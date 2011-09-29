@@ -4,6 +4,8 @@ use Carp;
 
 use RPC::ExtDirect Action => 'TestAction';
 
+our $VERSION = '1.01';
+
 sub doEcho : ExtDirect(1) {
     my ($class, $data) = @_;
 

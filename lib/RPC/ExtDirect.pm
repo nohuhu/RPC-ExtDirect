@@ -16,7 +16,7 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 ### PACKAGE PRIVATE VARIABLE ###
 #
@@ -264,53 +264,53 @@ __END__
 
 =pod
 
-=head1 RPC::ExtDirect
+=head1 NAME
 
-Provides method attributes for packages to be used with RPC::ExtDirect
+Expose Perl code to JavaScript web applications through Ext.Direct remoting
 
 =head1 SYNOPSIS
 
-package Foo::Bar;
-
-use Carp;
-
-use RPC::ExtDirect Action => 'Fubar';
-
-sub foo : ExtDirect(2) {
+ package Foo::Bar;
+    
+ use Carp;
+ 
+ use RPC::ExtDirect Action => 'Fubar';
+ 
+ sub foo : ExtDirect(2) {
     my ($class, $arg1, $arg2) = @_;
-
+  
     # do something, store results in scalar
     my $result = ...;
-
+  
     return $result;
-}
-
-sub bar : ExtDirect(params => [foo, bar]) {
+ }
+  
+ sub bar : ExtDirect(params => [foo, bar]) {
     my ($class, %arg) = @_;
-
+  
     my $foo = $arg{foo};
     my $bar = $arg{bar};
-
+  
     # do something, returning scalar
     my $result = [ ... ];
-
+  
     # or throw an exception if something's not right
     croak "Houston, we've got a problem" if $error;
-
+  
     return $result;
-}
-
-sub baz : ExtDirect(formHandler) {
+ }
+  
+ sub baz : ExtDirect(formHandler) {
     my ($class, %arg) = @_;
-
+  
     my @form_fields    =  { grep !/^file_uploads$/ }, keys %arg;
     my @uploaded_files = @{ $arg{file_uploads}     };
-
+  
     # do something with form fields and files
     my $result = { ... };
-
+  
     return $result;
-}
+ }
 
 =head1 DESCRIPTION
 
@@ -435,30 +435,30 @@ In order to keep this module as simple as possible, I had to sacrifice the
 ability to automatically distinguish inherited class methods. In order to
 declare inherited class methods as Ext.Direct exportable you have to override
 them in subclass, like that:
-
+    
     package foo;
     use RPC::ExtDirect;
-
+    
     sub foo_sub : ExtDirect(1) {
         my ($class, $arg) = @_;
-
+    
         # do something
         ...
     }
-
+    
     package bar;
     use base 'foo';
-
+    
     sub foo_sub : ExtDirect(1) {
         my ($class, $arg) = @_;
-
+    
         # call inherited method
         return __PACKAGE__->SUPER::foo_sub($arg);
     }
-
+    
     sub bar_sub : ExtDirect(2) {
         my ($class, $arg1, $arg2) = @_;
-
+    
         # do something
         ...
     }
