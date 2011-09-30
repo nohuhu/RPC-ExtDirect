@@ -1,6 +1,9 @@
 Revision history for Perl extension RPC::ExtDirect.
 
-1.01  Fir Sep 30 00:00:39 2011
+1.02  Fri Sep 30 11:18:13 2011
+    - Fixed an embarrassing error in RPC::ExtDirect Pod.
+
+1.01  Fri Sep 30 00:00:39 2011
     - Minor changes to documentation; added $VERSION to Demo modules.
 
 1.00  Thu Sep 29 14:42:39 2011

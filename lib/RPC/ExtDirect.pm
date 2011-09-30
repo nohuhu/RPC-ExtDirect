@@ -16,7 +16,7 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 ### PACKAGE PRIVATE VARIABLE ###
 #
@@ -266,7 +266,7 @@ __END__
 
 =head1 NAME
 
-Expose Perl code to JavaScript web applications through Ext.Direct remoting
+RPC::ExtDirect - Expose Perl code to JavaScript web applications through Ext.Direct remoting
 
 =head1 SYNOPSIS
 
