@@ -14,7 +14,7 @@ use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
 # Version of this module.
 #
 
-our $VERSION = '1.00';
+our $VERSION = '1.10';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -40,17 +40,22 @@ sub new {
     # Unpack and validate arguments
     my ($action, $method, $tid, $data, $type, $upload)
         = eval { $self->_unpack_arguments($arguments) };
-    return $xcpt->new( $DEBUG, $@->[0] ) if $@;
+    return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                        method  => $method, tid    => $tid,
+                        message => $@->[0] })
+        if $@;
 
     # Look up method parameters
     my %parameters = eval {
         RPC::ExtDirect->get_method_parameters($action, $method)
     };
-    return $xcpt->new($DEBUG, 'ExtDirect action or method not found')
+    return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                        method  => $method, tid    => $tid,
+                        message => 'ExtDirect action or method not found' })
         if $@;
 
     # Check if arguments passed in $data are of right kind
-    my $exception = $self->_check_arguments($action, $method, $data,
+    my $exception = $self->_check_arguments($action, $method, $tid, $data,
                                             \%parameters);
     return $exception if defined $exception;
 
@@ -172,8 +177,13 @@ sub _set_error {
         $where = $package . '->' . $sub;
     };
 
+    # A shortcut
+    my $xcpt = 'RPC::ExtDirect::Exception';
+
     # We need newborn Exception object to tear its guts out
-    my $ex = RPC::ExtDirect::Exception->new($DEBUG, $msg, $where);
+    my $ex = $xcpt->new({ debug   => $DEBUG,        action => $self->action,
+                          method  => $self->method, tid    => $self->tid,
+                          message => $msg,          where  => $where });
 
     # Now the black voodoo magiKC part, live on stage
     delete @$self{ keys %$self };
@@ -224,7 +234,7 @@ sub _unpack_arguments {
 #
 
 sub _check_arguments {
-    my ($self, $action, $method, $data, $method_def) = @_;
+    my ($self, $action, $method, $tid, $data, $method_def) = @_;
 
     # A shortcut
     my $xcpt = 'RPC::ExtDirect::Exception';
@@ -233,10 +243,11 @@ sub _check_arguments {
     if ( defined $method_def->{param_names} ) {
         my $param_names = $method_def->{param_names};
 
-        return $xcpt->new( $DEBUG,
-                           "ExtDirect method $action.$method ".
-                           "needs named parameters: " .
-                           join( ', ', @$param_names ) )
+        return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                            method  => $method, tid    => $tid,
+                            message => "ExtDirect method $action.$method ".
+                                       "needs named parameters: " .
+                                       join( ', ', @$param_names ) })
             if !$self->_check_params($param_names, $data);
     };
 
@@ -244,18 +255,22 @@ sub _check_arguments {
     if ( $method_def->{param_no} ) {
         my $defined_param_no = $method_def->{param_no};
         my $real_param_no    = @$data;
-        return $xcpt->new( $DEBUG,
-                           "ExtDirect method $action.$method ".
+
+        return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                            method  => $method, tid    => $tid,
+                            message => "ExtDirect method $action.$method ".
                            "needs $defined_param_no ".
-                           "arguments instead of $real_param_no" )
+                           "arguments instead of $real_param_no" })
             if $real_param_no < $defined_param_no;
     };
 
     # There's not much to check for formHandler methods
     if ( $method_def->{formHandler} ) {
-        return $xcpt->new( $DEBUG,
-                           "ExtDirect formHandler method $action.$method ".
-                           "should only be called with form submits" )
+        return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                            method  => $method, tid    => $tid,
+                            message => "ExtDirect formHandler method ".
+                                       "$action.$method should only ".
+                                       "be called with form submits" })
             if ref $data ne 'HASH' || !exists $data->{extAction} ||
                                       !exists $data->{extMethod};
     };
@@ -263,9 +278,11 @@ sub _check_arguments {
     # Event poll handlers return Event objects instead of plain data;
     # there is no sense in calling them directly
     if ( $method_def->{pollHandler} ) {
-        return $xcpt->new( $DEBUG,
-                           "ExtDirect pollHandler method $action.$method ".
-                           "should not be called directly" );
+        return $xcpt->new({ debug   => $DEBUG,  action => $action,
+                            method  => $method, tid    => $tid,
+                            message => "ExtDirect pollHandler method ".
+                                       "$action.$method should not ".
+                                       "be called directly" });
     };
 
     # undef means no exception

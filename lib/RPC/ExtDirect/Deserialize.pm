@@ -16,7 +16,7 @@ use RPC::ExtDirect::Exception;
 # Version of this module.
 #
 
-our $VERSION = '1.00';
+our $VERSION = '1.10';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -52,7 +52,7 @@ sub decode_post {
             if $DEBUG;
 
         my $msg = "ExtDirect error decoding POST data: '$@'";
-        return [ $xcpt->new($DEBUG, $msg) ];
+        return [ $xcpt->new({ debug => $DEBUG, message => $msg }) ];
     };
 
     # Normalize data

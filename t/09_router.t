@@ -37,9 +37,11 @@ __DATA__
     { name   => 'Invalid POST', debug => 1,
       input  => '{"something":"invalid":"here"}',
       output => [ 'application/json',
-                  q|{"message":"ExtDirect error decoding POST data: |.
+                  q|{"action":null,|.
+                  q|"message":"ExtDirect error decoding POST data: |.
                   q|', or } expected while parsing object/hash, at |.
                   q|character offset 22 (before \":\"here\"}\")'",|.
+                  q|"method":null,"tid":null,|.
                   q|"type":"exception",|.
                   q|"where":"RPC::ExtDirect::Deserialize->decode_post"}|
                 ],
@@ -75,8 +77,10 @@ __DATA__
       input  => { extTID => 100, action => 'Bar', method => 'bar_baz',
                   type => 'rpc', data => undef, },
       output => [ 'application/json',
-                  q|{"message":"ExtDirect formHandler method |.
+                  q|{"action":"Bar",|.
+                  q|"message":"ExtDirect formHandler method |.
                   q|Bar.bar_baz should only be called with form submits",|.
+                  q|"method":"bar_baz","tid":100,|.
                   q|"type":"exception",|.
                   q|"where":"RPC::ExtDirect::Request->_check_arguments"}|,
                 ],

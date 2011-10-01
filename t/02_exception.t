@@ -10,19 +10,61 @@ package RPC::ExtDirect::Test;
 
 use RPC::ExtDirect::Exception;
 
-sub foo { RPC::ExtDirect::Exception->new(0, 'new fail'); }
-sub bar { RPC::ExtDirect::Exception->new(1, 'bar fail'); }
-sub qux { RPC::ExtDirect::Exception->new(1, 'qux fail', 'X->qux'); }
+sub foo {
+    return RPC::ExtDirect::Exception->new({ debug   => 0,
+                                            action  => 'Test',
+                                            method  => 'foo',
+                                            tid     => 1,
+                                            message => 'new fail' });
+}
+
+sub bar {
+    return RPC::ExtDirect::Exception->new({ debug   => 1,
+                                            action  => 'Test',
+                                            method  => 'bar',
+                                            tid     => 2,
+                                            message => 'bar fail' });
+}
+
+sub qux {
+    return RPC::ExtDirect::Exception->new({ debug   => 1,
+                                            action  => 'Test',
+                                            method  => 'qux',
+                                            tid     => 3,
+                                            message => 'qux fail',
+                                            where => 'X->qux' });
+}
 
 package main;
 
 my $tests = [
-    { method  => 'foo', ex => { type => 'exception', where => 'ExtDirect',
-      message => 'An error has occured while processing request' }, },
-    { method  => 'bar', ex => { type => 'exception',
-      where   => 'RPC::ExtDirect::Test->bar', message => 'bar fail', }, },
-    { method  => 'qux', ex => { type => 'exception',
-      where   => 'X->qux', message => 'qux fail', }, },
+    { method  => 'foo',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'foo',
+              tid     => 1,
+              where   => 'ExtDirect',
+              message => 'An error has occured while processing request',
+      },
+    },
+    { method  => 'bar',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'bar',
+              tid     => 2,
+              where   => 'RPC::ExtDirect::Test->bar',
+              message => 'bar fail',
+      },
+    },
+    { method  => 'qux',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'qux',
+              tid     => 3,
+              where   => 'X->qux',
+              message => 'qux fail',
+      },
+    },
 ];
 
 for my $test ( @$tests ) {

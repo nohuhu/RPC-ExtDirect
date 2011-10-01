@@ -11,7 +11,7 @@ use Carp;
 # Version of this module.
 #
 
-our $VERSION = '1.00';
+our $VERSION = '1.10';
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
@@ -19,10 +19,23 @@ our $VERSION = '1.00';
 #
 
 sub new {
-    my ($class, $debug, $message, $where) = @_;
+    my ($class, $arguments) = @_;
+
+    # Unpack the arguments
+    my $debug   = $arguments->{debug};
+    my $action  = $arguments->{action};
+    my $method  = $arguments->{method};
+    my $tid     = $arguments->{tid};
+    my $where   = $arguments->{where};
+    my $message = $arguments->{message};
 
     # Need the object to call private methods
-    my $self = bless { debug => $debug }, $class;
+    my $self = bless {
+        debug   => $debug,
+        action  => $action,
+        method  => $method,
+        tid     => $tid,
+    }, $class;
 
     # Store the information internally
     $self->_set_error($message, $where);
@@ -56,6 +69,9 @@ sub result {
 #
 
 sub debug   { $_[0]->{debug}   }
+sub action  { $_[0]->{action}  }
+sub method  { $_[0]->{method}  }
+sub tid     { $_[0]->{tid}     }
 sub where   { $_[0]->{where}   }
 sub message { $_[0]->{message} }
 
@@ -106,8 +122,11 @@ sub _get_exception_hashref {
 
     # Format the hashref
     my $exception_ref = {
-        type => 'exception',
-        where => $where,
+        type    => 'exception',
+        action  => $self->action,
+        method  => $self->method,
+        tid     => $self->tid,
+        where   => $where,
         message => $message,
     };
 
