@@ -15,7 +15,7 @@ use RPC::ExtDirect;
 # Version of this module.
 #
 
-our $VERSION = '1.00';
+our $VERSION = '1.20';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -223,16 +223,12 @@ sub _define_method {
     return { name => $method, len => 0, formHandler => \1 }
         if $param{formHandler};
 
-    # Ordinary method with numbered arguments
-    return { name => $method, len => $param{param_no} + 0 }
-        if $param{param_no};
-
     # Ordinary method with named arguments
     return { name => $method, params => $param{param_names} }
         if $param{param_names};
 
-    # Can't reach here but still
-    return;
+    # Ordinary method with numbered arguments
+    return { name => $method, len => $param{param_no} + 0 };
 }
 
 ### PRIVATE CLASS METHOD ###

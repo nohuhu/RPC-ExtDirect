@@ -27,4 +27,13 @@ sub foo_baz : ExtDirect( params => [foo, bar, baz] ) {
     return $ret;
 }
 
+# Testing zero parameters
+sub foo_zero : ExtDirect(0) {
+    my ($class) = @_;
+
+    my $ret = [ @_ ];
+
+    return $ret;
+}
+
 1;

@@ -1,5 +1,10 @@
 Revision history for Perl extension RPC::ExtDirect.
 
+1.20  Tue Oct  4 21:16:00 2011
+    - Fixed a bug in RPC::ExtDirect::API: Methods with 0 numbered
+      parameters (i.e. no parameters at all) were not defined
+      properly in generated JavaScript API string.
+
 1.10  Sat Oct  1 20:41:28 2011
     - Fixed improper exception handling: RPC::ExtDirect::Exception
       object did not contain required 'action', 'method' and 'tid'

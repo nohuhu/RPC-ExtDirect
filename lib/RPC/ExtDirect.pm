@@ -16,7 +16,7 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '1.10';
+our $VERSION = '1.20';
 
 ### PACKAGE PRIVATE VARIABLE ###
 #
