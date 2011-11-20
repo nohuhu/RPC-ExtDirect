@@ -4,13 +4,6 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
-### PUBLIC PACKAGE VARIABLE ###
-#
-# Version of this module.
-#
-
-our $VERSION = '1.00';
-
 ### PUBLIC CLASS METHOD ###
 #
 # Returns default router path

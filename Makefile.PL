@@ -9,7 +9,7 @@ WriteMakefile(
     PREREQ_PM         => {
         'Test::More'            => 0,
         'Test::Pod'             => 0,
-        'Attribute::Handlers'   => 0,
+        'Attribute::Handlers'   => '0.87',
         'JSON'                  => '2.0',
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?     ## Add these new keywords supported since 5.005

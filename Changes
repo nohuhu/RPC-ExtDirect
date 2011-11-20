@@ -1,5 +1,12 @@
 Revision history for Perl extension RPC::ExtDirect.
 
+1.21  Mon Nov 21 00:39:12 2011
+    - Fixed dependency on Attribute::Handlers version >= 0.87 as
+      an attempt to fix failing tests reported by CPAN testers.
+
+      Removed versions from all packages except RPC::ExtDirect.
+      No point in versioning submodules, it only confuses me.
+
 1.20  Tue Oct  4 21:16:00 2011
     - Fixed a bug in RPC::ExtDirect::API: Methods with 0 numbered
       parameters (i.e. no parameters at all) were not defined

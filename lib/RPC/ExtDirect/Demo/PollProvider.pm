@@ -5,8 +5,6 @@ use POSIX 'strftime';
 use RPC::ExtDirect;
 use RPC::ExtDirect::Event;
 
-our $VERSION = '1.01';
-
 sub poll : ExtDirect(pollHandler) {
     my $time = strftime "Successfully polled at: %a %b %e %H:%M:%S %Y",
                         localtime;

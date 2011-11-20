@@ -10,13 +10,6 @@ use JSON;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
-# Version of this module.
-#
-
-our $VERSION = '1.00';
-
-### PACKAGE GLOBAL VARIABLE ###
-#
 # Turn on for debugging
 #
 

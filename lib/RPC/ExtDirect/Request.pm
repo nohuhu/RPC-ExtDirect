@@ -11,13 +11,6 @@ use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
-# Version of this module.
-#
-
-our $VERSION = '1.10';
-
-### PACKAGE GLOBAL VARIABLE ###
-#
 # Turn on for debugging
 #
 

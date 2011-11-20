@@ -6,13 +6,6 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
-### PACKAGE GLOBAL VARIABLE ###
-#
-# Version of this module.
-#
-
-our $VERSION = '1.00';
-
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of Event.

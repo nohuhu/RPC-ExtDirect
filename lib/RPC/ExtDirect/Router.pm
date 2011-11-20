@@ -13,13 +13,6 @@ use RPC::ExtDirect::Exception;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
-# Version of this module.
-#
-
-our $VERSION = '1.00';
-
-### PACKAGE GLOBAL VARIABLE ###
-#
 # Turn this on for debug output
 #
 

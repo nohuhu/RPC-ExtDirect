@@ -12,13 +12,6 @@ use RPC::ExtDirect;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
-# Version of this module.
-#
-
-our $VERSION = '1.20';
-
-### PACKAGE GLOBAL VARIABLE ###
-#
 # Turn this on for debugging
 #
 

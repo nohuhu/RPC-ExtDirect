@@ -2,8 +2,6 @@ package RPC::ExtDirect::Demo::Profile;
 
 use RPC::ExtDirect Action => 'Profile';
 
-our $VERSION = '1.01';
-
 sub updateBasicInfo : ExtDirect(formHandler) {
     my ($class, %fields) = @_;
 
