@@ -73,9 +73,6 @@ sub route {
 sub _wrap_in_html {
     my ($json) = @_;
 
-    # Quoting specification: Quote double quotes at first quote
-    $json =~ s/ " /\\"/gmsx;
-
     # Actually wrap in soft HTML blankets
     my $html = "<html><body><textarea>$json</textarea></body></html>";
 

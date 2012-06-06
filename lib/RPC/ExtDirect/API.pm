@@ -108,8 +108,7 @@ sub get_remoting_api {
     my $auto_connect = $param{auto_connect};
 
     # Compile JavaScript for REMOTING_API
-    my $js_chunk = "Ext.namespace('Ext.app');\n"
-                 . "$remoting_var = "
+    my $js_chunk = "$remoting_var = "
                  . RPC::ExtDirect::Serialize->serialize($remoting_api)
                  . ";\n";
 

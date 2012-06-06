@@ -1,5 +1,20 @@
 Revision history for Perl extension RPC::ExtDirect.
 
+1.30  Wed Jun  6 09:43:58 2012
+    - Fixed a bug in RPC::ExtDirect::Router: form/file upload
+      responses improperly escaped double quotes, which didn't
+      play well with client side.
+
+    - Fixed small misfeature: API definition no longer include
+      Ext.app namespace declaration. That seemed like a good
+      idea at the time, but turned out to be more trouble than
+      it was worth.
+
+    - More diagnostics for attribute handler in RPC::ExtDirect.
+
+    - Fixed a couple of bugs in RPC::ExtDirect documentation and
+      expanded it a bit.
+
 1.21  Mon Nov 21 00:39:12 2011
     - Fixed dependency on Attribute::Handlers version >= 0.87 as
       an attempt to fix failing tests reported by CPAN testers.

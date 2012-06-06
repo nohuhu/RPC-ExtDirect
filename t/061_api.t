@@ -16,7 +16,6 @@ BEGIN { use_ok 'RPC::ExtDirect::API'; }
 local $RPC::ExtDirect::API::DEBUG = 1;
 
 my $expected = q~
-Ext.namespace('Ext.app');
 Ext.app.REMOTING_API = {
     "actions":{
         "Bar":[
@@ -64,7 +63,6 @@ RPC::ExtDirect::API->import(
 );
 
 $expected = q~
-Ext.namespace('Ext.app');
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[

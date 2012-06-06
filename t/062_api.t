@@ -21,7 +21,6 @@ use RPC::ExtDirect::API     namespace    => 'myApp.Server',
 local $RPC::ExtDirect::API::DEBUG = 1;
 
 my $expected = q~
-Ext.namespace('Ext.app');
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[

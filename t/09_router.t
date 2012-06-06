@@ -107,14 +107,14 @@ __DATA__
                 },
       output => [ 'text/html',
                   q|<html><body><textarea>|.
-                  q|{\"action\":\"Bar\",\"method\":\"bar_baz\",|.
-                  q|\"result\":{\"bar_field\":\"bar\",|.
-                  q|\"foo_field\":\"foo\",|.
-                  q|\"upload_response\":\"The following files were |.
+                  q|{"action":"Bar","method":"bar_baz",|.
+                  q|"result":{"bar_field":"bar",|.
+                  q|"foo_field":"foo",|.
+                  q|"upload_response":"The following files were |.
                   q|processed:\n|.
-                  q|foo.txt text/plain 123\n\"|.
-                  q|},\"tid\":7,|.
-                  q|\"type\":\"rpc\"}|.
+                  q|foo.txt text/plain 123\n"|.
+                  q|},"tid":7,|.
+                  q|"type":"rpc"}|.
                   q|</textarea></body></html>|,
                 ],
     },
@@ -136,15 +136,15 @@ __DATA__
                 },
       output => [ 'text/html',
                   q|<html><body><textarea>|.
-                  q|{\"action\":\"Bar\",\"method\":\"bar_baz\",|.
-                  q|\"result\":{|.
-                  q|\"field\":\"value\",|.
-                  q|\"upload_response\":\"The following files were |.
+                  q|{"action":"Bar","method":"bar_baz",|.
+                  q|"result":{|.
+                  q|"field":"value",|.
+                  q|"upload_response":"The following files were |.
                   q|processed:\n|.
                   q|bar.jpg image/jpeg 123123\n|.
                   q|qux.png image/png 54321\n|.
-                  q|script.js application/javascript 1000\n\"|.
-                  q|},\"tid\":8,\"type\":\"rpc\"}|.
+                  q|script.js application/javascript 1000\n"|.
+                  q|},"tid":8,"type":"rpc"}|.
                   q|</textarea></body></html>|,
                 ],
     },
