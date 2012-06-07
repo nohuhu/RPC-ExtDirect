@@ -7,7 +7,7 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect ();          # No imports here
-use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
+use RPC::ExtDirect::Exception;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -77,8 +77,7 @@ sub run {
     my $xcpt = 'RPC::ExtDirect::Exception';
 
     # Ensure run() is not called twice
-    return
-        $self->_set_error("ExtDirect request can't be run more than once")
+    return $self->_set_error("ExtDirect request can't run more than once")
             if $self->run_count > 0;
     
     # Set the flag
@@ -96,18 +95,10 @@ sub run {
 
     # Fail gracefully if method call was unsuccessful
     if ( $@ ) {
-        # Remove that nasty newline from standard die() or croak() msg
-        chomp $@;
-
-        # When debugging, try our best to remove that frigging
-        # line number and file name from error message.
-        # It blows up all string comparisons.
-        $@ =~ s/(?<![,]) at .*? line \d+(, <DATA> line \d+)?\.?//
-            if $DEBUG;
 
         # Report actual package and method in case we're debugging
         my $where = $self->package .'->'. $self->method;
-        my $msg   = "ExtDirect request failed: '$@'";
+        my $msg   = RPC::ExtDirect::Exception->clean_message($@);
 
         return $self->_set_error($msg, $where);
     };
@@ -362,7 +353,7 @@ sub _get_result_hashref {
         tid    => $self->tid,
         action => $self->action,
         method => $self->method,
-        result => $self->{result},  # To avoid collisions
+        result => $self->{result},  # Collides with public method "result"
     };
 
     return $result_ref;

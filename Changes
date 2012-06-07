@@ -1,5 +1,13 @@
 Revision history for Perl extension RPC::ExtDirect.
 
+1.31  Thu Jun  7 11:13:32 2012
+    - Fixed a bug in RPC::ExtDirect::Router that allowed some
+      misformed method output to break result serialization
+      without catching the error, leading to route() finishing
+      prematurely.
+
+    - Added bugtracker and repository properties in Makefile.PL.
+
 1.30  Wed Jun  6 09:43:58 2012
     - Fixed a bug in RPC::ExtDirect::Router: form/file upload
       responses improperly escaped double quotes, which didn't

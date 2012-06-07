@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 22;
+use Test::More tests => 25;
 
 BEGIN { use_ok 'RPC::ExtDirect::Router'; }
 
@@ -23,7 +23,10 @@ for my $test ( @$tests ) {
     my $result = eval { RPC::ExtDirect::Router->route($input) };
 
     # Remove whitespace
-    s/\s//g for ( $expect, $result );
+    s/\s//g for ( $expect->[1], $result->[1] );
+
+    # Remove reference addresses
+    s/HASH\([^\)]+\)/HASH(blessed)/g for ( $expect->[1], $result->[1] );
 
     is        $@,      '',      "$name eval $@";
     is ref    $result, 'ARRAY', "$name result ARRAY";
@@ -34,6 +37,17 @@ exit 0;
 
 __DATA__
 [
+    { name   => 'Invalid result', debug => 1,
+      input  => '{"type":"rpc","tid":1,"action":"Foo","method":"foo_blessed",'.
+                ' "data":[]}',
+      output => [ 'application/json',
+                q|{"action":"Foo","message":"encountered object |.
+                q|'foo=HASH(0x10088fca0)', but neither allow_blessed|.
+                q| nor convert_blessed settings are enabled","method"|.
+                q|:"foo_blessed","tid":1,"type":"exception","where":|.
+                q|"RPC::ExtDirect::Serialize"}|,
+                ],
+    },
     { name   => 'Invalid POST', debug => 1,
       input  => '{"something":"invalid":"here"}',
       output => [ 'application/json',

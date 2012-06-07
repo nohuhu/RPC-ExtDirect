@@ -35,11 +35,6 @@ RPC::ExtDirect modules require these other modules and libraries:
   Attribute::Handlers
   JSON
 
-And, for testing purposes only:
-
-  Test::More
-  Test::Pod
-
 COPYRIGHT AND LICENCE
 
 Copyright (C) 2011-2012 by Alexander Tokarev <tokarev@cpan.org>

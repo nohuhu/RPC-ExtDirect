@@ -6,6 +6,8 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
+use RPC::ExtDirect::Exception;
+
 use JSON;
 
 ### PACKAGE GLOBAL VARIABLE ###
@@ -21,17 +23,39 @@ our $DEBUG = 0;
 #
 
 sub serialize {
-    my ($class, @data) = @_;
+    my ($class, $suppress_exceptions, @data) = @_;
 
-    # Single parameter comes through, else wrap
-    my $data_ref = @data == 1 ?   $data[0]
-                 :              [ @data    ]
-                 ;
+    my $json = JSON->new->utf8->canonical($DEBUG);
 
-    my $json      = JSON->new->utf8->canonical($DEBUG);
-    my $json_text = $json->encode( $data_ref );
+    # Try to serialize each response separately;
+    # if one fails it's better to return an exception
+    # for one response than fail all of them
+    my @serialized;
+    for my $response ( @data ) {
+        my $text = eval { $json->encode($response) };
 
-    return $json_text;
+        if ( $@ and not $suppress_exceptions ) {
+            my $msg = RPC::ExtDirect::Exception->clean_message($@);
+
+            my $exception = RPC::ExtDirect::Exception->new({
+                                debug   => $DEBUG,
+                                action  => $response->{action},
+                                method  => $response->{method},
+                                tid     => $response->{tid},
+                                where   => __PACKAGE__,
+                                message => $msg,
+                             });
+            $text = eval { $json->encode( $exception->result() ) };
+        };
+
+        push @serialized, $text;
+    };
+
+    my $text = @serialized == 1 ? shift @serialized
+             :                    '[' . join(',', @serialized) . ']'
+             ;
+
+    return $text;
 }
 
 ############## PRIVATE METHODS BELOW ##############

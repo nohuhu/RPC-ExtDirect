@@ -79,12 +79,12 @@ sub poll {
 
     # Polling results are always JSON; no content type needed
     my $serialized = eval {
-        RPC::ExtDirect::Serialize->serialize( $final_result )
+        RPC::ExtDirect::Serialize->serialize( 1, $final_result )
     };
 
     # And if serialization fails we have to return something positive
-    return $@ eq '' ? $serialized
-           :          $class->_no_events
+    return $@ eq '' && $serialized ? $serialized
+           :                         $class->_no_events
            ;
 }
 
@@ -100,7 +100,7 @@ sub _no_events {
 
     my $no_events  = RPC::ExtDirect::NoEvents->new();
     my $result     = $no_events->result();
-    my $serialized = RPC::ExtDirect::Serialize->serialize($result);
+    my $serialized = RPC::ExtDirect::Serialize->serialize(0, $result);
 
     return $serialized;
 }

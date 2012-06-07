@@ -68,6 +68,19 @@ sub tid     { $_[0]->{tid}     }
 sub where   { $_[0]->{where}   }
 sub message { $_[0]->{message} }
 
+### PUBLIC CLASS METHOD ###
+#
+# Clean croak() and die() messages of file/line information
+#
+
+sub clean_message {
+    my ($class, $msg) = @_;
+
+    $msg =~ s/(?<![,]) at .*? line \d+(, <DATA> line \d+)?\.?\n*//ms;
+
+    return $msg;
+}
+
 ############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE INSTANCE METHOD ###

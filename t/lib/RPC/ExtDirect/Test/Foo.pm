@@ -36,4 +36,9 @@ sub foo_zero : ExtDirect(0) {
     return $ret;
 }
 
+# Testing blessed object return
+sub foo_blessed : ExtDirect(0) {
+    return bless {}, 'foo';
+}
+
 1;

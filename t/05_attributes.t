@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Carp;
 
-use Test::More tests => 46;
+use Test::More tests => 48;
 
 BEGIN { use_ok 'RPC::ExtDirect'; }
 
@@ -16,7 +16,7 @@ use RPC::ExtDirect::Test::PollProvider;
 my %test_for = (
     # foo is plain basic package with ExtDirect methods
     'Foo' => {
-        methods => [ sort qw( foo_foo foo_bar foo_baz foo_zero ) ],
+        methods => [ sort qw( foo_foo foo_bar foo_baz foo_zero foo_blessed ) ],
         list    => {
             foo_foo => { package => 'RPC::ExtDirect::Test::Foo',
                          method  => 'foo_foo', param_no => 1,
@@ -32,6 +32,10 @@ my %test_for = (
                          param_names => [ qw( foo bar baz ) ], },
             foo_zero =>{ package => 'RPC::ExtDirect::Test::Foo',
                          method  => 'foo_zero', param_no => 0,
+                         formHandler => 0, pollHandler => 0,
+                         param_names => undef, },
+            foo_blessed => { package => 'RPC::ExtDirect::Test::Foo',
+                         method => 'foo_blessed', param_no => 0,
                          formHandler => 0, pollHandler => 0,
                          param_names => undef, },
         },
@@ -108,7 +112,7 @@ my @expected_methods = sort qw(
     Qux::bar_bar            Qux::bar_baz        Qux::bar_foo
     Qux::foo_bar            Qux::foo_baz        Qux::foo_foo
     Foo::foo_foo            Foo::foo_bar        Foo::foo_baz
-    Foo::foo_zero
+    Foo::foo_zero           Foo::foo_blessed
     Bar::bar_foo            Bar::bar_bar        Bar::bar_baz
     PollProvider::foo
 );

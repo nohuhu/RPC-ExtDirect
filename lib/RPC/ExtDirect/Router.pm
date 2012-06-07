@@ -52,12 +52,12 @@ sub route {
     my $responses = [ map { $_->result() } @$requests ];
 
     # Serialize responses
-    my $result = $ser->serialize(@$responses);
+    my $result = $ser->serialize(0, @$responses);
 
-    # Wrap in HTML if that was form request
+    # Wrap in HTML if that was form upload request
     $result = _wrap_in_html($result) if $has_upload;
 
-    # Form responses are HTML instead of JSON
+    # Form responses are JSON wrapped in HTML, not plain JSON
     my $content_type = $has_upload ? 'text/html' : 'application/json';
 
     return [ $content_type, $result ];

@@ -34,17 +34,11 @@ sub decode_post {
 
     # Try to decode data, return Exception upon failure
     my $data = eval { decode_json $post_text };
+
     if ( $@ ) {
-        # Remove that nasty newline from standard die() or croak() msg
-        chomp $@;
+        my $error = RPC::ExtDirect::Exception->clean_message($@);
 
-        # When debugging, try our best to remove that frigging
-        # line number and file name from error message.
-        # It blows up all string comparisons.
-        $@ =~ s/(?<![,]) at .*? line \d+(, <DATA> line \d+)?\.?//
-            if $DEBUG;
-
-        my $msg = "ExtDirect error decoding POST data: '$@'";
+        my $msg = "ExtDirect error decoding POST data: '$error'";
         return [ $xcpt->new({ debug => $DEBUG, message => $msg }) ];
     };
 

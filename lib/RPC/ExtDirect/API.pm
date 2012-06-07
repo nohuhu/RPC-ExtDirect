@@ -107,9 +107,11 @@ sub get_remoting_api {
     my $polling_var  = $param{polling_var};
     my $auto_connect = $param{auto_connect};
 
+    my $serializer = 'RPC::ExtDirect::Serialize';
+
     # Compile JavaScript for REMOTING_API
     my $js_chunk = "$remoting_var = "
-                 . RPC::ExtDirect::Serialize->serialize($remoting_api)
+                 . ($serializer->serialize(1, $remoting_api) || '{}')
                  . ";\n";
 
     # If auto_connect is on, add client side initialization code
@@ -119,7 +121,7 @@ sub get_remoting_api {
     # POLLING_API is added only when there's something in it
     if ( $polling_api && !$OPTION_FOR{no_polling} ) {
         $js_chunk .= "$polling_var = "
-                  .  RPC::ExtDirect::Serialize->serialize($polling_api)
+                  .  ($serializer->serialize(1, $polling_api) || '{}')
                   .  ";\n";
 
         # Same initialization code for POLLING_API if auto connect is on

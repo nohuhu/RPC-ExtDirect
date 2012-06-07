@@ -165,8 +165,8 @@ __DATA__
                     method  => 'foo_foo',
                     tid     => 333,
                     where   => 'RPC::ExtDirect::Request->run',
-                    message => "ExtDirect request can't be run more than ".
-                               "once", },
+                    message => "ExtDirect request can't run more than once"
+                  },
     },
     # Method call failed
     {
@@ -179,7 +179,7 @@ __DATA__
                     method  => 'bar_foo',
                     tid     => 444,
                     where   => 'RPC::ExtDirect::Test::Qux->bar_foo',
-                    message => "ExtDirect request failed: 'bar foo!'", },
+                    message => "bar foo!", },
     },
     # Form handler called directly
     {
