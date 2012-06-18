@@ -1,5 +1,9 @@
 package RPC::ExtDirect::Demo::TestAction;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';
+
 use Carp;
 
 use RPC::ExtDirect Action => 'TestAction';

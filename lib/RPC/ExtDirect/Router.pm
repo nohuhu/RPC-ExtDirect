@@ -24,7 +24,7 @@ our $DEBUG = 0;
 #
 
 sub route {
-    my ($class, $input) = @_;
+    my ($class, $input, $env) = @_;
 
     # Set debug flags
     local $RPC::ExtDirect::Deserialize::DEBUG = $DEBUG;
@@ -46,7 +46,7 @@ sub route {
                  ;
 
     # Run the requests
-    $_->run() for @$requests;
+    $_->run($env) for @$requests;
 
     # Collect responses
     my $responses = [ map { $_->result() } @$requests ];
@@ -57,10 +57,20 @@ sub route {
     # Wrap in HTML if that was form upload request
     $result = _wrap_in_html($result) if $has_upload;
 
-    # Form responses are JSON wrapped in HTML, not plain JSON
+    # Form upload responses are JSON wrapped in HTML, not plain JSON
     my $content_type = $has_upload ? 'text/html' : 'application/json';
 
-    return [ $content_type, $result ];
+    # We need content length in octets
+    my $content_length = do { no warnings; use bytes; length $result };
+
+    return [
+        200,
+        [
+            'Content-Type',   $content_type,
+            'Content-Length', $content_length,
+        ],
+        [ $result ],
+    ];
 }
 
 ############## PRIVATE METHODS BELOW ##############
@@ -99,9 +109,10 @@ Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011 Alexander Tokarev.
+Copyright (c) 2011-2012 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
 
 =cut
+

@@ -32,7 +32,10 @@ for my $test ( @$tests ) {
     is     $@, '',               "$name $method() requests eval $@";
     ok ref $requests eq 'ARRAY', "$name $method requests is ARRAY";
 
-    BAIL_OUT "requests not ARRAY" unless ref $requests eq 'ARRAY';
+    if ( 'ARRAY' ne ref $requests ) {
+        print "requests not ARRAY\n";
+        exit 1;
+    };
 
     my $runs    = eval { [ map { $_->run()    } @$requests ] };
 

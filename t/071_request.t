@@ -51,7 +51,7 @@ for my $test ( @$tests ) {
     is        $@,      '',               "$name result() eval $@";
     ok        $result,                   "$name result() not empty";
     is_deeply $result, $expected_result, "$name result() deep"
-        or print Data::Dumper->Dump( [$result], ['result'] );
+        or diag Data::Dumper->Dump( [$result], ['result'] );
 };
 
 __DATA__

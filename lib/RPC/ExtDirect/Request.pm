@@ -7,7 +7,8 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect ();          # No imports here
-use RPC::ExtDirect::Exception;
+use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
+use RPC::ExtDirect::Hook;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -56,10 +57,15 @@ sub new {
     my @attrs        = qw(action method package referent param_no
                           param_names formHandler
                           tid arguments type data upload run_count);
-    @$self{ @attrs } =  ($action, $method,        $parameters{package},
-                         $parameters{referent},   $parameters{param_no},
-                         $parameters{param_names},$parameters{formHandler},
+    @$self{ @attrs } =  ($action, $method,         $parameters{package},
+                         $parameters{referent},    $parameters{param_no},
+                         $parameters{param_names}, $parameters{formHandler},
                          $tid, $data, $type, $data, $upload, 0);
+
+    # Hooks should be already defined by now
+    my @hook_types = qw/ before instead after /;
+    @$self{ @hook_types }
+        = map { RPC::ExtDirect::Hook->new($_, \%parameters) } @hook_types;
 
     return $self;
 }
@@ -71,7 +77,7 @@ sub new {
 #
 
 sub run {
-    my ($self) = @_;
+    my ($self, $env) = @_;
 
     # A shortcut
     my $xcpt = 'RPC::ExtDirect::Exception';
@@ -84,24 +90,62 @@ sub run {
     $self->{run_count} = 1;
 
     # Prepare the arguments
-    my @arg = $self->_prepare_method_arguments();
+    my @arg = $self->_prepare_method_arguments($env);
+
+    my ($result, $exception, $method_called);
+    my $run_method = 1;
+
+    # Run "before" hook if we got one
+    if ( $self->before ) {
+
+        # This hook may die() with an Exception
+        my $hook_result = eval { $self->before->run($env, \@arg) };
+
+        # If "before" hook died, cancel Method call
+        if ( $@ ) {
+            $exception  = $@;
+            $run_method = '';
+        };
+
+        # If "before" hook returns anything but number 1,
+        # treat it as Ext.Direct response and do not call
+        # the actual method
+        if ( $hook_result ne '1' ) {
+            $result     = $hook_result;
+            $run_method = '';
+        };
+    };
 
     # We call methods by code reference
     my $package  = $self->package;
     my $referent = $self->referent;
 
-    # Actual methods are always called in scalar context
-    my $result = eval { $referent->($package, @arg) };
+    # If there is "instead" hook, call it instead of the method
+    if ( $run_method ) {
+        $method_called = $self->instead ? $self->instead->instead
+                       :                  $referent
+                       ;
+
+        $result = $self->instead ? eval { $self->instead->run($env, \@arg) }
+                :                  eval { $referent->($package, @arg)      }
+                ;
+
+        $exception = $@;
+    };
+
+    # Finally, run "after" hook if we got one
+    if ( $self->after ) {
+
+        # Return value and exceptions are ignored
+        eval {
+            $self->after->run($env, \@arg, $result, $exception, $method_called)
+        };
+        $@ = '';
+    };
 
     # Fail gracefully if method call was unsuccessful
-    if ( $@ ) {
-
-        # Report actual package and method in case we're debugging
-        my $where = $self->package .'->'. $self->method;
-        my $msg   = RPC::ExtDirect::Exception->clean_message($@);
-
-        return $self->_set_error($msg, $where);
-    };
+    return $self->_process_exception($env, $exception)
+        if $exception;
 
     # Else stash the results
     $self->{result} = $result;
@@ -142,6 +186,9 @@ sub message     { $_[0]->{message}     }
 sub upload      { $_[0]->{upload}      }
 sub run_count   { $_[0]->{run_count}   }
 sub formHandler { $_[0]->{formHandler} }
+sub before      { $_[0]->{before}      }
+sub instead     { $_[0]->{instead}     }
+sub after       { $_[0]->{after}       }
 sub param_names { @{ $_[0]->{param_names} || [] } }
 sub data        { @{ $_[0]->{data}              } }
 
@@ -173,7 +220,7 @@ sub _set_error {
     delete @$self{ keys %$self };
     @$self{ keys %$ex } = values %$ex;
 
-    # Finally, cover our sins with a blessing and we're born again!
+    # Finally, cover our sins with a blessing and we've been born again!
     bless $self, 'RPC::ExtDirect::Exception';
 
     # Humbly return failure to be propagated upwards
@@ -301,27 +348,12 @@ sub _check_params {
 #
 
 sub _prepare_method_arguments {
-    my ($self) = @_;
+    my ($self, $env) = @_;
 
     my @arg;
 
-    # Ensure we're passing the right number of arguments
-    if ( $self->param_no ) {
-        my @data = $self->data;
-        @arg     = splice @data, 0, $self->param_no;
-    }
-
-    # Pluck the named arguments and stash them into @arg
-    elsif ( $self->param_names ) {
-        my @names = $self->param_names;
-        my $data  = $self->{data};
-        my %tmp;
-        @tmp{ @names } = @$data{ @names };
-        @arg = %tmp;
-    }
-
-    # Deal with form handlers
-    elsif ( $self->formHandler ) {
+    # Deal with form handlers first
+    if ( $self->formHandler ) {
         # Data should be hashref here
         my $data = $self->{data};
 
@@ -334,8 +366,29 @@ sub _prepare_method_arguments {
         $data->{file_uploads} = $self->upload
             if $self->upload;
 
+        $data->{_env} = $env;
+
         @arg = %$data;
     }
+
+    # Pluck the named arguments and stash them into @arg
+    elsif ( $self->param_names ) {
+        my @names = $self->param_names;
+        my $data  = $self->{data};
+        my %tmp;
+        @tmp{ @names } = @$data{ @names };
+        $tmp{_env} = $env;
+
+        @arg = %tmp;
+    }
+
+    # Ensure we're passing the right number of arguments
+    elsif ( defined $self->param_no ) {
+        my @data = $self->data;
+        @arg     = splice @data, 0, $self->param_no;
+
+        push @arg, $env;
+    };
 
     return @arg;
 }
@@ -353,10 +406,27 @@ sub _get_result_hashref {
         tid    => $self->tid,
         action => $self->action,
         method => $self->method,
-        result => $self->{result},  # Collides with public method "result"
+        result => $self->{result},  # To avoid collisions
     };
 
     return $result_ref;
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Process exception message returned by die() in method or hooks
+#
+
+sub _process_exception {
+    my ($self, $env, $exception) = @_;
+
+    # Stringify exception and treat it as error message
+    my $msg = RPC::ExtDirect::Exception->clean_message("$exception");
+
+    # Report actual package and method in case we're debugging
+    my $where = $self->package .'->'. $self->method;
+
+    return $self->_set_error($msg, $where);
 }
 
 1;
@@ -379,9 +449,10 @@ Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011 Alexander Tokarev.
+Copyright (c) 2011-2012 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
 
 =cut
+

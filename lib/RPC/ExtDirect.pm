@@ -2,7 +2,7 @@ package RPC::ExtDirect;
 
 use 5.006;
 
-# ABSTRACT: Ext.Direct implementation for Sencha ExtJS framework
+# ABSTRACT: Ext.Direct implementation for Perl
 
 use strict;
 use warnings;
@@ -16,7 +16,14 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '1.31';
+our $VERSION = '2.00';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Debugging; defaults to off.
+#
+
+our $DEBUG = 0;
 
 ### PACKAGE PRIVATE VARIABLE ###
 #
@@ -40,13 +47,22 @@ my %PARAMETERS_FOR = ();
 
 my @POLL_HANDLERS = ();
 
+### PACKAGE PRIVATE VARIABLE ###
+#
+# Holds hook definitions. It has to be stored separately from
+# method definitions because global scope hooks can be added
+# *after* package attributes are processed.
+#
+
+my %HOOK_FOR = ();
+
 ### PUBLIC ATTRIBUTE DEFINITION ###
 #
 # Defines ExtDirect attribute subroutine and exports it into UNIVERSAL
 # namespace.
 #
 
-sub UNIVERSAL::ExtDirect : ATTR(CODE) {
+sub UNIVERSAL::ExtDirect : ATTR(CODE,BEGIN) {
     my ($package, $symbol, $referent, $attr, $data, $phase, $file, $line)
         = @_;
 
@@ -57,7 +73,7 @@ sub UNIVERSAL::ExtDirect : ATTR(CODE) {
           "method parameters at $file line $line"
         if !defined $data || ref $data ne 'ARRAY' || @$data < 0;
 
-    my $symbol_name = eval { *{$symbol}{NAME} };
+    my $symbol_name = eval { no strict 'refs'; *{$symbol}{NAME} };
     croak "Can't resolve symbol '$symbol' for package '$package' ".
           "at $file line $line: $@"
         if $@;
@@ -67,34 +83,57 @@ sub UNIVERSAL::ExtDirect : ATTR(CODE) {
     my $param_names = undef;
     my $formHandler = 0;
     my $pollHandler = 0;
+    my %hooks       = ();
 
-    my $param_def   = shift @$data;
+    while ( @$data ) {
+        my $param_def = shift @$data;
 
-    # Digits means number of unnamed arguments
-    if ( $param_def =~ / \A (\d+) \z /xms ) {
-        $param_no = $1;
-    }
+        # Digits means number of unnamed arguments
+        if ( $param_def =~ / \A (\d+) \z /xms ) {
+            $param_no = $1;
+        }
 
-    # formHandler means exactly that, a handler for form requests
-    elsif ( $param_def =~ / \A formHandler \z /xms ) {
-        $formHandler = 1;
-    }
+        # formHandler means exactly that, a handler for form requests
+        elsif ( $param_def =~ / \A formHandler \z /xms ) {
+            $formHandler = 1;
+        }
 
-    # pollHandlers are a bit tricky but are defined here anyway
-    elsif ( $param_def =~ / \A pollHandler \z /xms ) {
-        $pollHandler = 1;
-    }
+        # pollHandlers are a bit tricky but are defined here anyway
+        elsif ( $param_def =~ / \A pollHandler \z /xms ) {
+            $pollHandler = 1;
+        }
 
-    elsif ( $param_def =~ / \A params \z /ixms ) {
-        my $arg_names = shift @$data;
+        elsif ( $param_def =~ / \A params \z /ixms ) {
+            my $arg_names = shift @$data;
 
-        croak "ExtDirect attribute 'params' must be followed by ".
-              "arrayref containing at least one parameter name"
-            if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
+            croak "ExtDirect attribute 'params' must be followed by ".
+                  "arrayref containing at least one parameter name ".
+                  "at $file line $line"
+                if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
 
-        # Copy the names
-        $param_names = [ @{ $arg_names } ];
-    }
+            # Copy the names
+            $param_names = [ @{ $arg_names } ];
+        }
+
+        # Hooks
+        elsif ( $param_def =~ / \A (before|instead|after) \z /ixms ) {
+            my $type = $1;
+            my $code = shift @$data;
+
+            croak "ExtDirect attribute '$type' must be followed by coderef ".
+                  "or 'NONE' at $file line $line"
+                if $code ne 'NONE' && 'CODE' ne ref $code;
+
+            $hooks{ $type } = $code;
+
+            RPC::ExtDirect->add_hook(
+                package => $package,
+                method  => $symbol_name,
+                type    => $type,
+                code    => $code,
+            );
+        };
+    };
 
     my $attribute_ref = {
         package     => $package,
@@ -106,6 +145,8 @@ sub UNIVERSAL::ExtDirect : ATTR(CODE) {
         pollHandler => $pollHandler,
     };
 
+    @$attribute_ref{ keys %hooks } = values %hooks;
+
     RPC::ExtDirect->add_method($attribute_ref);
 }
 
@@ -116,24 +157,75 @@ sub UNIVERSAL::ExtDirect : ATTR(CODE) {
 #
 
 sub import {
-    my ($class, @arguments) = @_;
+    my ($class, @params) = @_;
 
     # Nothing to do
-    return unless @arguments;
+    return unless @params;
 
-    # Only hash-like arguments are supported at this time
-    croak "Odd number of arguments in RPC::ExtDirect::import()"
-        unless (@arguments % 2) == 0;
+    # Only hash-like arguments are supported
+    croak "Odd number of parameters in RPC::ExtDirect::import()"
+        unless (@params % 2) == 0;
 
-    my %argument_for = @arguments;
+    my %param = @params;
+       %param = map { lc $_ => delete $param{ $_ } } keys %param;
 
-    # Store Action name as an alias for a package
-    if ( exists $argument_for{ Action } ) {
-        my ($package, $filename, $line) = caller();
-        my $alias = $argument_for{ Action };
+    my ($package, $filename, $line) = caller();
+
+    # Store Action (class) name as an alias for a package
+    if ( exists $param{action} or exists $param{class} ) {
+        my $alias = defined $param{action} ? $param{action} : $param{class};
 
         RPC::ExtDirect->add_action($package, $alias);
     };
+
+    # Store package level hooks
+    for my $type ( qw/ before instead after / ) {
+        my $code = $param{ $type };
+
+        $class->add_hook( package => $package, type => $type, code => $code )
+            if $code;
+    };
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Add a hook to global hash
+#
+
+sub add_hook {
+    my ($class, %params) = @_;
+
+    my $package = $params{package};
+    my $method  = $params{method};
+    my $type    = $params{type};
+    my $code    = $params{code};
+
+    my $hook_key = $method  ? $package . '::' . $method  . '::' . $type
+                 : $package ? $package . '::' . 'global' . '::' . $type
+                 :            'global' .                   '::' . $type
+                 ;
+
+    $HOOK_FOR{ $hook_key } = $code;
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Return hook coderef by package and method, with hierarchical lookup.
+#
+
+sub get_hook {
+    my ($class, %params) = @_;
+
+    my $package = $params{package};
+    my $method  = $params{method};
+    my $type    = $params{type};
+
+    my $code = $HOOK_FOR{ $package . '::' . $method  . '::' . $type }
+            || $HOOK_FOR{ $package . '::' . 'global' . '::' . $type }
+            || $HOOK_FOR{ 'global' . '::'                   . $type }
+            ;
+
+    return $code eq 'NONE' ? undef : $code;
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -271,15 +363,23 @@ __END__
 
 =head1 NAME
 
-RPC::ExtDirect - Expose Perl code to JavaScript web applications through Ext.Direct remoting
+RPC::ExtDirect - Expose Perl code to Ext JS RIA applications through Ext.Direct remoting
 
 =head1 SYNOPSIS
 
  package Foo::Bar;
-    
- use RPC::ExtDirect Action => 'Fubar';
  
- sub foo : ExtDirect(2) {
+ use RPC::ExtDirect Action => 'Fubar',
+                    before => \&package_before_hook,
+                    after  => \&package_after_hook,
+                    ;
+  
+ sub foo_custom_hook {
+    # Check something, return true
+    return 1;
+ }
+ 
+ sub foo : ExtDirect(2, before => \&foo_custom_hook) {
     my ($class, $arg1, $arg2) = @_;
   
     # do something, store results in scalar
@@ -288,7 +388,12 @@ RPC::ExtDirect - Expose Perl code to JavaScript web applications through Ext.Dir
     return $result;
  }
   
- sub bar : ExtDirect(params => ['foo', 'bar']) {
+ # This method doesn't need hooks for some reason
+ sub bar
+    : ExtDirect(
+        params => ['foo', 'bar'], before => 'NONE', after  => 'NONE',
+      )
+ {
     my ($class, %arg) = @_;
   
     my $foo = $arg{foo};
@@ -314,24 +419,64 @@ RPC::ExtDirect - Expose Perl code to JavaScript web applications through Ext.Dir
   
     return $result;
  }
+  
+ sub package_before_hook {
+    my ($class, %params) = @_;
+  
+    # Unpack parameters
+    my ($method, $env) = @params{ qw/method _env/ };
+  
+    # Decide if user is authorized to call this method
+    my $authorized = check_authorization($method, $env);
+  
+    # Positive
+    return 1 if $authorized;
+  
+    # Negative, return error string
+    return 'Not authorized';
+ }
+  
+ sub package_after_hook {
+    my ($class, %params) = @_;
+  
+    # Unpack parameters
+    my ($method, $result, $ex) = @params{ qw/method result exception/ };
+    
+    # Log the action
+    security_audit_log($method, $result, $ex);
+ }
 
 =head1 DESCRIPTION
 
 =head2 Abstract
 
-This module provides an easy way to map class methods to ExtDirect RPC
-interface used with ExtJS JavaScript framework.
+This module provides an easy way to map Perl code to Ext.Direct RPC
+interface used with Ext JS JavaScript framework.
 
-=head2 What is this for?
+=head2 What Ext.Direct is for?
 
-There are many RPC protocols out there; ExtJS framework provides yet another
-one called Ext.Direct. In short, Ext.Direct is a way to call server side code
-from client side without having to mess with HTML, forms and stuff like that.
-Besides forward asynchronous data stream (client calls server), Ext.Direct
-also provides mechanism for backward (server to client) asynchronous event
-propagation.
+Ext.Direct is a high level RPC protocol that allows easy and fast
+integration of server components with JavaScript interface. Client side
+stack is built in Ext JS core and is used by many components like data Stores,
+Forms, Grids, Charts, etc. Ext.Direct supports request batching, file uploads,
+event polling and many other features.
 
-For more detailed explanation, see
+Besides simplicity and ease of use, Ext.Direct allows to achieve very clean
+code and issue separation both on server and client sides, which in turn
+results in simplified code, greater overall software quality and shorter
+development times.
+
+From Perl module developer perspective, Ext.Direct is just a method
+attribute; it doesn't matter if it's called from Perl code or through
+Ext.Direct. This approach, in particular, allows for multi-tiered testing:
+    - Server side methods can be tested without setting up
+      HTTP environment with the usual tools like Test::More
+    - Server side classes can be tested as a whole via Ext.Direct calls
+      using Perl client
+    - Major application components are tested with browser automation
+      tools like Selenium.
+
+For more information on Ext.Direct, see
 L<http://www.sencha.com/products/extjs/extdirect/>.
 
 =head2 Terminology
@@ -342,13 +487,13 @@ Ext.Direct uses the following terms, followed by their descriptions:
                   and Method names, as well as argument
                   number and/or names.
  
- API            - JavaScript code that encodes Configuration.
-                  Usually generated by application server code
+ API            - JavaScript chunk that encodes Configuration.
+                  Usually generated by application server
                   called by client once upon startup.
  
  Router         - Server side component that receives remoting
                   calls, dispatches requests, collects and
-                  returns call results.
+                  returns call Results or Exceptions.
  
  Action         - Namespace unit; collection of Methods. The
                   nearest Perl analog is package, other 
@@ -368,15 +513,22 @@ Ext.Direct uses the following terms, followed by their descriptions:
                   and alike events should be returned as Results,
                   not Exceptions.
  
- Exception      - A fatal error, or any other unrecoverable event
-                  in application code. Unlike Results, Exceptions
-                  are not considered successful; Ext.Direct
-                  provides mechanism for managing Exceptions.
+ Exception      - Fatal error, or any other unrecoverable event
+                  in application code. Calls that produce
+                  Exception instead of Result are considered
+                  unsuccessful; Ext.Direct provides built in
+                  mechanism for managing Exceptions.
+ 
                   Exceptions are not used to indicate errors in
                   application logic flow, only for catastrophic
                   conditions. Nearest analog is status code 500
                   for HTTP responses.
-  
+ 
+                  Examples of Exceptions are: request JSON is
+                  broken and can't be decoded, called Method
+                  dies because of internall error, Result
+                  cannot be encoded in JSON, etc.
+ 
  Event          - An asynchronous notification that can be
                   generated by server side and passed to
                   client side, resulting in some reaction.
@@ -389,25 +541,34 @@ Ext.Direct uses the following terms, followed by their descriptions:
                   is 3 but it can be changed in client side
                   configuration.
 
-=head2 Using RPC::ExtDirect
+=head1 USING RPC::EXTDIRECT
 
-In order to export subroutine to ExtDirect interface, use ExtDirect(n)
+In order to export subroutine to ExtDirect interface, use C<ExtDirect(n, ...)>
 attribute in sub's declaration. Note that there can be no space between
 attribute name and opening parentheses. n is mandatory calling convention
 declaration; it may be one of the following options:
     - Number of arguments to be passed as ordered list
     - Names of arguments to be passed as hash
-    - formHandler that will receive hash of fields and uploaded files
-    - pollHandler that does not receive any arguments
+    - formHandler: method will receive hash of fields and file
+      uploads
+    - pollHandler: method that provides Events when polled by client
+
+Optional method attributes can be specified after calling convention
+declaration, in hash-like C<key =E<gt> value> form. Optional attributes
+are:
+    - before: code reference to use as "before" hook. See L</HOOKS>.
+    - instead: code reference to "instead" hook.
+    - after: code reference to "after" hook.
+
+=head1 METHODS
 
 Unlike Ext.Direct specification (and reference PHP implementation, too)
-RPC::ExtDirect does not impose any calling convention on server side code,
-except bare minimum. There are no "before" and "after" handlers, no
-object instantiation and no assumptions about the code called. That said,
-an RPC::ExtDirect Method should conform to the following conventions:
-    - Be a package (Class) method, i.e. be aware that its first
-      argument will be package name. Just ignore it if you don't
-      want it.
+RPC::ExtDirect does not impose strict architectural notation on server
+side code. There is no mandatory object instantiation and no assumption
+about the code called. That said, an RPC::ExtDirect Method should conform
+to the following conventions:
+    - Be a class method, i.e. be aware that its first argument
+      will be package name. Just ignore it if you don't want it.
  
     - Ordered (numbered) arguments are passed as list in @_, so
       $_[1] is the first argument. No more than number of arguments
@@ -416,34 +577,210 @@ an RPC::ExtDirect Method should conform to the following conventions:
       declared will result in Exception returned to client side,
       and Method never gets called.
  
+      The last argument is an environment object (see below). For
+      methods that take 0 arguments, it will be the first argument
+      after class name.
+ 
     - Named arguments are passed as hash in @_. No arguments other
       than declared will be passed to Method; extra arguments will
       be dropped silently. If not all arguments are present in
       actual call, an Exception will be returned and Method never
       gets called.
  
+      Environment object will be passed in '_env' key.
+ 
     - Form handlers are passed their arguments as hash in @_.
       Standard Ext.Direct form fields are removed from argument
       hash; uploaded file(s) will be passed in file_uploads hash
       element. It will only be present when there are uploaded
-      files.
+      files. For more info, see "UPLOADS".
  
-    - All Methods are called in scalar context. Returning one
-      scalar value is OK; returning array- or hashref is OK too.
+      Environment object will be passed in '_env' key.
+ 
+    - All remoting Methods are called in scalar context. Returning
+      one scalar value is OK; returning array- or hashref is OK too.
       Do not return blessed objects; it is almost always not
       obvious how to serialize them into JSON that is expected by
-      client side. Just don't do it.
+      client side; JSON encoder will choke and an Exception will
+      be returned to the client.
  
     - If an error is encountered while processing request, throw
-      an exception with die() or croak(). Do not return some
-      obscure value that client side is supposed to know about.
-  
+      an exception: die "My error string\n". Note that "\n" at
+      the end of error string; if you don't add it, die() will
+      append file name and line number to the error message;
+      which is probably not the best idea for errors that are not
+      shown in console but rather passed on to JavaScript client.
+ 
+      RPC::ExtDirect will trim that last "\n" for you before
+      sending Exception back to client side.
+ 
     - Poll handler methods are called in list context and do not
-      receive any arguments. Return values must be instantiated
-      Event object(s), see L<RPC::ExtDirect::EventProvider> for
-      more detail.
+      receive any arguments except environment object. Return values
+      must be instantiated Event object(s), see RPC::ExtDirect::Event
+      for more detail.
 
-=head2 Caveats
+=head1 HOOKS
+
+Hooks provide an option to intercept method calls and modify arguments
+passed to the methods, or cancel their execution. Hooks are intended
+to be used as a shim between task-oriented Methods and Web specifics.
+
+Methods should not, to the reasonable extent, be aware of their
+environment or care about it; Hooks are expected to know how to deal with
+Web intricacies but not be task oriented.
+
+The best uses for Hooks are: application or package-wide pre-call setup,
+user authorization, logging, cleanup, testing, etc.
+
+A hook is a Perl subroutine (can be anonymous, too). Hooks can be of three
+types:
+    - "Before" hook is called before the Method, and can be used
+      to change Method arguments or cancel Method execution. This
+      hook must return numeric value 1 to allow Method call. Any
+      other value will be interpreted as Ext.Direct Result; it
+      will be returned to client side and Method never gets called.
+ 
+      Note that RPC::ExtDirect will not make any assumptions about
+      this hook's return value; returning a false value like '' or 0
+      will probably look not too helpful from client side code.
+ 
+      If this hook throws an exception, it is returned as Ext.Direct
+      Exception to the client side, and the Method does not execute.
+  
+    - "Instead" hook replaces the Method it is assigned to. It is
+      the hook sub's responsibility to call (or not call) the Method
+      and return appropriate Result.
+ 
+      If this hook throws an exception, it is interpreted as if the
+      Method trew it.
+  
+    - "After" hook is called after the Method or "instead" hook. This
+      hook cannot affect Method execution, it is intended mostly for
+      logging and testing purposes; its input include Method's
+      Result or Exception. This hook's return value and
+      thrown exceptions are ignored.
+
+Hooks can be defined on three levels, in order of precedence: method,
+package and global. For each Method, only one hook of each type can be
+applied. Hooks specified in Method definition take precedence over all
+other; if no method hook is found then package hook applies; and if
+there is no package hook then global hook gets called, if any. To avoid
+using hooks for a particular method, use 'NONE' instead of coderef;
+this way you can specify global and/or package hooks and exclude some
+specific Methods piecemeal.
+
+Hooks are subject to the following calling conventions:
+    - Hook subroutine is called as class method, i.e. first argument
+      is name of the package in which this sub was defined. Ignore it
+      if you don't need it.
+ 
+    - Hooks receive a hash of the following arguments:
+        action        => Ext.Direct Action name for the Method
+ 
+        method        => Ext.Direct Method name
+ 
+        package       => Name of the package (not Action) where
+                         the Method is declared
+ 
+        code          => Coderef to the Method subroutine
+ 
+        param_no      => Number of parameters when Method accepts
+                         ordered arguments
+ 
+        param_names   => Arrayref with names of parameters when Method
+                         accepts named arguments
+ 
+        formHandler   => True if Method handles form submits
+ 
+        pollHandler   => True if Method handles Event poll requests
+ 
+        arg           => Arrayref with actual arguments when Method
+                         accepts ordered args, single Environment
+                         object for poll handlers, hashref otherwise.
+ 
+                         Note that this is a direct link to Method's @_
+                         so it is possible to modify the arguments
+                         in "before" hook
+ 
+        env           => Environment object, see below. Like arg,
+                         this is direct reference to the same object
+                         that will be passed to Method, so it's
+                         possible to modify it in "before" hook
+ 
+        before        => Coderef to "before" hook for that Method,
+                         or undef
+ 
+        instead       => Coderef to "instead" hook for that Method,
+                         or undef
+ 
+        after         => Coderef to "after" hook for that Method,
+                         or undef
+ 
+        result        => For "after" hooks, the Result returned by
+                         Method or "instead" hook, if any. Does not
+                         exist for "before" and "instead" hooks
+ 
+        exception     => For "after" hooks, an exception ($@) thrown
+                         by Method or "instead" hook, if any. Does
+                         not exist for "before" and "instead" hooks
+ 
+        method_called => For "after" hooks, the reference to actual
+                         code called as Method, if any. Can be either
+                         Method itself, "instead" hook or undef if
+                         the call was canceled.
+ 
+        orig          => A closure that binds Method coderef to
+                         its current arguments, allowing to call it
+                         as easily as $params{orig}->()
+
+=head1 ENVIRONMENT OBJECTS
+
+Since Hooks, and sometimes Methods too, need to be aware of their Web
+environment, it is necessary to give them access to it in some way
+without locking on platform specifics. The answer for this problem is
+environment objects.
+
+An environment object provides platform-agnostic interface for accessing
+HTTP headers, cookies, form fields, etc, by duck typing. Such object is
+guaranteed to have the same set of methods that behave the same way
+across all platforms supported by RPC::ExtDirect, avoiding portability
+issues.
+
+The interface is modeled after de facto standard CGI.pm:
+    - C<$value = $env-E<gt>param('name')> will retrieve parameter by name
+    - C<@list = $env-E<gt>param()> will get the list of available parameters
+    - C<$cookie = $env-E<gt>cookie('name')> will retrieve a cookie
+    - C<@cookies = $env-E<gt>cookie()> will return the list of cookies
+    - C<$header = $env-E<gt>http('name')> will return HTTP header
+    - C<@headers = $env-E<gt>http()> will return the list of HTTP headers
+
+Of course it is possible to use environment object in a more sophisticated
+way if you like to, however do not rely on it having a well-known class
+name as it is not guaranteed.
+
+=head1 FILE UPLOADS
+
+Ext.Direct offers native support for file uploading by using temporary
+forms. RPC::ExtDirect supports this feature; upload requests can be
+processed in a formHandler Method. The interface aims to be platform
+agnostic and will try to do its best to provide the same results in all
+HTTP environments supported by RPC::ExtDirect.
+
+In a formHandler Method, arguments are passed as a hash. If one or more
+file uploads were associated with request, the argument hash will contain
+'file_uploads' key with value set to arrayref of file hashrefs. Each file
+hashref will have the following keys:
+    - type     => MIME type of the file
+    - size     => file size, in octets
+    - path     => path to temporary file that holds uploaded content
+    - handle   => opened IO::Handle for temporary file
+    - basename => name portion of original file name
+    - filename => full original path as sent by client
+
+All files passed to a Method need to be processed in that Method; existence
+of temporary files is not guaranteed after Method returns.
+
+=head1 CAVEATS
 
 In order to keep this module as simple as possible, I had to sacrifice the
 ability to automatically distinguish inherited class methods. In order to
@@ -489,16 +826,22 @@ L<JSON>.
 
 =head1 BUGS AND LIMITATIONS
 
-Perl versions below 5.6 are not supported.
+In version 2.0, ExtDirect attribute was moved to BEGIN phase instead of
+default CHECK phase. While this improves compatibility with Plack and
+Apache/mod_perl environments, this also causes backwards compatibility
+problems with Perl older than 5.12. Please let me know if you need to
+run RPC::ExtDirect 2.0 with older Perls; meanwhile RPC::ExtDirect 1.x
+will provide compatibility with Perl 5.6.0 and newer.
 
 There are no known bugs in this module. Please report problems to author,
 patches are welcome.
 
 =head1 SEE ALSO
 
-Alternative Ext.Direct Perl implementations:
+Alternative Ext.Direct implementations for Perl:
 L<CatalystX::ExtJS::Direct> by Moritz Onken,
-L<https://github.com/scottp/extjs-direct-perl> by Scott Penrose.
+L<http://github.com/scottp/extjs-direct-perl> by Scott Penrose,
+L<Dancer::Plugin::ExtDirect> by Alessandro Ranellucci.
 
 For Web server gateway implementations, see L<CGI::ExtDirect> and
 L<Plack::Middleware::ExtDirect> modules based on RPC::ExtDirect engine.
@@ -509,6 +852,11 @@ module.
 =head1 AUTHOR
 
 Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
+
+=head1 ACKNOWLEDGEMENTS
+
+I would like to thank IntelliSurvey, Inc for sponsoring my work
+on version 2.0 of RPC::ExtDirect suite of modules.
 
 =head1 LICENSE AND COPYRIGHT
 

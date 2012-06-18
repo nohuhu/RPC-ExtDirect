@@ -5,6 +5,10 @@ sub result  { $_[0] }
 
 package RPC::ExtDirect::Test::PollProvider;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';
+
 use Carp;
 
 use RPC::ExtDirect;

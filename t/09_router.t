@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+no  warnings 'uninitialized';
 
 use Test::More tests => 25;
 
@@ -23,10 +24,19 @@ for my $test ( @$tests ) {
     my $result = eval { RPC::ExtDirect::Router->route($input) };
 
     # Remove whitespace
-    s/\s//g for ( $expect->[1], $result->[1] );
+    s/\s//g for ( $expect->[2]->[0], $result->[2]->[0] );
 
-    # Remove reference addresses
-    s/HASH\([^\)]+\)/HASH(blessed)/g for ( $expect->[1], $result->[1] );
+    # Remove reference addresses. On different platforms
+    # stringified reference has different length so we're
+    # trying to compensate for it here
+    if ( $result->[2]->[0] =~ /HASH\(/ ) {
+        my $ref_len = length({} . '') - length 'HASH(blessed)';
+
+        s/HASH\([^\)]+\)/HASH(blessed)/g
+            for ( $expect->[2]->[0], $result->[2]->[0] );
+
+        $result->[1]->[3] -= $ref_len;
+    };
 
     is        $@,      '',      "$name eval $@";
     is ref    $result, 'ARRAY', "$name result ARRAY";
@@ -40,32 +50,46 @@ __DATA__
     { name   => 'Invalid result', debug => 1,
       input  => '{"type":"rpc","tid":1,"action":"Foo","method":"foo_blessed",'.
                 ' "data":[]}',
-      output => [ 'application/json',
+      output => [
+                    200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 221,
+                    ],
+                [
                 q|{"action":"Foo","message":"encountered object |.
                 q|'foo=HASH(0x10088fca0)', but neither allow_blessed|.
                 q| nor convert_blessed settings are enabled","method"|.
                 q|:"foo_blessed","tid":1,"type":"exception","where":|.
                 q|"RPC::ExtDirect::Serialize"}|,
                 ],
+                ],
     },
     { name   => 'Invalid POST', debug => 1,
       input  => '{"something":"invalid":"here"}',
-      output => [ 'application/json',
-                  q|{"action":null,|.
-                  q|"message":"ExtDirect error decoding POST data: |.
-                  q|', or } expected while parsing object/hash, at |.
-                  q|character offset 22 (before \":\"here\"}\")'",|.
-                  q|"method":null,"tid":null,|.
-                  q|"type":"exception",|.
-                  q|"where":"RPC::ExtDirect::Deserialize->decode_post"}|
+      output => [ 200,
+                  [ 'Content-Type', 'application/json',
+                    'Content-Length', 250,
+                  ],
+                  [ q|{"action":null,|.
+                    q|"message":"ExtDirect error decoding POST data: |.
+                    q|', or } expected while parsing object/hash, at |.
+                    q|character offset 22 (before \":\"here\"}\")'",|.
+                    q|"method":null,"tid":null,|.
+                    q|"type":"exception",|.
+                    q|"where":"RPC::ExtDirect::Deserialize->decode_post"}|
+                  ],
                 ],
     },
     { name   => 'Valid POST, single request', debug => 1,
       input  => '{"type":"rpc","tid":1,"action":"Qux","method":"foo_foo",'.
                 ' "data":["bar"]}',
-      output => [ 'application/json',
-                  q|{"action":"Qux","method":"foo_foo",|.
-                  q|"result":"foo! 'bar'","tid":1,"type":"rpc"}|
+      output => [ 200,
+                  [ 'Content-Type', 'application/json',
+                    'Content-Length', 78,
+                  ],
+                  [ q|{"action":"Qux","method":"foo_foo",|.
+                  q|"result":"foo! 'bar'","tid":1,"type":"rpc"}| ],
                 ],
     },
     { name   => 'Valid POST, multiple requests', debug => 1,
@@ -76,7 +100,11 @@ __DATA__
                 q| {"tid":3,"action":"Qux","method":"foo_baz",|.
                 q|  "data":{"foo":"baz1","bar":"baz2","baz":"baz3"},|.
                 q|          "type":"rpc"}]|,
-      output => [ 'application/json',
+      output => [ 200, 
+                  [ 'Content-Type', 'application/json',
+                    'Content-Length', 304,
+                  ],
+                  [
                   q|[{"action":"Qux","method":"foo_foo",|.
                   q|"result":"foo! 'foo'","tid":1,"type":"rpc"},|.
                   q|{"action":"Qux","method":"foo_bar",|.
@@ -85,28 +113,35 @@ __DATA__
                   q|{"action":"Qux","method":"foo_baz",|.
                   q|"result":{"bar":"baz2","baz":"baz3","foo":"baz1",|.
                   q|"msg":"foo! bar! baz!"},"tid":3,"type":"rpc"}]|
+                  ],
                 ],
     },
     { name   => 'Invalid form request', debug => 1,
       input  => { extTID => 100, action => 'Bar', method => 'bar_baz',
                   type => 'rpc', data => undef, },
-      output => [ 'application/json',
+      output => [ 200, [ 'Content-Type', 'application/json',
+                         'Content-Length', 209, ],
+                  [
                   q|{"action":"Bar",|.
                   q|"message":"ExtDirect formHandler method |.
                   q|Bar.bar_baz should only be called with form submits",|.
                   q|"method":"bar_baz","tid":100,|.
                   q|"type":"exception",|.
                   q|"where":"RPC::ExtDirect::Request->_check_arguments"}|,
+                  ],
                 ],
     },
     { name   => 'Form request, no upload', debug => 1,
       input  => { action => '/router_action', method => 'POST',
                   extAction => 'Bar', extMethod => 'bar_baz',
                   extTID => 123, field1 => 'foo', field2 => 'bar', },
-      output => [ 'application/json',
+      output => [ 200, [ 'Content-Type', 'application/json',
+                         'Content-Length', 99 ],
+                  [
                   q|{"action":"Bar","method":"bar_baz",|.
                   q|"result":{"field1":"foo","field2":"bar"},|.
                   q|"tid":123,"type":"rpc"}|,
+                  ],
                 ],
     },
     { name   => 'Form request, upload one file', debug => 1,
@@ -119,7 +154,9 @@ __DATA__
                         filename => 'C:\Users\nohuhu\foo.txt',
                         path => '/tmp/cgi-upload/foo.txt', size => 123 }],
                 },
-      output => [ 'text/html',
+      output => [ 200, [ 'Content-Type', 'text/html',
+                         'Content-Length', 232, ],
+                  [
                   q|<html><body><textarea>|.
                   q|{"action":"Bar","method":"bar_baz",|.
                   q|"result":{"bar_field":"bar",|.
@@ -130,6 +167,7 @@ __DATA__
                   q|},"tid":7,|.
                   q|"type":"rpc"}|.
                   q|</textarea></body></html>|,
+                  ],
                 ],
     },
     { name   => 'Form request, multiple uploads', debug => 1,
@@ -148,7 +186,9 @@ __DATA__
                           filename => '/Users/nohuhu/Documents/script.js',
                           path => 'C:\Windows\tmp\script.js', }, ],
                 },
-      output => [ 'text/html',
+      output => [ 200, [ 'Content-Type', 'text/html',
+                         'Content-Length', 279, ],
+                  [
                   q|<html><body><textarea>|.
                   q|{"action":"Bar","method":"bar_baz",|.
                   q|"result":{|.
@@ -160,6 +200,7 @@ __DATA__
                   q|script.js application/javascript 1000\n"|.
                   q|},"tid":8,"type":"rpc"}|.
                   q|</textarea></body></html>|,
+                  ],
                 ],
     },
 ]

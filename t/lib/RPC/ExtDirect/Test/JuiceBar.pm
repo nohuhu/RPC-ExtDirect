@@ -1,5 +1,9 @@
 package RPC::ExtDirect::Test::JuiceBar;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';
+
 use base 'RPC::ExtDirect::Test::Foo';
 
 use RPC::ExtDirect;

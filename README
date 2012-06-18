@@ -4,13 +4,14 @@ RPC-ExtDirect
 ABSTRACT
 
 RPC::ExtDirect is a Perl implementation for Ext.Direct remoting protocol
-used in ExtJS JavaScript framework by Sencha Inc.
+used in Ext JS JavaScript framework by Sencha Inc.
 
 WHAT IS IT FOR?
 
-There are many RPC protocols out there; ExtJS framework provides yet another
+There are many RPC protocols out there; Ext JS framework provides yet another
 one. In short, it is a means of calling server side code from client side
-JavaScript without having to mess with HTML, forms, AJAX and stuff like that.
+JavaScript without having to deal with Ajax calls and form submits manually.
+
 Besides providing forward asynchronous data stream (client calls server),
 Ext.Direct also defines a mechanism for backward (server to client) event
 stream, also asynchronous. Add some perks like standartized exception
@@ -40,6 +41,5 @@ COPYRIGHT AND LICENCE
 Copyright (C) 2011-2012 by Alexander Tokarev <tokarev@cpan.org>
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.6.0 or,
-at your option, any later version of Perl 5 you may have available.
+it under the same terms as Perl itself. See perlartistic.
 

@@ -31,20 +31,28 @@ my %OPTION_FOR = ();
 #
 
 sub import {
-    my ($class, @arguments) = @_;
+    my ($class, @parameters) = @_;
 
     # Nothing to do
-    return unless @arguments;
+    return unless @parameters;
 
-    # Only hash-like arguments are supported at this time
-    croak 'Odd number of arguments in '.
-          'RPC::ExtDirect::EventProvider::import()'
-        unless (@arguments % 2) == 0;
+    # Only hash-like arguments are supported
+    croak 'Odd number of parameters in RPC::ExtDirect::API::import()'
+        unless (@parameters % 2) == 0;
 
-    my %argument_for = @arguments;
+    my %param = @parameters;
+       %param = map { lc $_ => delete $param{ $_ } } keys %param;
 
-    # Parameter names
-    my @parameters = qw(
+    # Hook definitions are exported to RPC::ExtDirect hash
+    for my $type ( qw(before instead after) ) {
+        my $code = delete $param{ $type };
+
+        RPC::ExtDirect->add_hook( type => $type, code => $code )
+            if $code;
+    };
+
+    # General options
+    my @options = qw(
         namespace       router_path     poll_path
         auto_connect    remoting_var    polling_var
         no_polling
@@ -53,15 +61,13 @@ sub import {
     # Set defaults
     $OPTION_FOR{no_polling} = 0;
 
-    PARAMETER:
-    for my $parameter ( @parameters ) {
-        # This is not going to be used often so grep is ok
-        my ($actual_parameter) = grep { /$parameter/i }
-                                      keys %argument_for;
+    OPTION:
+    for my $option ( @options ) {
+        my $value = $param{ $option };
 
-        next PARAMETER unless $actual_parameter;
+        next OPTION unless defined $value;
 
-        $OPTION_FOR{ $parameter } = $argument_for{ $actual_parameter };
+        $OPTION_FOR{ $option } = $value;
     };
 }
 
@@ -272,6 +278,8 @@ RPC::ExtDirect::API - Remoting API generator for Ext.Direct
                                  polling_var  => 'Ext.app.POLLING_API',
                                  auto_connect => 0,
                                  no_polling   => 0,
+                                 before       => \&global_before_hook,
+                                 after        => \&global_after_hook,
                                  ;
 
 =head1 DESCRIPTION
@@ -281,11 +289,11 @@ This module provides Ext.Direct API code generation.
 In order for Ext.Direct client code to know about what Actions (classes)
 and Methods are available on the server side, these should be defined in
 a chunk of JavaScript code that gets requested from the client at startup
-time. It is usually included in index.html after main ExtJS code:
+time. It is usually included in the index.html after main ExtJS code:
 
   <script type="text/javascript" src="extjs/ext-debug.js"></script>
-  <script type="text/javascript" src="myapp.js"></script>
   <script type="text/javascript" src="/extdirect_api"></script>
+  <script type="text/javascript" src="myapp.js"></script>
 
 RPC::ExtDirect::API provides a way to configure Ext.Direct definition
 variable(s) to accomodate specific application needs. To do so, pass
@@ -313,6 +321,17 @@ The following configuration options are supported:
                   Ext.app.REMOTING_API variable. If for any
                   reason you would like to change that, do this
                   by setting remoting_var.
+                  Note that in production environment you would
+                  probably want to use a compiled version of
+                  JavaScript application that consist of one
+                  big JavaScript file. In this case, it is
+                  recommended to include API declaration as the
+                  first script in your index.html and change
+                  remoting API variable name to something like
+                  EXT_DIRECT_API. Default variable name depends
+                  on Ext.app namespace being available by the
+                  time Ext.Direct API is downloaded, which is
+                  often not the case.
  
  polling_var    - By default, Ext.Direct does not provide a
                   standard name for Event providers to be
@@ -323,6 +342,8 @@ The following configuration options are supported:
                   POLLING_API configuration will only be
                   advertised to client side if there are any
                   Event provider Methods declared.
+                  Note that the same caveat applies here as
+                  with remoting_var.
  
  no_polling     - Explicitly declare that no Event providers
                   are supported by server side. This results
@@ -334,6 +355,14 @@ The following configuration options are supported:
                   Polling providers on the client side without
                   having to do this manually.
 
+ before         - Global "before" hook.
+ 
+ instead        - Global "instead" hook.
+ 
+ after          - Global "after" hook.
+ 
+ For more information on hooks and their usage, see L<RPC::ExtDirect>.
+
 =head1 SUBROUTINES/METHODS
 
 There are no methods intended for external use in this module.
@@ -344,7 +373,10 @@ Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011 Alexander Tokarev.
+Copyright (c) 2011-2012 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
+
+=cut
+

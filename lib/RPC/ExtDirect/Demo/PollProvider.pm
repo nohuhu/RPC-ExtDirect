@@ -41,9 +41,10 @@ Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2011 by Alexander Tokarev. 
+Copyright (c) 2011-2012 by Alexander Tokarev. 
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
 
 =cut
+

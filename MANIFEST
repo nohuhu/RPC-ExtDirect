@@ -9,6 +9,7 @@ lib/RPC/ExtDirect/Deserialize.pm
 lib/RPC/ExtDirect/Event.pm
 lib/RPC/ExtDirect/EventProvider.pm
 lib/RPC/ExtDirect/Exception.pm
+lib/RPC/ExtDirect/Hook.pm
 lib/RPC/ExtDirect/NoEvents.pm
 lib/RPC/ExtDirect/Request.pm
 lib/RPC/ExtDirect/Router.pm
@@ -23,11 +24,13 @@ t/04_serialize.t
 t/05_attributes.t
 t/061_api.t
 t/062_api.t
+t/063_api.t
 t/071_request.t
 t/072_request.t
 t/08_deserialize.t
 t/09_router.t
 t/10_poll.t
+t/11_hook.t
 t/lib/RPC/ExtDirect/Demo/PollProvider.pm
 t/lib/RPC/ExtDirect/Demo/Profile.pm
 t/lib/RPC/ExtDirect/Demo/TestAction.pm
@@ -36,4 +39,5 @@ t/lib/RPC/ExtDirect/Test/Foo.pm
 t/lib/RPC/ExtDirect/Test/JuiceBar.pm
 t/lib/RPC/ExtDirect/Test/PollProvider.pm
 t/lib/RPC/ExtDirect/Test/Qux.pm
+t/lib/RPC/ExtDirect/Test/Hooks.pm
 t/pod.t

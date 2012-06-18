@@ -1,5 +1,9 @@
 package RPC::ExtDirect::Demo::PollProvider;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';
+
 use POSIX 'strftime';
 
 use RPC::ExtDirect;

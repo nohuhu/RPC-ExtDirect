@@ -1,5 +1,9 @@
 package RPC::ExtDirect::Test::Qux;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';
+
 use base 'RPC::ExtDirect::Test::Bar';
 
 use RPC::ExtDirect Action => 'Qux';

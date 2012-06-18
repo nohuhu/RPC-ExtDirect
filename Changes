@@ -1,4 +1,18 @@
-Revision history for Perl extension RPC::ExtDirect.
+2.00  Mon Jun 18 12:16:32 2012
+    - Added new feature: Hooks. See documentation for details.
+
+    - Added new feature: Environment objects. See documentation
+      for details.
+
+    - Moved ExtDirect attribute handling to BEGIN phase for
+      better compatibility with Apache/mod_perl environment.
+      This change breaks compatibility with Perls below 5.12.
+
+    - Improved attribute error messages.
+
+    - Updated documentation and test suite.
+
+    - Fixed some bugs in documentation.
 
 1.31  Thu Jun  7 11:13:32 2012
     - Fixed a bug in RPC::ExtDirect::Router that allowed some
