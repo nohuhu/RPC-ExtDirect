@@ -190,7 +190,15 @@ sub before      { $_[0]->{before}      }
 sub instead     { $_[0]->{instead}     }
 sub after       { $_[0]->{after}       }
 sub param_names { @{ $_[0]->{param_names} || [] } }
-sub data        { @{ $_[0]->{data}              } }
+
+sub data {
+    my ($self) = @_;
+
+    return 'HASH'  eq ref $self->{data} ? %{ $self->{data} }
+         : 'ARRAY' eq ref $self->{data} ? @{ $self->{data} }
+         :                                ()
+         ;
+}
 
 ############## PRIVATE METHODS BELOW ##############
 
