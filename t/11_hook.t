@@ -31,7 +31,11 @@ use RPC::ExtDirect::API before => \&before_hook, after => \&after_hook;
         local $Data::Dumper::Indent = 0;
         local $Data::Dumper::Terse  = 1;
 
-        return $self->name . ':' . Dumper( $self->data );
+        my $str = $self->name . ':' . Dumper( $self->data );
+        $str =~ s/^'//;
+        $str =~ s/'$//;
+
+        return $str;
     }
 
     sub equals {

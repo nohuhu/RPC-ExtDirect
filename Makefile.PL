@@ -1,4 +1,4 @@
-use 5.012000;
+use 5.006000;
 use ExtUtils::MakeMaker;
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -8,8 +8,8 @@ WriteMakefile(
     VERSION_FROM      => 'lib/RPC/ExtDirect.pm', # finds $VERSION
     ($ExtUtils::MakeMaker::VERSION >= 6.55
         ? ( BUILD_REQUIRES => {
-                'Test::More' => 0,
-                'Test::Pod'  => 0,
+                'Test::More' => '0.48',
+                'Test::Pod'  => '1.00',
             },
             PREREQ_PM => {
                 'Attribute::Handlers' => '0.87',
@@ -17,8 +17,8 @@ WriteMakefile(
             },
         )
         : ( PREREQ_PM => {
-                'Test::More'            => 0,
-                'Test::Pod'             => 0,
+                'Test::More'            => '0.48',
+                'Test::Pod'             => '1.00',
                 'Attribute::Handlers'   => '0.87',
                 'JSON'                  => '2.0',
             },
@@ -41,5 +41,6 @@ WriteMakefile(
         : ()
     ),
 
-    MIN_PERL_VERSION => 5.012000,
+    MIN_PERL_VERSION => 5.006000,
 );
+

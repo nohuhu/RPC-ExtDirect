@@ -16,7 +16,7 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '2.02';
+our $VERSION = '2.10';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -62,7 +62,11 @@ my %HOOK_FOR = ();
 # namespace.
 #
 
-sub UNIVERSAL::ExtDirect : ATTR(CODE,BEGIN) {
+# This here is to choose proper function declaration for Perl we're running
+use if !$^V || $^V lt v5.12.0, 'RPC::ExtDirect::CHECK';
+use if $^V  && $^V ge v5.12.0, 'RPC::ExtDirect::BEGIN';
+
+sub extdirect {
     my ($package, $symbol, $referent, $attr, $data, $phase, $file, $line)
         = @_;
 

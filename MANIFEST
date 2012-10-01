@@ -1,6 +1,8 @@
 Changes
 lib/RPC/ExtDirect.pm
 lib/RPC/ExtDirect/API.pm
+lib/RPC/ExtDirect/BEGIN.pm
+lib/RPC/ExtDirect/CHECK.pm
 lib/RPC/ExtDirect/Config.pm
 lib/RPC/ExtDirect/Demo/PollProvider.pm
 lib/RPC/ExtDirect/Demo/Profile.pm
