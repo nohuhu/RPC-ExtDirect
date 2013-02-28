@@ -14,7 +14,7 @@ use Carp;
 sub new {
     my ($class, $name, $data) = @_;
 
-    croak "ExtDirect Event name is required"
+    croak "Ext.Direct Event name is required"
         unless defined $name;
 
     my $self = bless { name => $name, data => $data }, $class;

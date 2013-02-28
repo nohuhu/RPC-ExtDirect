@@ -173,7 +173,7 @@ __DATA__
                     method  => 'foo_foo',
                     tid     => 333,
                     where   => 'RPC::ExtDirect::Request->run',
-                    message => "ExtDirect request can't run more than once"
+                    message => "ExtDirect request can't run more than once per batch"
                   },
     },
     # Method call failed

@@ -18,6 +18,37 @@ use RPC::ExtDirect::Exception;
 
 our $DEBUG = 0;
 
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Serializer class name so it could be configured
+#
+# TODO This is hacky hack, find another way to inject
+# new functionality (all class names)
+#
+
+our $SERIALIZER_CLASS = 'RPC::ExtDirect::Serialize';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Deserializer class name so it could be configured
+#
+
+our $DESERIALIZER_CLASS = 'RPC::ExtDirect::Deserialize';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Exception class name so it could be configured
+#
+
+our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Request class name so it could be configured
+#
+
+our $REQUEST_CLASS = 'RPC::ExtDirect::Request';
+
 ### PUBLIC CLASS METHOD ###
 #
 # Routes the request(s) and returns serialized responses
@@ -26,34 +57,98 @@ our $DEBUG = 0;
 sub route {
     my ($class, $input, $env) = @_;
 
+    #
+    # It's a bit awkward to turn this off for the whole sub,
+    # but enclosing `local` in a block won't work
+    #
+    no strict 'refs';       ## no critic
+
     # Set debug flags
-    local $RPC::ExtDirect::Deserialize::DEBUG = $DEBUG;
-    local $RPC::ExtDirect::Serialize::DEBUG   = $DEBUG;
-    local $RPC::ExtDirect::Exception::DEBUG   = $DEBUG;
-    local $RPC::ExtDirect::Request::DEBUG     = $DEBUG;
+    local ${$DESERIALIZER_CLASS.'::DEBUG'} = $DEBUG;
+    local ${$SERIALIZER_CLASS.'::DEBUG'}   = $DEBUG;
+    local ${$EXCEPTION_CLASS.'::DEBUG'}    = $DEBUG;
+    local ${$REQUEST_CLASS.'::DEBUG'}      = $DEBUG;
+    
+    # Propagate class names
+    local ${$DESERIALIZER_CLASS.'::REQUEST_CLASS'}   = $REQUEST_CLASS;
+    local ${$DESERIALIZER_CLASS.'::EXCEPTION_CLASS'} = $EXCEPTION_CLASS;
+    local ${$SERIALIZER_CLASS.'::EXCEPTION_CLASS'}   = $EXCEPTION_CLASS;
+    local ${$REQUEST_CLASS.'::EXCEPTION_CLASS'}      = $EXCEPTION_CLASS;
+    
+    # Decode requests
+    my ($has_upload, $requests) = $class->_decode_requests($input);
 
-    # Shortcuts
-    my $ser   = 'RPC::ExtDirect::Serialize';
-    my $deser = 'RPC::ExtDirect::Deserialize';
+    # Run requests and collect responses
+    my $responses = $class->_run_requests($env, $requests);
 
+    # Serialize responses
+    my $result = $class->_serialize_responses($responses);
+
+    my $http_response = $class->_format_response($result, $has_upload);
+    
+    return $http_response;
+}
+
+############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Decode requests
+#
+
+sub _decode_requests {
+    my ($class, $input) = @_;
+    
     # $input can be scalar containing POST data,
     # or a hashref containing form data
     my $has_form   = ref $input eq 'HASH';
     my $has_upload = $has_form && $input->{extUpload} eq 'true';
 
-    my $requests = $has_form ? $deser->decode_form($input)
-                 :             $deser->decode_post($input)
+    my $requests = $has_form ? $DESERIALIZER_CLASS->decode_form($input)
+                 :             $DESERIALIZER_CLASS->decode_post($input)
                  ;
+    
+    return ($has_upload, $requests);
+}
 
+### PRIVATE INSTANCE METHOD ###
+#
+# Run the requests and return their results
+#
+
+sub _run_requests {
+    my ($class, $env, $requests) = @_;
+    
     # Run the requests
     $_->run($env) for @$requests;
 
     # Collect responses
     my $responses = [ map { $_->result() } @$requests ];
+    
+    return $responses;
+}
 
-    # Serialize responses
-    my $result = $ser->serialize(0, @$responses);
+### PRIVATE INSTANCE METHOD ###
+#
+# Serialize the responses and return result
+#
 
+sub _serialize_responses {
+    my ($class, $responses) = @_;
+
+    my $result = $SERIALIZER_CLASS->serialize(0, @$responses);
+    
+    return $result;
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Format Plack-compatible HTTP response
+#
+
+sub _format_response {
+    my ($class, $result, $has_upload) = @_;
+    
     # Wrap in HTML if that was form upload request
     $result = _wrap_in_html($result) if $has_upload;
 
@@ -72,8 +167,6 @@ sub route {
         [ $result ],
     ];
 }
-
-############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE INSTANCE METHOD ###
 #

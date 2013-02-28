@@ -56,18 +56,6 @@ sub result {
     return $self->_get_exception_hashref();
 }
 
-### PUBLIC INSTANCE METHODS ###
-#
-# Read-only getters
-#
-
-sub debug   { $_[0]->{debug}   }
-sub action  { $_[0]->{action}  }
-sub method  { $_[0]->{method}  }
-sub tid     { $_[0]->{tid}     }
-sub where   { $_[0]->{where}   }
-sub message { $_[0]->{message} }
-
 ### PUBLIC CLASS METHOD ###
 #
 # Clean croak() and die() messages of file/line information
@@ -81,6 +69,31 @@ sub clean_message {
     return $msg;
 }
 
+### PUBLIC CLASS METHOD ###
+#
+# Return formatted call stack part to use in exception
+#
+
+sub get_where {
+    my ($class, $depth) = @_;
+    
+    my ($package, $sub) = (caller $depth)[3] =~ / \A (.*) :: (.*?) \z /xms;
+    
+    return $package . '->' . $sub;
+}
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Read-only getters
+#
+
+sub debug   { $_[0]->{debug}   }
+sub action  { $_[0]->{action}  }
+sub method  { $_[0]->{method}  }
+sub tid     { $_[0]->{tid}     }
+sub where   { $_[0]->{where}   }
+sub message { $_[0]->{message} }
+
 ############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE INSTANCE METHOD ###
@@ -91,15 +104,8 @@ sub clean_message {
 sub _set_error {
     my ($self, $message, $where) = @_;
 
-    # Reconstruct where error happened if not given
-    if ( !$where ) {
-        my ($package, $sub)
-            = (caller 2)[3] =~ / \A (.*) :: (.*?) \z /xms;
-        $where = $package . '->' . $sub;
-    };
-
     # Store the information
-    $self->{where}   = $where;
+    $self->{where}   = defined $where ? $where : $self->get_where(3);
     $self->{message} = $message;
 
     # Ensure fall through for caller methods
@@ -115,8 +121,9 @@ sub _get_exception_hashref {
     my ($self) = @_;
 
     # If debug flag is not set, return generic message. This is for
-    # compatibility with ExtDirect specification
+    # compatibility with Ext.Direct specification
     my ($where, $message);
+    
     if ( $self->debug ) {
         $where   = $self->where;
         $message = $self->message;

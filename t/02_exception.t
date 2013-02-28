@@ -87,7 +87,7 @@ for my $test ( @$tests ) {
     is        $@,      '',      "$method() result eval $@";
     ok        $result,          "$method() result not empty";
     is_deeply $result, $expect, "$method() exception deep"
-        or BAIL_OUT( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
+        or diag( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
 };
 
 exit 0;

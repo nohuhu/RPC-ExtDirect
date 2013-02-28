@@ -17,6 +17,13 @@ use JSON;
 
 our $DEBUG = 0;
 
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Exception class name so it could be configured
+#
+
+our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+
 ### PUBLIC CLASS METHOD ###
 #
 # Serializes the data passed to it in JSON
@@ -25,31 +32,11 @@ our $DEBUG = 0;
 sub serialize {
     my ($class, $suppress_exceptions, @data) = @_;
 
-    my $json = JSON->new->utf8->canonical($DEBUG);
-
     # Try to serialize each response separately;
     # if one fails it's better to return an exception
     # for one response than fail all of them
-    my @serialized;
-    for my $response ( @data ) {
-        my $text = eval { $json->encode($response) };
-
-        if ( $@ and not $suppress_exceptions ) {
-            my $msg = RPC::ExtDirect::Exception->clean_message($@);
-
-            my $exception = RPC::ExtDirect::Exception->new({
-                                debug   => $DEBUG,
-                                action  => $response->{action},
-                                method  => $response->{method},
-                                tid     => $response->{tid},
-                                where   => __PACKAGE__,
-                                message => $msg,
-                             });
-            $text = eval { $json->encode( $exception->result() ) };
-        };
-
-        push @serialized, $text;
-    };
+    my @serialized = map { $class->_encode_response($_, $suppress_exceptions) }
+                         @data;
 
     my $text = @serialized == 1 ? shift @serialized
              :                    '[' . join(',', @serialized) . ']'
@@ -59,6 +46,67 @@ sub serialize {
 }
 
 ############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Return new Exception object
+#
+
+sub _exception {
+    my $self = shift;
+    
+    return $EXCEPTION_CLASS->new(@_);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Clean error message
+#
+
+sub _clean_msg {
+    my ($class, $msg) = @_;
+    
+    return $EXCEPTION_CLASS->clean_message($msg);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Try encoding response into JSON
+#
+
+sub _encode_response {
+    my ($class, $response, $suppress_exceptions) = @_;
+    
+    my $text = eval { $class->_encode_json($response) };
+
+    if ( $@ and not $suppress_exceptions ) {
+        my $msg = $class->_clean_msg($@);
+
+        my $exception = $class->_exception({
+            debug   => $DEBUG,
+            action  => $response->{action},
+            method  => $response->{method},
+            tid     => $response->{tid},
+            where   => __PACKAGE__,
+            message => $msg,
+        });
+        
+        $text = eval { $class->_encode_json( $exception->result() ) };
+    };
+    
+    return $text;
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Actually encode JSON
+#
+
+sub _encode_json {
+    my ($class, $data) = @_;
+    
+    return JSON->new->utf8->canonical($DEBUG)->encode($data);
+}
 
 1;
 

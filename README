@@ -38,7 +38,7 @@ RPC::ExtDirect modules require these other modules and libraries:
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2011-2012 by Alexander Tokarev <tokarev@cpan.org>
+Copyright (C) 2011-2013 by Alexander Tokarev <tokarev@cpan.org>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. See perlartistic.

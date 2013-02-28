@@ -18,6 +18,27 @@ use RPC::ExtDirect::Exception;
 
 our $DEBUG = 0;
 
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Exception class name so it could be configured
+#
+
+our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Request class name so it could be configured
+#
+
+our $REQUEST_CLASS = 'RPC::ExtDirect::Request';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# JSON decoding options
+#
+
+our %JSON_OPTIONS;
+
 ### PUBLIC CLASS METHOD ###
 #
 # Turns JSONified POST request(s) into array of instantiated
@@ -28,25 +49,23 @@ our $DEBUG = 0;
 sub decode_post {
     my ($class, $post_text) = @_;
 
-    # Shortcuts
-    my $rqst = 'RPC::ExtDirect::Request';
-    my $xcpt = 'RPC::ExtDirect::Exception';
-
     # Try to decode data, return Exception upon failure
-    my $data = eval { decode_json $post_text };
+    my $data = eval { from_json $post_text, \%JSON_OPTIONS };
 
+    # TODO This looks strikingly similar to what Serialize is doing,
+    # time for a bit of refactoring?
     if ( $@ ) {
-        my $error = RPC::ExtDirect::Exception->clean_message($@);
+        my $error = $class->_clean_msg($@);
 
         my $msg = "ExtDirect error decoding POST data: '$error'";
-        return [ $xcpt->new({ debug => $DEBUG, message => $msg }) ];
+        return [ $class->_exception({ debug => $DEBUG, message => $msg }) ];
     };
 
     # Normalize data
     $data = [ $data ] unless ref $data eq 'ARRAY';
 
     # Create array of Requests (or Exceptions)
-    my @requests = map { $rqst->new($_) } @$data;
+    my @requests = map { $class->_request($_) } @$data;
 
     return \@requests;
 }
@@ -61,12 +80,47 @@ sub decode_form {
     my ($class, $form_hashref) = @_;
 
     # Create the Request (or Exception)
-    my $request = RPC::ExtDirect::Request->new($form_hashref);
+    my $request = $class->_request($form_hashref);
 
     return [ $request ];
 }
 
 ############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Return new Exception object
+#
+
+sub _exception {
+    my ($self, $params) = @_;
+    
+    $params->{where} ||= $EXCEPTION_CLASS->get_where(2);
+    
+    return $EXCEPTION_CLASS->new($params);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Clean error message
+#
+
+sub _clean_msg {
+    my ($class, $msg) = @_;
+    
+    return $EXCEPTION_CLASS->clean_message($msg);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Return new Request object
+#
+
+sub _request {
+    my ($self, $arg) = @_;
+    
+    return $REQUEST_CLASS->new($arg);
+}
 
 1;
 
