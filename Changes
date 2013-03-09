@@ -1,3 +1,6 @@
+2.12  Fri Mar 8  21:20:11 2013
+    - Some more refactoring; no API changes.
+
 2.11  Wed Feb 27 20:42:23 2013
     - Refactored some packages internally, to provide better
       extensibility. No major code changes.

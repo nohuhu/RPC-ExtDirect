@@ -11,6 +11,7 @@ use RPC::ExtDirect::Serialize;
 use RPC::ExtDirect::Event;
 use RPC::ExtDirect::NoEvents;
 use RPC::ExtDirect::Hook;
+use RPC::ExtDirect::Request::PollHandler;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -18,6 +19,30 @@ use RPC::ExtDirect::Hook;
 #
 
 our $DEBUG = 0;
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Serializer class name so it could be configured
+#
+# TODO This is hacky hack, find another way to inject
+# new functionality (all class names)
+#
+
+our $SERIALIZER_CLASS = 'RPC::ExtDirect::Serialize';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Event class name so it could be configured
+#
+
+our $EVENT_CLASS = 'RPC::ExtDirect::Event';
+
+### PACKAGE GLOBAL VARIABLE ###
+#
+# Set Request class name so it could be configured
+#
+
+our $REQUEST_CLASS = 'RPC::ExtDirect::Request::PollHandler';
 
 ### PUBLIC CLASS METHOD ###
 #
@@ -28,100 +53,97 @@ our $DEBUG = 0;
 
 sub poll {
     my ($class, $env) = @_;
+    
+    no strict 'refs';
 
     # First set the debug flag
-    local $RPC::ExtDirect::Serialize::DEBUG = $DEBUG;
+    local ${$SERIALIZER_CLASS.'::DEBUG'} = $DEBUG;
+
+    my @poll_handlers = $class->_get_poll_handlers();
+
+    # Even if we have nothing to poll, we must return a stub Event
+    # or client side will throw an unhandled JavaScript exception
+    return $class->_no_events unless @poll_handlers;
+
+    # Run all the handlers and collect their outputs
+    my @results = $class->_run_handlers($env, \@poll_handlers);
+
+    # No events returned by handlers? We still gotta return something.
+    return $class->_no_events unless @results;
+
+    # Polling results are always JSON; no content type needed
+    my $serialized = $class->_serialize_results(@results);
+
+    # And if serialization fails we have to return something positive
+    return $serialized || $class->_no_events;
+}
+
+############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE CLASS METHOD ###
+#
+# Return the list of poll handlers
+#
+
+sub _get_poll_handlers {
+    my ($class) = @_;
 
     # Compile the list of poll handler
     my @handler_refs = RPC::ExtDirect->get_poll_handlers();
 
-    # Even if we have nothing to poll, we must return a stub Event
-    # or client side will throw an unhandled JavaScript exception
-    return $class->_no_events unless @handler_refs;
-
     # Compile the list of poll handler references
     my @poll_handlers;
     for my $handler_ref ( @handler_refs ) {
-        my ($action, $method) = @$handler_ref;
+        my $req = $class->_create_request($handler_ref);
 
-        my %params
-            = RPC::ExtDirect->get_method_parameters($action, $method);
-
-        push @poll_handlers, \%params;
+        push @poll_handlers, $req if $req;
     };
+    
+    return @poll_handlers;
+}
 
-    # Run all the handlers and collect their outputs
-    my @results;
+### PRIVATE CLASS METHOD ###
+#
+# Create Request off poll handler
+#
 
-    POLL_HANDLER:
-    for my $handler ( @poll_handlers ) {
-        next POLL_HANDLER unless defined $handler;
+sub _create_request {
+    my ($class, $handler) = @_;
+    
+    my ($action, $method) = @$handler;
+    
+    my $req = $REQUEST_CLASS->new({
+        action  => $action,
+        method  => $method,
+    });
+    
+    return $req;
+}
 
-        my (@output, $exception, $method_called);
-        my $run_method = 1;
+### PRIVATE CLASS METHOD ###
+#
+# Run poll handlers and collect results
+#
 
-        # Run "before" hook if we got one
-        my $before = RPC::ExtDirect::Hook->new('before', $handler);
+sub _run_handlers {
+    my ($class, $env, $requests) = @_;
+    
+    # Run the requests
+    $_->run($env) for @$requests;
 
-        if ( $before ) {
-            my @hook_output = eval { $before->run($env, [$env]) };
+    # Collect responses
+    my @results = map { $_->result } @$requests;
+    
+    return @results;
+}
 
-            # If "before" hook died, cancel Method call
-            if ( $@ ) {
-                $exception  = $@;
-                $run_method = '';
-            };
+### PRIVATE CLASS METHOD ###
+#
+# Serialize result
+#
 
-            # If "before" hook returns anything but single number 1,
-            # or if it dies, we treat this as the result and do not
-            # run the poll handler.
-            if ( @hook_output != 1 || $hook_output[0] ne '1' ) {
-                @output = @hook_output;
-                $run_method = '';
-            };
-        };
-
-        # If "instead" hook is defined, we run it in place of handler
-        my $instead = RPC::ExtDirect::Hook->new('instead', $handler);
-
-        my $package  = $handler->{package};
-        my $referent = $handler->{referent};
-
-        if ( $run_method ) {
-            $method_called = $instead ? $instead->instead
-                           :            $referent
-                           ;
-
-            @output = $instead ? eval { $instead->run($env, [$env]) }
-                    :            eval { $referent->($package, $env) }
-                    ;
-
-            $exception = $@;
-        };
-
-        # Finally, run the "after" hook if it's defined
-        my $after = RPC::ExtDirect::Hook->new('after', $handler);
-
-        if ( $after ) {
-
-            # Return value and exceptions are ignored
-            eval {
-                $after->run($env, [$env], \@output, $exception, $method_called)
-            };
-        };
-
-        # Presently there is no way to return an exception to the
-        # client side: Ext.Direct PollingProvider code does not have any
-        # processing for exceptions and just freaks out upon receiving
-        # anything but an event. Passing exceptions disguised as events
-        # is kludgy and kinda defeats the whole purpose IMHO.
-        # So in fact we just ignore anything exceptional on our side.
-        push @results, eval { map { $_->result() } @output }
-            unless $@;
-    };
-
-    # No events returned by handlers? We still gotta return something.
-    return $class->_no_events unless @results;
+sub _serialize_results {
+    my ($class, @results) = @_;
 
     # Fortunately, client side does understand more than on event
     # batched as array
@@ -129,18 +151,12 @@ sub poll {
                      :                  $results[0]
                      ;
 
-    # Polling results are always JSON; no content type needed
-    my $serialized = eval {
-        RPC::ExtDirect::Serialize->serialize( 1, $final_result )
+    my $json = eval {
+        $SERIALIZER_CLASS->serialize( 1, $final_result )
     };
 
-    # And if serialization fails we have to return something positive
-    return $@ eq '' && $serialized ? $serialized
-           :                         $class->_no_events
-           ;
+    return $json;
 }
-
-############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE CLASS METHOD ###
 #
@@ -152,7 +168,7 @@ sub _no_events {
 
     my $no_events  = RPC::ExtDirect::NoEvents->new();
     my $result     = $no_events->result();
-    my $serialized = RPC::ExtDirect::Serialize->serialize(0, $result);
+    my $serialized = $SERIALIZER_CLASS->serialize(0, $result);
 
     return $serialized;
 }
@@ -162,7 +178,7 @@ sub _no_events {
 # Run specified hook
 #
 
-sub _run_hook {
+sub __run_hook {
     my ($hook, $handler, $env, $output, $exception) = @_;
 
     my %params = %$handler;

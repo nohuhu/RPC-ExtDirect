@@ -76,11 +76,12 @@ sub new {
 
     # Assign attributes
     my @attrs        = qw(action method package referent param_no
-                          param_names formHandler
+                          param_names formHandler pollHandler
                           tid arguments type data upload run_count);
     @$self{ @attrs } =  ($action, $method,         $parameters{package},
                          $parameters{referent},    $parameters{param_no},
                          $parameters{param_names}, $parameters{formHandler},
+                         $parameters{pollHandler},
                          $tid, $data, $type, $data, $upload, 0);
 
     # Hooks should be already defined by now
@@ -171,6 +172,7 @@ sub message     { $_[0]->{message}     }
 sub upload      { $_[0]->{upload}      }
 sub run_count   { $_[0]->{run_count}   }
 sub formHandler { $_[0]->{formHandler} }
+sub pollHandler { $_[0]->{pollHandler} }
 sub before      { $_[0]->{before}      }
 sub instead     { $_[0]->{instead}     }
 sub after       { $_[0]->{after}       }
@@ -511,11 +513,25 @@ sub _run_method {
                :                  $referent
                ;
 
-    my $result = $self->instead ? eval { $self->instead->run($env, $arg) }
-               :                  eval { $referent->($package, @$arg)    }
+    my $result = $self->instead ? eval { $self->instead->run($env, $arg)   }
+               :                  eval { $self->_do_run_method($env, $arg) }
                ;
-
+    
     return ($result, $@, $callee);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Actually run the method or hook and return result
+#
+
+sub _do_run_method {
+    my ($self, $env, $arg) = @_;
+    
+    my $package  = $self->package;
+    my $referent = $self->referent;
+    
+    return $referent->($package, @$arg);
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -567,7 +583,7 @@ sub _process_exception {
     my ($self, $env, $exception) = @_;
 
     # Stringify exception and treat it as error message
-    my $msg = RPC::ExtDirect::Exception->clean_message("$exception");
+    my $msg = $EXCEPTION_CLASS->clean_message("$exception");
 
     # Report actual package and method in case we're debugging
     my $where = $self->package .'->'. $self->method;

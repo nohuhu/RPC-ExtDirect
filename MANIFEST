@@ -14,6 +14,7 @@ lib/RPC/ExtDirect/Exception.pm
 lib/RPC/ExtDirect/Hook.pm
 lib/RPC/ExtDirect/NoEvents.pm
 lib/RPC/ExtDirect/Request.pm
+lib/RPC/ExtDirect/Request/PollHandler.pm
 lib/RPC/ExtDirect/Router.pm
 lib/RPC/ExtDirect/Serialize.pm
 Makefile.PL
