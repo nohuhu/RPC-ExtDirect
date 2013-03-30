@@ -43,7 +43,7 @@ sub foo_zero : ExtDirect(0) {
 }
 
 # Testing blessed object return
-sub foo_blessed : ExtDirect(0) {
+sub foo_blessed : ExtDirect {
     return bless {}, 'foo';
 }
 

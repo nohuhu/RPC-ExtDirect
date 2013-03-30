@@ -228,7 +228,11 @@ sub _define_method {
         if $param{param_names};
 
     # Ordinary method with numbered arguments
-    return { name => $method, len => $param{param_no} + 0 };
+    return { name => $method, len => $param{param_no} + 0 }
+        if $param{param_no} =~ /\d+/;
+    
+    # No arguments specified means we're not checking them
+    return { name => $method };
 }
 
 ### PRIVATE CLASS METHOD ###

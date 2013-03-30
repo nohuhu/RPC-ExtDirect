@@ -31,7 +31,7 @@ Ext.app.REMOTE_CALL_API = {
         "Foo":[
                 { "len":2, "name":"foo_bar" },
                 { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":0, "name":"foo_blessed" },
+                { "name":"foo_blessed" },
                 { "len":1, "name":"foo_foo" },
                 { "len":0, "name":"foo_zero" }
               ],

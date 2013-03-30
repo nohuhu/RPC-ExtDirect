@@ -16,7 +16,7 @@ use Attribute::Handlers;
 # Version of this module.
 #
 
-our $VERSION = '2.12';
+our $VERSION = '2.13';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -73,21 +73,18 @@ sub extdirect {
     croak "Method attribute is not ExtDirect at $file line $line"
         unless $attr eq 'ExtDirect';
 
-    croak "ExtDirect attribute must define ".
-          "method parameters at $file line $line"
-        if !defined $data || ref $data ne 'ARRAY' || @$data < 0;
-
     my $symbol_name = eval { no strict 'refs'; *{$symbol}{NAME} };
     croak "Can't resolve symbol '$symbol' for package '$package' ".
           "at $file line $line: $@"
         if $@;
 
     # These parameters depend on attribute input
-    my $param_no    = 0;
+    my $param_no    = undef;
     my $param_names = undef;
     my $formHandler = 0;
     my $pollHandler = 0;
     my %hooks       = ();
+    $data           = $data || [];
 
     while ( @$data ) {
         my $param_def = shift @$data;
@@ -128,14 +125,12 @@ sub extdirect {
                   "or 'NONE' at $file line $line"
                 if $code ne 'NONE' && 'CODE' ne ref $code;
 
-            $hooks{ $type } = $code;
-
-            RPC::ExtDirect->add_hook(
+            $hooks{ $type } = {
                 package => $package,
                 method  => $symbol_name,
                 type    => $type,
                 code    => $code,
-            );
+            };
         };
     };
 
@@ -210,6 +205,8 @@ sub add_hook {
                  ;
 
     $HOOK_FOR{ $hook_key } = $code;
+
+    return $code;
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -288,6 +285,29 @@ sub add_method {
     # Make a copy of the hashref
     my $attribute_def = {};
     @$attribute_def{ keys %$attribute_ref } = values %$attribute_ref;
+
+    #
+    # Our internal variable specifying the number of ordered arguments
+    # is called param_no, but in JavaScript API definition it's called
+    # len; it is very easy to make a mistake when adding methods
+    # directly (not via ExtDirect attribute) so we better accommodate
+    # for that.
+    #
+    $attribute_def->{param_no} = delete $attribute_def->{len}
+        if exists $attribute_def->{len} and not
+           exists $attribute_def->{param_no};
+
+    # The same as above goes for param_names (params in JS)
+    $attribute_def->{param_names} = delete $attribute_def->{params}
+        if exists $attribute_def->{params} and not
+           exists $attribute_def->{param_names};
+    
+    # Go over the hooks and add them
+    for my $hook_type ( qw/ before instead after / ) {
+        next unless my $hook = $attribute_def->{$hook_type};
+
+        $attribute_def->{$hook_type} = $class->add_hook(%$hook);
+    }
 
     $PARAMETERS_FOR{ $qualified_name } = $attribute_def;
 
@@ -395,7 +415,7 @@ RPC::ExtDirect - Expose Perl code to Ext JS RIA applications through Ext.Direct 
  # This method doesn't need hooks for some reason
  sub bar
     : ExtDirect(
-        params => ['foo', 'bar'], before => 'NONE', after  => 'NONE',
+        params => ['foo', 'bar'], before => 'NONE', after => 'NONE',
       )
  {
     my ($class, %arg) = @_;

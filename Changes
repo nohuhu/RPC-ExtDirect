@@ -1,3 +1,12 @@
+2.13  Fri Mar 29 18:38:11 2013
+    - Additional round of refactoring: moved hook initialization
+      to RPC::ExtDirect::add_method, this allows adding methods
+      explicitly without using ExtDirect attributes.
+
+      Added support for methods without parameter declaration;
+      it is assumed that parameters are passed by-name without
+      strict checking.
+
 2.12  Fri Mar 8  21:20:11 2013
     - Some more refactoring; no API changes.
 
