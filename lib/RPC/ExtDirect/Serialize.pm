@@ -7,6 +7,7 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect::Exception;
+use RPC::ExtDirect::Util qw/ clean_error_message /;
 
 use JSON;
 
@@ -66,7 +67,7 @@ sub _exception {
 sub _clean_msg {
     my ($class, $msg) = @_;
     
-    return $EXCEPTION_CLASS->clean_message($msg);
+    return clean_error_message($msg);
 }
 
 ### PRIVATE INSTANCE METHOD ###

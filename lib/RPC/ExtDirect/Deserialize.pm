@@ -10,6 +10,7 @@ use JSON;
 
 use RPC::ExtDirect::Request;
 use RPC::ExtDirect::Exception;
+use RPC::ExtDirect::Util qw/ clean_error_message get_caller_info /;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -95,7 +96,7 @@ sub decode_form {
 sub _exception {
     my ($self, $params) = @_;
     
-    $params->{where} ||= $EXCEPTION_CLASS->get_where(2);
+    $params->{where} ||= get_caller_info(2);
     
     return $EXCEPTION_CLASS->new($params);
 }
@@ -108,7 +109,7 @@ sub _exception {
 sub _clean_msg {
     my ($class, $msg) = @_;
     
-    return $EXCEPTION_CLASS->clean_message($msg);
+    return clean_error_message($msg);
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -143,11 +144,11 @@ L<JSON>
 
 =head1 AUTHOR
 
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
+Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011-2012 Alexander Tokarev.
+Copyright (c) 2011-2013 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.

@@ -9,6 +9,7 @@ use Carp;
 use RPC::ExtDirect ();          # No imports here
 use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
 use RPC::ExtDirect::Hook;
+use RPC::ExtDirect::Util qw/ clean_error_message /;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -583,7 +584,7 @@ sub _process_exception {
     my ($self, $env, $exception) = @_;
 
     # Stringify exception and treat it as error message
-    my $msg = $EXCEPTION_CLASS->clean_message("$exception");
+    my $msg = clean_error_message("$exception");
 
     # Report actual package and method in case we're debugging
     my $where = $self->package .'->'. $self->method;
@@ -607,11 +608,11 @@ This module is not intended to be used directly.
 
 =head1 AUTHOR
 
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
+Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011-2012 Alexander Tokarev.
+Copyright (c) 2011-2013 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.

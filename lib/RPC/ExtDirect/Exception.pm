@@ -6,6 +6,15 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
+use RPC::ExtDirect::Util qw/
+    clean_error_message
+    get_caller_info
+/;
+    
+use RPC::ExtDirect::Util::Accessor qw/
+    debug action method tid where message
+/;
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of Exception.
@@ -41,9 +50,7 @@ sub new {
 # A stub for duck typing. Always returns failure.
 #
 
-sub run {
-    return '';
-}
+sub run { '' }
 
 ### PUBLIC INSTANCE METHOD ###
 #
@@ -56,44 +63,6 @@ sub result {
     return $self->_get_exception_hashref();
 }
 
-### PUBLIC CLASS METHOD ###
-#
-# Clean croak() and die() messages of file/line information
-#
-
-sub clean_message {
-    my ($class, $msg) = @_;
-
-    $msg =~ s/(?<![,]) at .*? line \d+(, <DATA> line \d+)?\.?\n*//ms;
-
-    return $msg;
-}
-
-### PUBLIC CLASS METHOD ###
-#
-# Return formatted call stack part to use in exception
-#
-
-sub get_where {
-    my ($class, $depth) = @_;
-    
-    my ($package, $sub) = (caller $depth)[3] =~ / \A (.*) :: (.*?) \z /xms;
-    
-    return $package . '->' . $sub;
-}
-
-### PUBLIC INSTANCE METHODS ###
-#
-# Read-only getters
-#
-
-sub debug   { $_[0]->{debug}   }
-sub action  { $_[0]->{action}  }
-sub method  { $_[0]->{method}  }
-sub tid     { $_[0]->{tid}     }
-sub where   { $_[0]->{where}   }
-sub message { $_[0]->{message} }
-
 ############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE INSTANCE METHOD ###
@@ -105,7 +74,7 @@ sub _set_error {
     my ($self, $message, $where) = @_;
 
     # Store the information
-    $self->{where}   = defined $where ? $where : $self->get_where(3);
+    $self->{where}   = defined $where ? $where : get_caller_info(3);
     $self->{message} = $message;
 
     # Ensure fall through for caller methods
@@ -146,6 +115,8 @@ sub _get_exception_hashref {
     return $exception_ref;
 }
 
+############## PRIVATE METHODS BELOW ##############
+
 1;
 
 __END__
@@ -166,10 +137,9 @@ Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011-2012 Alexander Tokarev.
+Copyright (c) 2011-2013 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
 
 =cut
-
