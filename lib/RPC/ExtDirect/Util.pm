@@ -4,6 +4,13 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
 
+use base 'Exporter';
+
+our @EXPORT_OK = qw/
+    clean_error_message
+    get_caller_info
+/;
+
 ### PUBLIC PACKAGE SUBROUTINE ###
 #
 # Clean croak() and die() messages of file/line information
