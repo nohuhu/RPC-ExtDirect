@@ -6,13 +6,41 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
+use RPC::ExtDirect::Util::Accessor qw/ name data /;
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of Event.
 #
 
 sub new {
-    my ($class, $name, $data) = @_;
+    my $class = shift;
+    
+    # Allow passing either ordered parameters, or hashref,
+    # or even a hash. This is to allow Mooseish and other
+    # popular invocation patterns without having to pile on
+    # argument converters
+    my ($name, $data);
+    
+    if ( @_ == 1 ) {
+        if ( 'HASH' eq ref $_[0] ) {
+            $name = $_[0]->{name};
+            $data = $_[0]->{data};
+        }
+        else {
+            $name = $_[0];
+        }
+    }
+    elsif ( @_ == 2 ) {
+        $name = $_[0];
+        $data = $_[1];
+    }
+    elsif ( @_ % 2 == 0 ) {
+        my %params = @_;
+        
+        $name = $params{name};
+        $data = $params{data};
+    }
 
     croak "Ext.Direct Event name is required"
         unless defined $name;
@@ -27,9 +55,7 @@ sub new {
 # A stub for duck typing. Does nothing, returns failure.
 #
 
-sub run {
-    return '';
-}
+sub run { '' }
 
 ### PUBLIC INSTANCE METHOD ###
 #
@@ -46,14 +72,6 @@ sub result {
         data => $self->data,
     };
 }
-
-### PUBLIC INSTANCE METHODS ###
-#
-# Read-only getters
-#
-
-sub name    { $_[0]->{name} }
-sub data    { $_[0]->{data} }
 
 ############## PRIVATE METHODS BELOW ##############
 
@@ -116,12 +134,25 @@ But in reality, it almost always is not as simple as this.
 
 =item new($name, $data)
 
-Creates a new Event object with event $name and some $data.
+Creates a new Event object with event $name and some $data. Can also be passed
+the arguments with a hashref, or a hash:
+
+    my $event1 = RPC::ExtDirect::Event->new( 'foo', 'bar' );
+    my $event2 = RPC::ExtDirect::Event->new({
+        name => 'foo',
+        data => 'bar',
+    });
+    my $event3 = RPC::ExtDirect::Event->new(
+        name => 'foo',
+        data => 'bar'
+    );
+
+All three ways are equal so use any one that is more convenient to you.
 
 =item run()
 
-Not intended to be called directly, provided for duck type compatibility with
-Exceptions and Request.
+Not intended to be called directly, provided for duck typing compatibility with
+Exception and Request objects.
 
 =item result()
 
@@ -130,20 +161,15 @@ intended to be called directly.
 
 =back
 
-=head1 BUGS AND LIMITATIONS
-
-There are no known bugs in this module.
-
 =head1 AUTHOR
 
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
+Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (c) 2011-2012 Alexander Tokarev.
+Copyright (c) 2011-2013 Alexander Tokarev.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<perlartistic>.
 
 =cut
-

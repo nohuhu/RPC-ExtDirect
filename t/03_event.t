@@ -1,52 +1,77 @@
 use strict;
 use warnings;
 
-use Test::More tests => 20;
+use Test::More tests => 33;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Event';
     use_ok 'RPC::ExtDirect::NoEvents';
 }
 
-# Test Event with data
+# Test Events with data
 
-my $event = eval { RPC::ExtDirect::Event->new('foo', 'bar') };
+my @new_tests = (
+    {
+        name => 'ordered',
+        arg  => ['foo', 'bar'],
+        res  => {
+            type => 'event',
+            name => 'foo',
+            data => 'bar',
+        },
+    },
+    {
+        name => 'hashref',
+        arg  => [{ name => 'bar', data => 'baz' }],
+        res  => {
+            type => 'event',
+            name => 'bar',
+            data => 'baz',
+        },
+    },
+    {
+        name => 'hash',
+        arg  => [name => 'baz', data => 'qux'],
+        res  => {
+            type => 'event',
+            name => 'baz',
+            data => 'qux',
+        },
+    },
+    {
+        name => 'w/o data',
+        arg  => ['burr'],
+        res  => {
+            type => 'event',
+            name => 'burr',
+            data => undef,
+        },
+    }
+);
 
-is     $@, '', "Event new() eval $@";
-ok     $event, "Event object created";
-isa_ok $event, 'RPC::ExtDirect::Event';
+for my $test ( @new_tests ) {
+    my $name = $test->{name};
+    my @arg  = @{ $test->{arg} };
+    my $exp  = $test->{res};
+    
+    my $event = eval { RPC::ExtDirect::Event->new(@arg) };
 
-my $expected_result = {
-    type => 'event',
-    name => 'foo',
-    data => 'bar',
-};
+    is     $@, '', "$name event new() eval $@";
+    ok     $event, "$name event object created";
+    isa_ok $event, 'RPC::ExtDirect::Event';
+    
+    my $result = eval { $event->result() };
 
-my $real_result = eval { $event->result() };
+    is        $@,      '',   "$name event result() eval $@";
+    ok        $result,       "$name event result() not empty";
+    is_deeply $result, $exp, "$name event result() deep";
+}
 
-is        $@, '',                         "Event result() eval $@";
-ok        $real_result,                   "Event result() not empty";
-is_deeply $real_result, $expected_result, "Event result() deep";
+# Test argument checking
 
-# Test Event without data
+my $event = eval { RPC::ExtDirect::Event->new() };
 
-$event = eval { RPC::ExtDirect::Event->new('baz') };
-
-is     $@, '', "Event new() eval $@";
-ok     $event, "Event object created";
-isa_ok $event, 'RPC::ExtDirect::Event';
-
-$expected_result = {
-    type => 'event',
-    name => 'baz',
-    data => undef,
-};
-
-$real_result = eval { $event->result() };
-
-is        $@, '',                         "Event result() eval $@";
-ok        $real_result,                   "Event result() not empty";
-is_deeply $real_result, $expected_result, "Event result() deep";
+like $@, qr/^Ext.Direct Event name is required/, "Argument check";
 
 # Test the stub
 
@@ -56,16 +81,14 @@ is     $@, '',     "NoEvents new() eval $@";
 ok     $no_events, "NoEvents new() object created";
 isa_ok $no_events, 'RPC::ExtDirect::NoEvents';
 
-$expected_result = {
+my $expected_result = {
     type => 'event',
     name => '__NONE__',
     data => '',
 };
 
-$real_result = eval { $no_events->result() };
+my $real_result = eval { $no_events->result() };
 
 is        $@, '',                         "NoEvents result() eval $@";
 ok        $real_result,                   "NoEvents result() not empty";
 is_deeply $real_result, $expected_result, "NoEvents result() deep";
-
-exit 0;
