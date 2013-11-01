@@ -53,6 +53,11 @@ However if you want to, there's no stopping you:
 
 Alex Tokarev E<lt>tokarev@cpan.org<gt>
 
+=head1 ATTRIBUTION
+
+I stole the idea from Miyagawa's Plack::Util::Accessor.
+Hopefully he won't mind. :)
+
 =head1 COPYRIGHT AND LICENSE
 
 Copyright (c) 2013 Alex Tokarev.
