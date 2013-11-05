@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 35;
+use Test::More tests => 36;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
@@ -198,3 +198,18 @@ for my $test ( @$tests ) {
         is_deeply $value, $result, "Var $name value matches";
     }
 };
+
+my $bar = Bar->new( scalar_value => 'fred' );
+
+my $flag = {
+    package => 'Bar',
+    var     => 'SCALAR_VALUE',
+    type    => 'scalar',
+    field   => 'scalar_value',
+    default => 'foo',
+};
+
+RPC::ExtDirect::Util::parse_global_flags( [ $flag ], $bar );
+
+is $bar->scalar_value, 'fred', "Existing object value";
+

@@ -88,16 +88,19 @@ sub parse_global_flags {
         
         if ( $have_value ) {
             warn <<END;
-The package global variable $full_var is deprecated and is going to be
-removed in the next RPC::ExtDirect version. Use the $field config option
-with the $caller_pkg instance instead:
+The package global variable $full_var is deprecated
+and is going to be removed in the next RPC::ExtDirect version.
+Use the `$field` config option with the $caller_pkg
+instance instead:
 
-    my \$obj = $caller_pkg->new( $field => ... );
+    my \$obj = $caller_pkg->new(
+            $field => ...
+    );
     
 END
         }
         
-        $obj->$field($value);
+        $obj->$field($value) unless defined $obj->$field();
     }
 }
 
