@@ -16,10 +16,12 @@ sub import {
     
     my $caller_class = caller();
     
-    no strict 'refs';
-    
     for my $prop ( @properties ) {
-        *{ $caller_class . '::' . $prop } = sub { $_[0]->{$prop} };
+        no strict 'refs';
+    
+        *{ $caller_class . '::' . $prop } = sub {
+            @_ == 1 ? $_[0]->{$prop} : ($_[0]->{$prop} = $_[1])
+        };
     }
 }
 
