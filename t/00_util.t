@@ -2,14 +2,14 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 36;
+use Test::More tests => 52;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
     use_ok 'RPC::ExtDirect::Util::Accessor';
 };
 
-# Accessors
+# Simple accessors
 
 package Foo;
 
@@ -25,24 +25,79 @@ sub bleh {
     return RPC::ExtDirect::Util::get_caller_info($_[1]);
 }
 
+RPC::ExtDirect::Util::Accessor::create_accessors( accessors => ['bar'] );
+
 package main;
 
 my $foo = Foo->new( bar => 'baz' );
 
 my $res = eval { $foo->bar() };
 
-is $@,   '',    "Getter didn't die";
-is $res, 'baz', "Getter value match";
+is $@,   '',    "Simple getter didn't die";
+is $res, 'baz', "Simple etter value match";
 
 $res = eval { $foo->bar('qux'); };
 
-is $@,          '',    "Setter didn't die";
-is $res,        'qux', "Setter value match";
-is $foo->{bar}, 'qux', "Object value match";
+is $@,          '',    "Simple setter didn't die";
+is $res,        $foo,  "Simple setter return the object";
+is $foo->{bar}, 'qux', "Simple setter value match";
 
-$res = $foo->bar();
+$res = eval { $foo->bar() };
 
-is $res, 'qux', "Getter after setter value match";
+is $res, 'qux', "Simple getter after setter value match";
+
+# Defaultable accessors
+
+package Defaultable;
+
+our @ISA = qw/ Foo /;
+
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    defaultable => [{
+        specific => 'bar_baz',
+        default  => 'bar',
+    }]
+);
+
+package main;
+
+my $baz = Defaultable->new( bar_baz => 'bleh' );
+
+$res = eval { $baz->bar_baz() };
+
+is $@,   '',     "Defaultable getter w/ specific didn't die";
+is $res, 'bleh', "Defaultable getter w/ specific value match";
+
+$res = eval { $baz->bar_baz('mumble') };
+
+is $@,              '',       "Defaultable setter w/ specific didn't die";
+is $res,            $baz,     "Defaultable setter w/ specific return the object";
+is $baz->{bar_baz}, 'mumble', "Defaultable setter w/ specific specific object value";
+is $baz->{bar},     undef,    "Defaultable setter w/ specific default object value";
+
+$baz = Defaultable->new( bar => 'bloom' );
+
+$res = eval { $baz->bar_baz() };
+
+is $@,   '',      "Defaultable getter w/ default didn't die";
+is $res, 'bloom', "Defaultable getter w/ default value match";
+
+$res = eval { $baz->bar_baz('croffle') };
+
+is $@,              '',        "Defaultable setter didn't die";
+is $res,            $baz,      "Defaultable setter w/ default return the object";
+is $baz->{bar_baz}, 'croffle', "Defaultable setter w/ default specific object value";
+is $baz->{bar},     'bloom',   "Defaultable setter w/ default default object value";
+
+$res = eval { $baz->bar_baz() };
+
+is $@,   '',        "Defaultable getter after setter didn't die";
+is $res, 'croffle', "Defaultable getter after setter value match";
+
+$res = eval { $baz->bar() };
+
+is $@,   '',      "Defaultable getter after setter default didn't die";
+is $res, 'bloom', "Defaultable getter after setter default value match";
 
 # Caller info retrieval
 
@@ -70,10 +125,11 @@ is $msg, "moo fred", "croak() message clean";
 
 package Bar;
 
-use RPC::ExtDirect::Util::Accessor
-    qw/ scalar_value empty_scalar
-        array_value empty_array
-        hash_value empty_hash/;
+use RPC::ExtDirect::Util::Accessor;
+
+my @accessors = qw/ scalar_value empty_scalar
+                    array_value empty_array
+                    hash_value empty_hash/;
 
 our $SCALAR_VALUE = 1;
 our $EMPTY_SCALAR;
@@ -89,6 +145,8 @@ sub new {
 
     return bless {@_}, $class;
 }
+
+RPC::ExtDirect::Util::Accessor::create_accessors( accessors => \@accessors );
 
 package main;
 
