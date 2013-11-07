@@ -183,29 +183,3 @@ sub _wrap_in_html {
 }
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::Router - Ext.Direct request dispatcher
-
-=head1 SYNOPSIS
-
-This module is not intended to be used directly.
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

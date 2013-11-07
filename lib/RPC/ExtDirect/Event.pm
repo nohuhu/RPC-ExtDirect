@@ -73,8 +73,6 @@ sub result {
     };
 }
 
-############## PRIVATE METHODS BELOW ##############
-
 1;
 
 __END__

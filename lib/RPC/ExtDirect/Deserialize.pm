@@ -43,6 +43,4 @@ our $REQUEST_CLASS;
 
 our %JSON_OPTIONS;
 
-############## PRIVATE METHODS BELOW ##############
-
 1;
