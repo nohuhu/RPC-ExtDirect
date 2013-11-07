@@ -55,7 +55,7 @@ our @ISA = qw/ Foo /;
 RPC::ExtDirect::Util::Accessor::create_accessors(
     defaultable => [{
         specific => 'bar_baz',
-        default  => 'bar',
+        fallback => 'bar',
     }]
 );
 

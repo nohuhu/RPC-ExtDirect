@@ -17,22 +17,22 @@ sub create_accessors {
     
     no strict 'refs';
     
-    my $simple = $params{accessors};
+    my $simple = $params{accessors} || $params{simple};
     
     for my $prop ( @$simple ) {
         *{ $caller_class . '::' . $prop }
             = _simple_accessor($caller_class, $prop);
     }
     
-    my $defaultable = $params{defaultable};
+    my $defaultable = $params{defaultable} || $params{complex};
     
     for my $prop ( @$defaultable ) {
         my $specific = $prop->{specific};
-        my $default  = $prop->{default};
+        my $fallback = $prop->{fallback};
         my $method   = $caller_class . '::' . $specific;
         
         *{ $method }
-            = _defaultable_accessor($caller_class, $specific, $default);
+            = _defaultable_accessor($caller_class, $specific, $fallback);
     }
 }
 
