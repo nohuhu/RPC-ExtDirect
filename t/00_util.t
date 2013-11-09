@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 52;
+use Test::More tests => 58;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
@@ -195,6 +195,17 @@ my $tests = [{
         default => [qw/ moo fuy /],
     },
 }, {
+    name   => 'empty array no default',
+    regex  => '',
+    result => undef,
+    flag   => {
+        package => 'Bar',
+        var     => 'EMPTY_ARRAY',
+        type    => 'array',
+        setter  => 'empty_array',
+        default => undef,
+    },
+}, {
     name   => 'hash w/ values',
     regex  => qr/^.*Bar::HASH_VALUE.*?hash_value/ms,
     result => { foo => 'bar' },
@@ -215,6 +226,17 @@ my $tests = [{
         type    => 'hash',
         setter  => 'empty_hash',
         default => { mymse => 'fumble' },
+    },
+}, {
+    name   => 'empty hash no default',
+    regex  => '',
+    result => undef,
+    flag   => {
+        package => 'Bar',
+        var     => 'EMPTY_HASH',
+        type    => 'hash',
+        setter  => 'empty_hash',
+        default => undef,
     },
 }];
 
@@ -252,7 +274,9 @@ for my $test ( @$tests ) {
         is $value, $result, "Var $name value matches";
     }
     else {
-        is ref($value), uc $type,  "Var $name type matches";
+        if ( defined $result ) {
+            is ref($value), uc $type,  "Var $name type matches";
+        }
         is_deeply $value, $result, "Var $name value matches";
     }
 };

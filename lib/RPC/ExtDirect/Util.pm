@@ -77,11 +77,17 @@ sub parse_global_flags {
             }
             elsif ( $type eq 'hash' ) {
                 $have_value = %{ $full_var };
-                $value      = $have_value ? { %{ $full_var } } : {%$default};
+                $value      = $have_value            ? { %{ $full_var } }
+                            : 'HASH' eq ref $default ? { %$default      }
+                            :                          undef
+                            ;
             }
             elsif ( $type eq 'array' ) {
                 $have_value = @{ $full_var };
-                $value      = $have_value ? [ @{ $full_var } ] : [@$default];
+                $value      = $have_value             ? [ @{ $full_var } ]
+                            : 'ARRAY' eq ref $default ? [ @$default      ]
+                            :                           undef
+                            ;
             }
             else {
                 die "Unknown global variable type: '$type'"; # Debug mostly
