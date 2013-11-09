@@ -4,34 +4,222 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
-### PUBLIC CLASS METHOD ###
-#
-# Returns default router path
-#
+use Carp;
 
-sub get_router_path { '/extdirectrouter' }
+use RPC::ExtDirect::Util::Accessor;
+use RPC::ExtDirect::Util qw/ parse_global_flags /;
 
-### PUBLIC CLASS METHOD ###
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Returns polling (events) path
+# Create a new Config instance
 #
 
-sub get_poll_path { '/extdirectevents' }
-
-### PUBLIC CLASS METHOD ###
-#
-# Returns REMOTING_API variable name
-#
-
-sub get_remoting_var { 'Ext.app.REMOTING_API' }
-
-### PUBLIC CLASS METHOD ###
-#
-# Returns POLLING_API variable name (RPC::ExtDirect extension)
-
-sub get_polling_var { 'Ext.app.POLLING_API' }
+sub new {
+    my $class = shift;
+    
+    my %params;
+    
+    if ( @_ == 1 and 'HASH' eq ref $_[0] ) {
+        %params = %{ $_[0] };
+    }
+    elsif ( @_ % 2 == 0 ) {
+        %params = @_;
+    }
+    elsif ( @_ != 0 ) {
+        croak "Odd number of parameters in RPC::ExtDirect::Config->new()";
+    }
+    
+    my $self = bless { %params }, $class;
+    
+    $self->_init();
+    
+    return $self;
+}
 
 ############## PRIVATE METHODS BELOW ##############
+
+#
+# This humongous hashref holds definitions for all fields,
+# accessors, default values and global variables involved
+# with config objects.
+# It's just easier to keep all this stuff in one place
+# and pluck the pieces needed for various purposes.
+#
+my $DEFINITIONS = [{
+    accessor => 'debug',
+    default  => !1,
+}, {
+    package  => 'RPC::ExtDirect::API',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => 'debug_api',
+    fallback => 'debug',
+    default  => undef,
+}, {
+    package  => 'RPC::ExtDirect::EventProvider',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => 'debug_eventprovider',
+    fallback => 'debug',
+    default  => undef,
+}, {
+    package  => 'RPC::ExtDirect::Serialize',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => 'debug_serialize',
+    fallback => 'debug',
+    default  => undef,
+}, {
+    package  => 'RPC::ExtDirect::Deserialize',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => 'debug_deserialize',
+    fallback => 'debug',
+    default  => undef,
+}, {
+    accessor => 'exception_class',
+    default  => 'RPC::ExtDirect::Exception',
+}, {
+    package  => 'RPC::ExtDirect::Serialize',
+    var      => 'EXCEPTION_CLASS',
+    type     => 'scalar',
+    setter   => 'exception_class_serialize',
+    fallback => 'exception_class',
+    default  => undef,
+}, {
+    package  => 'RPC::ExtDirect::Deserialize',
+    var      => 'EXCEPTION_CLASS',
+    type     => 'scalar',
+    setter   => 'exception_class_deserialize',
+    fallback => 'exception_class',
+    default  => undef,
+}, {
+    accessor => 'event_class',
+    default  => 'RPC::ExtDirect::Event',
+}, {
+    package  => 'RPC::ExtDirect::EventProvider',
+    var      => 'EVENT_CLASS',
+    type     => 'scalar',
+    setter   => 'event_class_eventprovider',
+    fallback => 'event_class',
+    default  => undef,
+}, {
+    accessor => 'request_class',
+    default  => 'RPC::ExtDirect::Request',
+}, {
+    package  => 'RPC::ExtDirect::Deserialize',
+    var      => 'REQUEST_CLASS',
+    type     => 'scalar',
+    setter   => 'request_class_deserialize',
+    fallback => 'request_class',
+    default  => 'RPC::ExtDirect::Request',
+}, {
+    # This is a special case - can be overridden but
+    # doesn't fall back to request_class
+    accessor => 'request_class_events',
+    default  => 'RPC::ExtDirect::Request::PollHandler',
+}, {
+    accessor => 'serializer_class',
+    default  => 'RPC::ExtDirect::Serializer',
+}, {
+    setter   => 'serializer_class_api',
+    fallback => 'serializer_class',
+}, {
+    package  => 'RPC::ExtDirect::EventProvider',
+    var      => 'SERIALIZER_CLASS',
+    type     => 'scalar',
+    setter   => 'serializer_class_eventprovider',
+    fallback => 'serializer_class',
+    default  => undef,
+}, {
+    accessor => 'json_options',
+    default  => undef,
+}, {
+    package  => 'RPC::ExtDirect::Deserialize',
+    var      => 'JSON_OPTIONS',
+    type     => 'hash',
+    setter   => 'json_options_deserialize',
+    fallback => 'json_options',
+    default  => undef,
+}, {
+    accessor => 'verbose_exceptions',
+    default  => !1,  # In accordance with Ext.Direct spec
+}, {
+    accessor => 'router_path',
+    default  => '/extdirectrouter',
+}, {
+    accessor => 'poll_path',
+    default  => '/extdirectevents',
+}, {
+    accessor => 'remoting_var',
+    default  => 'Ext.app.REMOTING_API',
+}, {
+    accessor => 'polling_var',
+    default  => 'Ext.app.POLLING_API',
+}, {
+    accessor => 'namespace',
+    default  => undef,
+}, {
+    accessor => 'create_namespace',
+    default  => !1,
+}, {
+    accessor => 'auto_connect',
+    default  => !1,
+}, {
+    accessor => 'no_polling',
+    default  => !1,
+}];
+
+my @simple_accessors = map  { $_->{accessor} }
+                       grep { $_->{accessor} }
+                            @$DEFINITIONS;
+
+my @complex_accessors = grep { $_->{fallback} } @$DEFINITIONS;
+
+# Package globals are handled separately, this is only for
+# accessors with default values
+my %field_defaults = map  { $_->{accessor} => $_ }
+                     grep { defined $_->{default} and !exists $_->{var} }
+                          @$DEFINITIONS;
+
+my @package_globals = grep { $_->{var} } @$DEFINITIONS;
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Parse global package variables and apply default values
+#
+
+sub _init {
+    my ($self) = @_;
+    
+    parse_global_flags(\@package_globals, $self);
+    
+    # Apply the defaults
+    while ( my ($field, $def) = each %field_defaults ) {
+        my $default = $def->{default};
+        
+        $self->$field($default) unless defined $self->$field();
+    }
+}
+
+### 
+
+### PRIVATE PACKAGE SUBROUTINE ###
+#
+# Exports a deep copy of the definitions for easier testing
+#
+
+sub _get_definitions {
+    return [ map { +{ %$_ } } @$DEFINITIONS ];
+}
+
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    simple => \@simple_accessors
+);
+
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    defaultable => \@complex_accessors
+);
 
 1;
 

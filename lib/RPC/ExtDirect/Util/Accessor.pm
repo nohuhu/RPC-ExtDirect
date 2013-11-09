@@ -27,7 +27,7 @@ sub create_accessors {
     my $defaultable = $params{defaultable} || $params{complex};
     
     for my $prop ( @$defaultable ) {
-        my $specific = $prop->{specific};
+        my $specific = $prop->{setter};
         my $fallback = $prop->{fallback};
         my $method   = $caller_class . '::' . $specific;
         

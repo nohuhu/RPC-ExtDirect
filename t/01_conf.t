@@ -1,26 +1,48 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 1;
 
-BEGIN { use_ok 'RPC::ExtDirect::Config'; }
+BEGIN { use_ok 'RPC::ExtDirect::Config' }
 
-my @methods = qw(router_path poll_path remoting_var polling_var);
+my $cfg_class = 'RPC::ExtDirect::Config';
+my $defs      = RPC::ExtDirect::Config::_get_definitions;
 
-my %expected_get_for = (
-    router_path  => '/extdirectrouter',
-    poll_path    => '/extdirectevents',
-    remoting_var => 'Ext.app.REMOTING_API',
-    polling_var  => 'Ext.app.POLLING_API',
-);
-
-for my $method ( @methods ) {
-    my $get_sub  = 'get_'.$method;
-
-    my $result   = eval { RPC::ExtDirect::Config->$get_sub() };
-    my $expected = $expected_get_for{ $method };
-
-    is $@,      '',        "$method get eval $@";
-    is $result, $expected, "$method get result";
-};
-
+for my $def ( @$defs ) {
+    my $accessor = $def->{accessor};
+    my $package  = $def->{package};
+    my $var      = $def->{var};
+    my $type     = $def->{type};
+    my $specific = $def->{setter};
+    my $fallback = $def->{fallback};
+    my $default  = $def->{default};
+    
+    # Simple accessor, test existence and default value
+    if ($accessor) {
+        my $config = $cfg_class->new();
+        my $value = eval { $config->$accessor() };
+        
+        is $@, '', "$accessor: simple accessor exists";
+        
+        if (defined $default) {
+            is $value, $default, "$accessor: simple accessor default value matches";
+        }
+    }
+    
+    # Defaultable accessor, check existence of specific getter
+    if ($specific) {
+        my $config = $cfg_class->new();
+        
+        eval { $config->$specific() };
+        
+        is $@, '', "$specific: defaultable specific accessor exists";
+    }
+    
+    if ($fallback) {
+        my $config = $cfg_class->new();
+        
+        eval { $config->$fallback() };
+        
+        is $@, '', "$fallback: defaultable fallback accessor exists";
+    }
+}

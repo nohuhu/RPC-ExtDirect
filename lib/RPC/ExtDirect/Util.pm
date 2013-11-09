@@ -4,6 +4,8 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
 
+use Carp;
+
 use base 'Exporter';
 
 our @EXPORT_OK = qw/
@@ -59,7 +61,7 @@ sub parse_global_flags {
         my $package = $flag->{package};
         my $var     = $flag->{var};
         my $type    = $flag->{type};
-        my $field   = $flag->{field};
+        my $field   = $flag->{setter};
         my $default = $flag->{default};
         
         my $full_var = $package . '::' . $var;
@@ -99,6 +101,9 @@ instance instead:
     
 END
         }
+
+        croak "Can't resolve the field name for var $full_var"
+            unless $field;
         
         $obj->$field($value) unless defined $obj->$field();
     }

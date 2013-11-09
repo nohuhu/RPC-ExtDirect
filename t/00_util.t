@@ -54,7 +54,7 @@ our @ISA = qw/ Foo /;
 
 RPC::ExtDirect::Util::Accessor::create_accessors(
     defaultable => [{
-        specific => 'bar_baz',
+        setter   => 'bar_baz',
         fallback => 'bar',
     }]
 );
@@ -158,7 +158,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'SCALAR_VALUE',
         type    => 'scalar',
-        field   => 'scalar_value',
+        setter  => 'scalar_value',
         default => 'foo',
     },
 }, {
@@ -169,7 +169,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'EMPTY_SCALAR',
         type    => 'scalar',
-        field   => 'empty_scalar',
+        setter  => 'empty_scalar',
         default => 'bar',
     },
 }, {
@@ -180,7 +180,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'ARRAY_VALUE',
         type    => 'array',
-        field   => 'array_value',
+        setter  => 'array_value',
         default => [qw/ baz qux /],
     },
 }, {
@@ -191,7 +191,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'EMPTY_ARRAY',
         type    => 'array',
-        field   => 'empty_array',
+        setter  => 'empty_array',
         default => [qw/ moo fuy /],
     },
 }, {
@@ -202,7 +202,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'HASH_VALUE',
         type    => 'hash',
-        field   => 'hash_value',
+        setter  => 'hash_value',
         default => { baz => 'qux' },
     },
 }, {
@@ -213,7 +213,7 @@ my $tests = [{
         package => 'Bar',
         var     => 'EMPTY_HASH',
         type    => 'hash',
-        field   => 'empty_hash',
+        setter  => 'empty_hash',
         default => { mymse => 'fumble' },
     },
 }];
@@ -228,7 +228,7 @@ for my $test ( @$tests ) {
     my $result = $test->{result};
     my $flag   = $test->{flag};
     my $type   = $flag->{type};
-    my $field  = $flag->{field};
+    my $field  = $flag->{setter};
     
     my $obj = new Bar;
     
@@ -263,7 +263,7 @@ my $flag = {
     package => 'Bar',
     var     => 'SCALAR_VALUE',
     type    => 'scalar',
-    field   => 'scalar_value',
+    setter  => 'scalar_value',
     default => 'foo',
 };
 
