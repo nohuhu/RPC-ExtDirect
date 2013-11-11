@@ -1,3 +1,6 @@
+2.14  Mon Nov 11 10:43:54 2013
+    - Fixed a memory leak in hook handling
+
 2.13  Fri Mar 29 18:38:11 2013
     - Additional round of refactoring: moved hook initialization
       to RPC::ExtDirect::add_method, this allows adding methods
