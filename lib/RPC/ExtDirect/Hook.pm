@@ -64,12 +64,9 @@ sub run {
         = map { $self->$_ } qw/before instead after/;
 
     # A drop of sugar
-    $hook_arg{orig} = sub {
-        my $code    = $hook_arg{code};
-        my $package = $hook_arg{package};
-
-        return $code->($package, @$arg);
-    };
+    my $code        = $hook_arg{code};
+    my $package     = $hook_arg{package};
+    $hook_arg{orig} = sub { $code->($package, @$arg) };
 
     my $hook     = $self->hook;
     my $hook_pkg = _package_from_coderef($hook);
