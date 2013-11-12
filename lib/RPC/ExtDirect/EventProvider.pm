@@ -17,32 +17,40 @@ use RPC::ExtDirect::Request::PollHandler;
 #
 # Turn this on for debugging.
 #
+# DEPRECATED. Use `debug_eventprovider` Config option instead.
+# See RPC::ExtDirect::Config.
+#
 
-our $DEBUG = 0;
+our $DEBUG;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Serializer class name so it could be configured
 #
-# TODO This is hacky hack, find another way to inject
-# new functionality (all class names)
+# DEPRECATED. Use `serializer_class_eventprovider` or `serializer_class`
+# Config options instead.
 #
 
-our $SERIALIZER_CLASS = 'RPC::ExtDirect::Serialize';
+our $SERIALIZER_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Event class name so it could be configured
 #
+# DEPRECATED. Use `event_class_eventprovider` or `event_class`
+# Config options instead.
+#
 
-our $EVENT_CLASS = 'RPC::ExtDirect::Event';
+our $EVENT_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Request class name so it could be configured
 #
+# DEPRECATED. Use `request_class_eventprovider` Config option instead.
+#
 
-our $REQUEST_CLASS = 'RPC::ExtDirect::Request::PollHandler';
+our $REQUEST_CLASS;
 
 ### PUBLIC CLASS METHOD ###
 #

@@ -6,7 +6,7 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
-use RPC::ExtDirect::Util::Accessor qw/ name data /;
+use RPC::ExtDirect::Util::Accessor;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
@@ -72,6 +72,15 @@ sub result {
         data => $self->data,
     };
 }
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Accessor methods
+#
+
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    simple => [qw/ name data /],
+);
 
 1;
 

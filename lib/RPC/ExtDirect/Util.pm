@@ -69,7 +69,8 @@ sub parse_global_flags {
         my ($value, $have_value);
         
         {
-            no strict 'refs';
+            no strict   'refs';
+            no warnings 'once';
             
             if ( $type eq 'scalar' ) {
                 $have_value = defined ${ $full_var };

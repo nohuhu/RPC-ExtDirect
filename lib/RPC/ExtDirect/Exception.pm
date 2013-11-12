@@ -6,15 +6,9 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
-use RPC::ExtDirect::Util qw/
-    clean_error_message
-    get_caller_info
-/;
+use RPC::ExtDirect::Util::Accessor;
+use RPC::ExtDirect::Util qw/ clean_error_message get_caller_info /;
     
-use RPC::ExtDirect::Util::Accessor qw/
-    debug action method tid where message
-/;
-
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of Exception.
@@ -62,6 +56,17 @@ sub result {
 
     return $self->_get_exception_hashref();
 }
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Accessor methods
+#
+
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    simple => [qw/
+        debug action method tid where message
+    /],
+);
 
 ############## PRIVATE METHODS BELOW ##############
 

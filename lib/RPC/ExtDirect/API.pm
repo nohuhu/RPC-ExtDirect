@@ -6,8 +6,10 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
+use RPC::ExtDirect::API::Action;
+use RPC::ExtDirect::API::Method;
 use RPC::ExtDirect::Config;
-use RPC::ExtDirect::Serialize;
+#use RPC::ExtDirect::Serializer;
 use RPC::ExtDirect;
 
 ### PACKAGE GLOBAL VARIABLE ###
@@ -15,12 +17,7 @@ use RPC::ExtDirect;
 # Turn this on for debugging
 #
 
-our $DEBUG = 0;
-
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Holds configuration parameters for API
-#
+our $DEBUG;
 
 my %OPTION_FOR = ();
 
@@ -71,6 +68,21 @@ sub import {
     };
 }
 
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
+#
+# Init a new API object
+#
+
+sub new {
+    my $class = shift;
+    
+    my %params = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
+    
+    $params{config} ||= RPC::ExtDirect::Config->new();
+    
+    return bless { %params }, $class;
+}
+
 ### PUBLIC CLASS METHOD ###
 #
 # Returns JavaScript chunk for REMOTING_API
@@ -78,6 +90,10 @@ sub import {
 
 sub get_remoting_api {
     my ($class) = @_;
+    
+    # Backwards compatibility: if called as a class method,
+    # operate on the "global" API object instead
+    my $self = ref($class) ? $class : RPC::ExtDirect->get_api();
 
     # Set the debugging flag
     local $RPC::ExtDirect::Serialize::DEBUG = $DEBUG;

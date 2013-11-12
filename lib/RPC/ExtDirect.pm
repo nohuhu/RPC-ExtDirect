@@ -11,6 +11,9 @@ no  warnings 'uninitialized';       ## no critic
 use Carp;
 use Attribute::Handlers;
 
+# Can't `use` here to avoid circular dependency
+require RPC::ExtDirect::API;
+
 ### PACKAGE VARIABLE ###
 #
 # Version of this module.
@@ -55,6 +58,19 @@ my @POLL_HANDLERS = ();
 #
 
 my %HOOK_FOR = ();
+
+#
+# This is a bit hacky, but we got to keep a reference to the API object
+# so that *compilation time* attributes would work as expected,
+# as well as configuration options for the RPC::ExtDirect::API class.
+#
+{
+    warn "DEBUG: API redefined";
+    my $api = RPC::ExtDirect::API->new();
+    
+    sub get_api { $api }
+}
+
 
 ### PUBLIC ATTRIBUTE DEFINITION ###
 #
