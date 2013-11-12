@@ -18,19 +18,16 @@ sub new {
     my ($class, $arguments) = @_;
 
     # Unpack the arguments
-    my $debug   = $arguments->{debug};
-    my $action  = $arguments->{action};
-    my $method  = $arguments->{method};
-    my $tid     = $arguments->{tid};
     my $where   = $arguments->{where};
     my $message = $arguments->{message};
 
     # Need the object to call private methods
     my $self = bless {
-        debug   => $debug,
-        action  => $action,
-        method  => $method,
-        tid     => $tid,
+        debug   => $arguments->{debug},
+        action  => $arguments->{action},
+        method  => $arguments->{method},
+        tid     => $arguments->{tid},
+        verbose => $arguments->{verbose},
     }, $class;
 
     # Store the information internally
@@ -64,7 +61,7 @@ sub result {
 
 RPC::ExtDirect::Util::Accessor::create_accessors(
     simple => [qw/
-        debug action method tid where message
+        debug action method tid where message verbose
     /],
 );
 
@@ -95,10 +92,10 @@ sub _get_exception_hashref {
     my ($self) = @_;
 
     # If debug flag is not set, return generic message. This is for
-    # compatibility with Ext.Direct specification
+    # compatibility with Ext.Direct specification.
     my ($where, $message);
     
-    if ( $self->debug ) {
+    if ( $self->debug || $self->verbose ) {
         $where   = $self->where;
         $message = $self->message;
     }

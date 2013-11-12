@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use Test::More tests => 25;
+use Test::More tests => 33;
 
 BEGIN { use_ok 'RPC::ExtDirect::Exception'; }
 
@@ -26,11 +26,20 @@ sub bar {
                                             message => 'bar fail' });
 }
 
+sub baz {
+    return RPC::ExtDirect::Exception->new({ debug   => !1,
+                                            verbose => 1,
+                                            action  => 'Test',
+                                            method  => 'baz',
+                                            tid     => 3,
+                                            message => 'baz fail' });
+}
+
 sub qux {
     return RPC::ExtDirect::Exception->new({ debug   => 1,
                                             action  => 'Test',
                                             method  => 'qux',
-                                            tid     => 3,
+                                            tid     => 4,
                                             message => 'qux fail',
                                             where => 'X->qux' });
 }
@@ -56,11 +65,20 @@ my $tests = [
               message => 'bar fail',
       },
     },
+    { method  => 'baz',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'baz',
+              tid     => 3,
+              where   => 'RPC::ExtDirect::Test->baz',
+              message => 'baz fail',
+      },
+    },
     { method  => 'qux',
       ex => { type    => 'exception',
               action  => 'Test',
               method  => 'qux',
-              tid     => 3,
+              tid     => 4,
               where   => 'X->qux',
               message => 'qux fail',
       },
@@ -89,5 +107,3 @@ for my $test ( @$tests ) {
     is_deeply $result, $expect, "$method() exception deep"
         or diag( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
 };
-
-exit 0;
