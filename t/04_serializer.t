@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 
 use RPC::ExtDirect::Config;
 
@@ -85,7 +85,10 @@ $data     = bless { foo => 'foo', };
 $expected = q|{"action":null,"message":"encountered object 'main=HASH(blessed)', but neither allow_blessed nor convert_blessed settings are enabled","method":null,"tid":null,"type":"exception","where":"RPC::ExtDirect::Serializer"}|;
 
 for my $option ( qw/ debug verbose_exceptions / ) {
-    my $config = $cfg_class->new($option => 1);
+    # verbose_exceptions will turn on verboseness only,
+    # but we also need debug to produce canonical JSON
+    # for comparison, or the test will never pass :)
+    my $config = $cfg_class->new($option => 1, debug => 1);
 
     my $json = $ser_class->new(config => $config)->serialize(0, $data);
 

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 1;
+use Test::More tests => 53;
 
 BEGIN { use_ok 'RPC::ExtDirect::Config' }
 

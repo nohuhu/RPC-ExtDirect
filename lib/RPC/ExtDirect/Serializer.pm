@@ -208,11 +208,11 @@ sub _exception {
     
     my $exception_class    = $config->$getter_class();
     my $debug              = $config->$getter_debug();
-    my $verbose_exceptions = $config->verbose_exceptions();
     
-    $params->{debug} = !!$debug           unless defined $params->{debug};
-    $params->{where} = get_caller_info(2) unless defined $params->{where};
+    $params->{debug}   = !!$debug           unless defined $params->{debug};
+    $params->{where}   = get_caller_info(2) unless defined $params->{where};
     
+    $params->{verbose} = $config->verbose_exceptions();
     
     return $exception_class->new($params);
 }
