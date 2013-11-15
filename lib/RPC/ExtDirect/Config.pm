@@ -46,6 +46,12 @@ sub new {
 # and pluck the pieces needed for various purposes.
 #
 my $DEFINITIONS = [{
+    accessor => 'api_action_class',
+    default  => 'RPC::ExtDirect::API::Action',
+}, {
+    accessor => 'api_method_class',
+    default  => 'RPC::ExtDirect::API::Method',
+}, {
     accessor => 'debug',
     default  => !1,
 }, {

@@ -4,49 +4,67 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
+use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Instantiate a new Client::API::Method
+# Instantiate a new Method
 #
 
 sub new {
     my ($class, $method) = @_;
-
-    return bless $method, $class;
+    
+    $method->{config} ||= RPC::ExtDirect::Config->new();
+    
+    return bless {
+        %$method,
+        is_named   => defined $method->{params},
+        is_ordered => defined $method->{len},
+    }, $class;
 }
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Check if this Method accepts named parameters
+# Return a hashref with API definition for this Method
 #
 
-sub is_named { !!$_[0]->{params} }
+sub get_api_definition {
+    my ($self) = @_;
+    
+    # Poll handlers are not declared in the API
+    return if $self->pollHandler;
+    
+    # Form handlers are defined like this
+    # (\1 means JSON::true and doesn't force us to `use JSON`)
+    return { name => $self->name, len => 0, formHandler => \1 }
+        if $self->formHandler;
+    
+    # Ordinary method with positioned arguments
+    return { name => $self->name, len => $self->len + 0 },
+        if $self->is_ordered;
+    
+    # Ordinary method with named arguments
+    return { name => $self->name, params => $self->params }
+        if $self->params;
+    
+    # No arguments specified means we're not checking them
+    return { name => $self->name };
+}
 
-### PUBLIC INSTANCE METHOD ###
-#
-# Check if this Method accepts ordered parameters
-#
+my $accessors = [qw/
+    config
+    name
+    params
+    len
+    formHandler
+    pollHandler
+    is_ordered
+    is_named
+/];
 
-sub is_ordered { $_[0]->{len} > 0 }
-
-### PUBLIC INSTANCE METHOD ###
-#
-# Check if this Method is a form handler
-#
-
-sub is_formhandler { !!$_[0]->{formHandler} }
-
-### PUBLIC INSTANCE METHOD ###
-#
-# Return the length of the parameter list, defaults to 0
-#
-
-sub len { $_[0]->{len} || 0 }
-
-my $accessors = [qw/ name params formHandler /];
-
-RPC::ExtDirect::Util::Accessor::create_accessors( simple => $accessors );
+RPC::ExtDirect::Util::Accessor::create_accessors(
+    simple => $accessors,
+);
 
 1;

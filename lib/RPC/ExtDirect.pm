@@ -2,8 +2,6 @@ package RPC::ExtDirect;
 
 use 5.006;
 
-# ABSTRACT: Ext.Direct implementation for Perl
-
 use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
@@ -19,7 +17,7 @@ require RPC::ExtDirect::API;
 # Version of this module.
 #
 
-our $VERSION = '2.14';
+our $VERSION = '3.00';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -80,7 +78,7 @@ my %HOOK_FOR = ();
 
 # This here is to choose proper function declaration for Perl we're running
 use if !$^V || $^V lt v5.12.0, 'RPC::ExtDirect::CHECK';
-use if $^V  && $^V ge v5.12.0, 'RPC::ExtDirect::BEGIN';
+use if  $^V && $^V ge v5.12.0, 'RPC::ExtDirect::BEGIN';
 
 sub extdirect {
     my ($package, $symbol, $referent, $attr, $data, $phase, $file, $line)
@@ -97,8 +95,8 @@ sub extdirect {
     # These parameters depend on attribute input
     my $param_no    = undef;
     my $param_names = undef;
-    my $formHandler = 0;
-    my $pollHandler = 0;
+    my $formHandler = !1;
+    my $pollHandler = !1;
     my %hooks       = ();
     $data           = $data || [];
 
@@ -162,7 +160,7 @@ sub extdirect {
 
     @$attribute_ref{ keys %hooks } = values %hooks;
 
-    RPC::ExtDirect->add_method($attribute_ref);
+    __PACKAGE__->add_method($attribute_ref);
 }
 
 ### PUBLIC PACKAGE SUBROUTINE ###
@@ -190,7 +188,7 @@ sub import {
     if ( exists $param{action} or exists $param{class} ) {
         my $alias = defined $param{action} ? $param{action} : $param{class};
 
-        RPC::ExtDirect->add_action($package, $alias);
+        __PACKAGE__->add_action($package, $alias);
     };
 
     # Store package level hooks
@@ -252,8 +250,13 @@ sub get_hook {
 
 sub add_action {
     my ($class, $package, $action_for_pkg) = @_;
-
-    $ACTION_NAME_FOR{ $package } = $action_for_pkg;
+    
+    my $api = $class->get_api();
+    
+    $api->add_action(
+        package => $package,
+        action  => $action_for_pkg,
+    );
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -262,9 +265,13 @@ sub add_action {
 #
 
 sub get_action_list {
-    my %action = map { / \A (.*) :: /xms; $1 => 1 }
-                     keys %PARAMETERS_FOR;
-    return sort keys %action;               ## no critic
+    my ($class) = @_;
+    
+    my $api = $class->get_api();
+    
+    my @actions = sort $api->actions();
+    
+    return @actions;
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -284,52 +291,10 @@ sub get_poll_handlers {
 
 sub add_method {
     my ($class, $attribute_ref) = @_;
-
-    # Unpack for clarity
-    my $package = $attribute_ref->{package};
-    my $method  = $attribute_ref->{method };
-
-    # If Action alias is not defined, use last chunk of the package name
-    my $action
-        = exists $ACTION_NAME_FOR{ $package } ? $ACTION_NAME_FOR{ $package }
-        :                                       _strip_name( $package )
-        ;
-
-    # Methods are addressed by qualified names
-    my $qualified_name = $action .'::'. $method;
-
-    # Make a copy of the hashref
-    my $attribute_def = {};
-    @$attribute_def{ keys %$attribute_ref } = values %$attribute_ref;
-
-    #
-    # Our internal variable specifying the number of ordered arguments
-    # is called param_no, but in JavaScript API definition it's called
-    # len; it is very easy to make a mistake when adding methods
-    # directly (not via ExtDirect attribute) so we better accommodate
-    # for that.
-    #
-    $attribute_def->{param_no} = delete $attribute_def->{len}
-        if exists $attribute_def->{len} and not
-           exists $attribute_def->{param_no};
-
-    # The same as above goes for param_names (params in JS)
-    $attribute_def->{param_names} = delete $attribute_def->{params}
-        if exists $attribute_def->{params} and not
-           exists $attribute_def->{param_names};
     
-    # Go over the hooks and add them
-    for my $hook_type ( qw/ before instead after / ) {
-        next unless my $hook = $attribute_def->{$hook_type};
-
-        $attribute_def->{$hook_type} = $class->add_hook(%$hook);
-    }
-
-    $PARAMETERS_FOR{ $qualified_name } = $attribute_def;
-
-    # We use the array to keep track of the order
-    push @POLL_HANDLERS, $qualified_name
-        if $attribute_def->{pollHandler};
+    my $api = $class->get_api;
+    
+    $api->add_method( %$attribute_ref );
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -338,19 +303,14 @@ sub add_method {
 #
 
 sub get_method_list {
-    my ($class, $action) = @_;
-
-    # Action and method names are keys of %PARAMETERS_FOR
-    my @keys = sort keys %PARAMETERS_FOR;
-    my @list;
-    if ( $action ) {
-        @list = grep { / \A $action :: /xms } @keys;
-        s/ \A $action :: //msx for @list;
-    }
-    else {
-        @list = @keys;
-    };
-
+    my ($class, $action_name) = @_;
+    
+    my $action = $class->get_api->get_action_by_name($action_name);
+    
+    return unless $action;
+    
+    my @list = $action->methods;
+    
     return wantarray ? @list : shift @list;
 }
 
@@ -364,35 +324,25 @@ sub get_method_list {
 #
 
 sub get_method_parameters {
-    my ($class, $action, $method) = @_;
-
+    my ($class, $action_name, $method_name) = @_;
+    
     croak "Wrong context" unless wantarray;
+    
+    croak "ExtDirect action name is required" unless defined $action_name;
+    croak "ExtDirect method name is required" unless defined $method_name;
+    
+    my $action = $class->get_api->get_action_by_name($action_name);
+    
+    croak "Can't find ExtDirect action $action"
+        unless $action;
+    
+    my $method = $action->method($method_name);
+    my $attrs  = $method && $method->get_api_definition;
 
-    croak "ExtDirect action name is required" unless defined $action;
-    croak "ExtDirect method name is required" unless defined $method;
+    croak "Can't find ExtDirect properties for method $method_name"
+        unless $attrs;
 
-    # Retrieve properties
-    my $attribute_ref = $PARAMETERS_FOR{ $action .'::'. $method };
-
-    croak "Can't find ExtDirect properties for method $method"
-        unless $attribute_ref;
-
-    return %$attribute_ref;
-}
-
-############## PRIVATE METHODS BELOW ##############
-
-### PRIVATE PACKAGE SUBROUTINE ###
-#
-# Strip all but the last :: chunk from package name
-#
-
-sub _strip_name {
-    my ($name) = @_;
-
-    $name =~ s/ \A .* :: //xms;
-
-    return $name;
+    return %$attrs;
 }
 
 1;
