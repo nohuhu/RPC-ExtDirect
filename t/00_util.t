@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 58;
+use Test::More tests => 66;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
@@ -12,8 +12,6 @@ BEGIN {
 # Simple accessors
 
 package Foo;
-
-use RPC::ExtDirect::Util::Accessor qw/ bar /;
 
 sub new {
     my ($class, %params) = @_;
@@ -25,7 +23,7 @@ sub bleh {
     return RPC::ExtDirect::Util::get_caller_info($_[1]);
 }
 
-RPC::ExtDirect::Util::Accessor::create_accessors( accessors => ['bar'] );
+RPC::ExtDirect::Util::Accessor::mk_accessors( simple => ['bar', 'baz'] );
 
 package main;
 
@@ -34,7 +32,17 @@ my $foo = Foo->new( bar => 'baz' );
 my $res = eval { $foo->bar() };
 
 is $@,   '',    "Simple getter didn't die";
-is $res, 'baz', "Simple etter value match";
+is $res, 'baz', "Simple getter value match";
+
+$res = eval { $foo->has_bar() };
+
+is $@,   '', "Simple accessor 1 predicate didn't die";
+is $res, 1,  "Simple accessor 1 predicate match";
+
+$res = eval { $foo->has_baz() };
+
+is $@,   '', "Simple accessor 2 predicate didn't die";
+is $res, !1, "Simple accessor 2 predicate match";
 
 $res = eval { $foo->bar('qux'); };
 
@@ -46,58 +54,71 @@ $res = eval { $foo->bar() };
 
 is $res, 'qux', "Simple getter after setter value match";
 
-# Defaultable accessors
+# Complex accessors
 
-package Defaultable;
+package Complex;
 
 our @ISA = qw/ Foo /;
 
-RPC::ExtDirect::Util::Accessor::create_accessors(
-    defaultable => [{
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    complex => [{
         setter   => 'bar_baz',
         fallback => 'bar',
+    }, {
+        setter   => 'baz_baz',
+        fallback => 'bar_baz',
     }]
 );
 
 package main;
 
-my $baz = Defaultable->new( bar_baz => 'bleh' );
+my $baz = Complex->new( bar_baz => 'bleh' );
 
 $res = eval { $baz->bar_baz() };
 
-is $@,   '',     "Defaultable getter w/ specific didn't die";
-is $res, 'bleh', "Defaultable getter w/ specific value match";
+is $@,   '',     "Complex getter w/ specific didn't die";
+is $res, 'bleh', "Complex getter w/ specific value match";
+
+$res = eval { $baz->has_bar_baz() };
+
+is $@,   '', "Complex accessor 1 predicate didn't die";
+is $res, 1,  "Complex accessor 1 predicate match";
+
+$res = eval { $baz->has_baz_baz() };
+
+is $@,   '', "Complex accessor 2 predicate didn't die";
+is $res, !1, "Complex accessor 2 predicate match";
 
 $res = eval { $baz->bar_baz('mumble') };
 
-is $@,              '',       "Defaultable setter w/ specific didn't die";
-is $res,            $baz,     "Defaultable setter w/ specific return the object";
-is $baz->{bar_baz}, 'mumble', "Defaultable setter w/ specific specific object value";
-is $baz->{bar},     undef,    "Defaultable setter w/ specific default object value";
+is $@,              '',       "Complex setter w/ specific didn't die";
+is $res,            $baz,     "Complex setter w/ specific return the object";
+is $baz->{bar_baz}, 'mumble', "Complex setter w/ specific specific object value";
+is $baz->{bar},     undef,    "Complex setter w/ specific default object value";
 
-$baz = Defaultable->new( bar => 'bloom' );
+$baz = Complex->new( bar => 'bloom' );
 
 $res = eval { $baz->bar_baz() };
 
-is $@,   '',      "Defaultable getter w/ default didn't die";
-is $res, 'bloom', "Defaultable getter w/ default value match";
+is $@,   '',      "Complex getter w/ default didn't die";
+is $res, 'bloom', "Complex getter w/ default value match";
 
 $res = eval { $baz->bar_baz('croffle') };
 
-is $@,              '',        "Defaultable setter didn't die";
-is $res,            $baz,      "Defaultable setter w/ default return the object";
-is $baz->{bar_baz}, 'croffle', "Defaultable setter w/ default specific object value";
-is $baz->{bar},     'bloom',   "Defaultable setter w/ default default object value";
+is $@,              '',        "Complex setter didn't die";
+is $res,            $baz,      "Complex setter w/ default return the object";
+is $baz->{bar_baz}, 'croffle', "Complex setter w/ default specific object value";
+is $baz->{bar},     'bloom',   "Complex setter w/ default default object value";
 
 $res = eval { $baz->bar_baz() };
 
-is $@,   '',        "Defaultable getter after setter didn't die";
-is $res, 'croffle', "Defaultable getter after setter value match";
+is $@,   '',        "Complex getter after setter didn't die";
+is $res, 'croffle', "Complex getter after setter value match";
 
 $res = eval { $baz->bar() };
 
-is $@,   '',      "Defaultable getter after setter default didn't die";
-is $res, 'bloom', "Defaultable getter after setter default value match";
+is $@,   '',      "Complex getter after setter default didn't die";
+is $res, 'bloom', "Complex getter after setter default value match";
 
 # Caller info retrieval
 
@@ -125,7 +146,7 @@ is $msg, "moo fred", "croak() message clean";
 
 package Bar;
 
-use RPC::ExtDirect::Util::Accessor;
+no warnings;
 
 my @accessors = qw/ scalar_value empty_scalar
                     array_value empty_array
@@ -146,7 +167,7 @@ sub new {
     return bless {@_}, $class;
 }
 
-RPC::ExtDirect::Util::Accessor::create_accessors( accessors => \@accessors );
+RPC::ExtDirect::Util::Accessor::mk_accessors( simple => \@accessors );
 
 package main;
 

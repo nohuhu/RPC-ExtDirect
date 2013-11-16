@@ -6,89 +6,110 @@ no  warnings 'uninitialized';       ## no critic
 
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
-# Generate simple accessors for the passed list of properties,
-# with each accessor acting as both getter and setter.
+# Generate either simple accessors, or complex ones, or both
 #
 
-sub create_accessors {
+sub mk_accessors {
     my (%params) = @_;
     
     my $caller_class = caller();
     
-    no strict 'refs';
+    my $simplexes = $params{simple};
     
-    my $simple = $params{accessors} || $params{simple};
-    
-    for my $prop ( @$simple ) {
-        *{ $caller_class . '::' . $prop }
-            = _simple_accessor($caller_class, $prop);
+    for my $prop ( @$simplexes ) {
+        my $accessor  = _simple_accessor($prop);
+        my $predicate = _predicate($prop);
+        
+        eval "package $caller_class; $accessor; $predicate; 1";
     }
     
-    my $defaultable = $params{defaultable} || $params{complex};
+    my $complexes = $params{complex};
     
-    for my $prop ( @$defaultable ) {
+    for my $prop ( @$complexes ) {
         my $specific = $prop->{setter};
         my $fallback = $prop->{fallback};
-        my $method   = $caller_class . '::' . $specific;
         
-        *{ $method }
-            = _defaultable_accessor($caller_class, $specific, $fallback);
+        my $accessor  = _complex_accessor($specific, $fallback);
+        my $predicate = _predicate($specific);
+        
+        eval "package $caller_class; $accessor; $predicate; 1";
     }
 }
 
 ############## PRIVATE METHODS BELOW ##############
 
-### PRIVATE PACKAGE SUBROUTINE #
+### PRIVATE PACKAGE SUBROUTINE ###
 #
-# Return a simple accessor method that acts as both getter when there
-# are no arguments passed to it, and as a setter when there is at least
-# one argument.
+# Return the text for a predicate method
+#
+
+sub _predicate {
+    my ($prop) = @_;
+    
+    return "
+        sub has_$prop {
+            my \$self = shift;
+            
+            return exists \$self->{$prop};
+        }
+    ";
+}
+
+### PRIVATE PACKAGE SUBROUTINE ###
+#
+# Return the text for a simple accessor method that acts as both getter
+# when there are no arguments passed to it, and as a setter when there is
+# at least one argument.
 # When used as a setter, only the first argument will be assigned
 # to the object property, the rest will be ignored.
 #
 
 sub _simple_accessor {
-    my ($caller_class, $prop) = @_;
+    my ($prop) = @_;
     
-    return
-        sub { 
-            my $self = shift;
+    return "
+        sub $prop { 
+            my \$self = shift;
             
-            if ( @_ ) {
-                $self->{$prop} = shift;
-                return $self;
+            if ( \@_ ) {
+                \$self->{$prop} = shift;
+                return \$self;
             }
             else {
-                return $self->{$prop};
+                return \$self->{$prop};
             }
-        };
+        }
+    ";
 }
 
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
 # Return an accessor that will query the 'specific' object property
-# first and return it if it's defined, falling back to the 'default'
+# first and return it if it's defined, falling back to the 'fallback'
 # property getter otherwise when called with no arguments.
 # Setter will set the 'specific' property for the object when called
 # with one argument.
 #
 
-sub _defaultable_accessor {
-    my ($caller_class, $specific, $default) = @_;
+sub _complex_accessor {
+    my ($specific, $fallback) = @_;
     
-    return
-        sub {
-            my $self = shift;
+    return "
+        sub $specific {
+            my \$self = shift;
             
-            if ( @_ ) {
-                $self->{$specific} = shift;
-                return $self;
+            if ( \@_ ) {
+                \$self->{$specific} = shift;
+                return \$self;
             }
             else {
-                my $value = $self->{$specific};
-                return defined $value ? $value : $self->$default();
+                return exists \$self->{$specific}
+                            ? \$self->{$specific}
+                            : \$self->$fallback()
+                            ;
             }
-        };
+        }
+    ";
 }
 
 1;
