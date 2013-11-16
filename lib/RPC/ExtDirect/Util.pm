@@ -120,4 +120,93 @@ END
     }
 }
 
+### PUBLIC PACKAGE SUBROUTINE ###
+#
+# Parse ExtDirect attribute, perform sanity checks and return
+# the attribute hashref
+#
+
+sub parse_attribute {
+    my ($package, $symbol, $referent, $attr, $data, $phase, $file, $line)
+        = @_;
+
+    croak "Method attribute is not ExtDirect at $file line $line"
+        unless $attr eq 'ExtDirect';
+
+    my $symbol_name = eval { no strict 'refs'; *{$symbol}{NAME} };
+    croak "Can't resolve symbol '$symbol' for package '$package' ".
+          "at $file line $line: $@"
+        if $@;
+
+    # These parameters depend on attribute input
+    my $param_no    = undef;
+    my $param_names = undef;
+    my $formHandler = !1;
+    my $pollHandler = !1;
+    my %hooks       = ();
+    $data           = $data || [];
+
+    while ( @$data ) {
+        my $param_def = shift @$data;
+
+        # Digits means number of unnamed arguments
+        if ( $param_def =~ / \A (\d+) \z /xms ) {
+            $param_no = $1;
+        }
+
+        # formHandler means exactly that, a handler for form requests
+        elsif ( $param_def =~ / \A formHandler \z /xms ) {
+            $formHandler = 1;
+        }
+
+        # pollHandlers are a bit tricky but are defined here anyway
+        elsif ( $param_def =~ / \A pollHandler \z /xms ) {
+            $pollHandler = 1;
+        }
+
+        elsif ( $param_def =~ / \A params \z /ixms ) {
+            my $arg_names = shift @$data;
+
+            croak "ExtDirect attribute 'params' must be followed by ".
+                  "arrayref containing at least one parameter name ".
+                  "at $file line $line"
+                if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
+
+            # Copy the names
+            $param_names = [ @{ $arg_names } ];
+        }
+
+        # Hooks
+        elsif ( $param_def =~ / \A (before|instead|after) \z /ixms ) {
+            my $type = $1;
+            my $code = shift @$data;
+
+            croak "ExtDirect attribute '$type' must be followed by coderef ".
+                  "or 'NONE' at $file line $line"
+                if $code ne 'NONE' && 'CODE' ne ref $code;
+
+            $hooks{ $type } = {
+                package => $package,
+                method  => $symbol_name,
+                type    => $type,
+                code    => $code,
+            };
+        };
+    };
+
+    my $attribute_ref = {
+        package     => $package,
+        method      => $symbol_name,
+        referent    => $referent,
+        param_no    => $param_no,
+        param_names => $param_names,
+        formHandler => $formHandler,
+        pollHandler => $pollHandler,
+    };
+
+    @$attribute_ref{ keys %hooks } = values %hooks;
+    
+    return $attribute_ref;
+}
+
 1;

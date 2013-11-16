@@ -20,28 +20,31 @@ use RPC::ExtDirect::API     namespace    => 'myApp.Server',
 
 local $RPC::ExtDirect::API::DEBUG = 1;
 
+# Silence the warnings
+$SIG{__WARN__} = sub {};
+
 my $expected = q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
-                { "len":4, "name":"bar_foo" }
+                { "len":4, "name":"bar_foo" },
+                { "formHandler":true, "len":0, "name":"bar_baz" }
               ],
         "Foo":[
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "name":"foo_blessed" },
                 { "len":1, "name":"foo_foo" },
+                { "len":2, "name":"foo_bar" },
+                { "name":"foo_blessed" },
+                { "name":"foo_baz", "params":["foo","bar","baz"] },
                 { "len":0, "name":"foo_zero" }
               ],
         "Qux":[
+                { "len":1, "name":"foo_foo" },
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
                 { "len":4, "name":"bar_foo" },
+                { "formHandler":true, "len":0, "name":"bar_baz" },
                 { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":1, "name":"foo_foo" }
+                { "name":"foo_baz", "params":["foo","bar","baz"] }
               ]
     },
     "namespace":"myApp.Server",

@@ -11,6 +11,7 @@ use Attribute::Handlers;
 
 # Can't `use` here to avoid circular dependency
 require RPC::ExtDirect::API;
+use RPC::ExtDirect::Util;
 
 ### PACKAGE VARIABLE ###
 #
@@ -23,23 +24,10 @@ our $VERSION = '3.00';
 #
 # Debugging; defaults to off.
 #
-
-our $DEBUG = 0;
-
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Holds Action names for corresponding Packages
+# DEPRECATED. Use `debug` Config option instead.
 #
 
-my %ACTION_NAME_FOR = ();
-
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Contains attribute definitions for methods published via ExtDirect
-# interface.
-#
-
-my %PARAMETERS_FOR = ();
+our $DEBUG;
 
 ### PACKAGE PRIVATE VARIABLE ###
 #
@@ -69,99 +57,6 @@ my %HOOK_FOR = ();
     sub get_api { $api }
 }
 
-
-### PUBLIC ATTRIBUTE DEFINITION ###
-#
-# Defines ExtDirect attribute subroutine and exports it into UNIVERSAL
-# namespace.
-#
-
-# This here is to choose proper function declaration for Perl we're running
-use if !$^V || $^V lt v5.12.0, 'RPC::ExtDirect::CHECK';
-use if  $^V && $^V ge v5.12.0, 'RPC::ExtDirect::BEGIN';
-
-sub extdirect {
-    my ($package, $symbol, $referent, $attr, $data, $phase, $file, $line)
-        = @_;
-
-    croak "Method attribute is not ExtDirect at $file line $line"
-        unless $attr eq 'ExtDirect';
-
-    my $symbol_name = eval { no strict 'refs'; *{$symbol}{NAME} };
-    croak "Can't resolve symbol '$symbol' for package '$package' ".
-          "at $file line $line: $@"
-        if $@;
-
-    # These parameters depend on attribute input
-    my $param_no    = undef;
-    my $param_names = undef;
-    my $formHandler = !1;
-    my $pollHandler = !1;
-    my %hooks       = ();
-    $data           = $data || [];
-
-    while ( @$data ) {
-        my $param_def = shift @$data;
-
-        # Digits means number of unnamed arguments
-        if ( $param_def =~ / \A (\d+) \z /xms ) {
-            $param_no = $1;
-        }
-
-        # formHandler means exactly that, a handler for form requests
-        elsif ( $param_def =~ / \A formHandler \z /xms ) {
-            $formHandler = 1;
-        }
-
-        # pollHandlers are a bit tricky but are defined here anyway
-        elsif ( $param_def =~ / \A pollHandler \z /xms ) {
-            $pollHandler = 1;
-        }
-
-        elsif ( $param_def =~ / \A params \z /ixms ) {
-            my $arg_names = shift @$data;
-
-            croak "ExtDirect attribute 'params' must be followed by ".
-                  "arrayref containing at least one parameter name ".
-                  "at $file line $line"
-                if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
-
-            # Copy the names
-            $param_names = [ @{ $arg_names } ];
-        }
-
-        # Hooks
-        elsif ( $param_def =~ / \A (before|instead|after) \z /ixms ) {
-            my $type = $1;
-            my $code = shift @$data;
-
-            croak "ExtDirect attribute '$type' must be followed by coderef ".
-                  "or 'NONE' at $file line $line"
-                if $code ne 'NONE' && 'CODE' ne ref $code;
-
-            $hooks{ $type } = {
-                package => $package,
-                method  => $symbol_name,
-                type    => $type,
-                code    => $code,
-            };
-        };
-    };
-
-    my $attribute_ref = {
-        package     => $package,
-        method      => $symbol_name,
-        referent    => $referent,
-        param_no    => $param_no,
-        param_names => $param_names,
-        formHandler => $formHandler,
-        pollHandler => $pollHandler,
-    };
-
-    @$attribute_ref{ keys %hooks } = values %hooks;
-
-    __PACKAGE__->add_method($attribute_ref);
-}
 
 ### PUBLIC PACKAGE SUBROUTINE ###
 #
@@ -198,6 +93,25 @@ sub import {
         $class->add_hook( package => $package, type => $type, code => $code )
             if $code;
     };
+}
+
+### PUBLIC ATTRIBUTE DEFINITION ###
+#
+# Define ExtDirect attribute subroutine and export it into UNIVERSAL
+# namespace. Attribute processing phase depends on the perl version
+# we're running
+#
+{
+    my $phase = $] >= 5.012 ? 'BEGIN' : 'CHECK';
+    my $pkg   = __PACKAGE__;
+    
+    eval <<END;
+    sub UNIVERSAL::ExtDirect : ATTR(CODE,$phase) {
+        my \$attr = RPC::ExtDirect::Util::parse_attribute(\@_);
+        
+        ${pkg}->add_method(\$attr);
+    }
+END
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -263,6 +177,8 @@ sub add_action {
 #
 # Returns the list of Actions that have ExtDirect methods
 #
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
+#
 
 sub get_action_list {
     my ($class) = @_;
@@ -279,9 +195,24 @@ sub get_action_list {
 # Returns the list of poll handler methods as list of
 # arrayrefs: [ $action, $method ]
 #
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
+#
 
 sub get_poll_handlers {
-    return map { / \A (.*) :: (.*) /xms; [ $1 => $2 ] } @POLL_HANDLERS;
+    my ($class) = @_;
+    
+    my $api     = $class->get_api();
+    my @actions = $class->get_api->actions;
+    my @handlers;
+    
+    for my $name ( @actions ) {
+        my $action  = $api->get_action_by_name($name);
+        my @methods = $action->polling_methods;
+        
+        push @handlers, [ $name, $_ ] for @methods;
+    }
+    
+    return @handlers;
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -299,17 +230,35 @@ sub add_method {
 
 ### PUBLIC CLASS METHOD ###
 #
-# Returns the list of method names with ExtDirect attribute for $action
+# Returns the list of method names with ExtDirect attribute
+# for $action_name, or all methods for all actions if $action_name
+# is empty
+#
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
 #
 
 sub get_method_list {
     my ($class, $action_name) = @_;
     
-    my $action = $class->get_api->get_action_by_name($action_name);
+    my $api = $class->get_api;
     
-    return unless $action;
+    my @actions = $action_name ? ( $action_name ) : $api->actions;
+    my @list;
     
-    my @list = $action->methods;
+    for my $name ( @actions ) {
+        my $action = $api->get_action_by_name($name);
+        
+        # The output of this method is inconsistent:
+        # when called with $action_name it returns the list of
+        # method names; when it is called with empty @_
+        # it returns the list of Action::method pairs.
+        # Not sure what was the original intent here but we
+        # got keep the compatibility. The whole method is
+        # deprecated anyway.
+        my $tpl = $action_name ? "" : $name.'::';
+        
+        push @list, map { $tpl.$_ } $action->methods;
+    }
     
     return wantarray ? @list : shift @list;
 }
@@ -321,6 +270,8 @@ sub get_method_list {
 #
 # Returns full attribute hash in list context.
 # Croaks if called in scalar context.
+#
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
 #
 
 sub get_method_parameters {
@@ -341,6 +292,15 @@ sub get_method_parameters {
 
     croak "Can't find ExtDirect properties for method $method_name"
         unless $attrs;
+    
+    # Another set of compatibility kludges
+    $attrs->{package}     = $action->package;
+    $attrs->{method}      = delete $attrs->{name};
+    $attrs->{param_names} = delete $attrs->{params};
+    $attrs->{param_no}    = delete $attrs->{len};
+    $attrs->{pollHandler} = !!delete($attrs->{pollHandler}) || 0;
+    $attrs->{formHandler} = !!delete($attrs->{formHandler}) || 0;
+    $attrs->{param_no}    = undef if $attrs->{formHandler};
 
     return %$attrs;
 }

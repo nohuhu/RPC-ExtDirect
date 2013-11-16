@@ -100,7 +100,9 @@ sub get_remoting_api {
     }
     else {
         $self     = RPC::ExtDirect->get_api();
-        $config ||= RPC::ExtDirect::Config->new();
+        $config ||= $self->config->clone();
+        
+        $config->read_global_vars();
         
         # This method used to set Serializer debug flag to whatever
         # API's global DEBUG variable was. This was a somewhat

@@ -25,23 +25,23 @@ Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
-                { "len":4, "name":"bar_foo" }
+                { "len":4, "name":"bar_foo" },
+                { "formHandler":true, "len":0, "name":"bar_baz" }
               ],
         "Foo":[
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "name":"foo_blessed" },
                 { "len":1, "name":"foo_foo" },
+                { "len":2, "name":"foo_bar" },
+                { "name":"foo_blessed" },
+                { "name":"foo_baz", "params":["foo","bar","baz"] },
                 { "len":0, "name":"foo_zero" }
               ],
         "Qux":[
+                { "len":1, "name":"foo_foo" },
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
                 { "len":4, "name":"bar_foo" },
+                { "formHandler":true, "len":0, "name":"bar_baz" },
                 { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":1, "name":"foo_foo" }
+                { "name":"foo_baz", "params":["foo","bar","baz"] }
               ]
     },
     "namespace":"myApp.Server",
@@ -55,6 +55,9 @@ Ext.app.REMOTE_EVENT_API = {
 };
 Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
 ~;
+
+# Just silence the warning
+$SIG{__WARN__} = sub {};
 
 my $remoting_api = eval { RPC::ExtDirect::API->get_remoting_api() };
 

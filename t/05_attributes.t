@@ -4,11 +4,9 @@ use Carp;
 
 use Test::More tests => 71;
 
-sub global_before {
-}
+sub global_before {}
 
-sub global_after {
-}
+sub global_after {}
 
 BEGIN {
     use_ok 'RPC::ExtDirect';      # Checking case insensitiveness, too
@@ -155,13 +153,13 @@ is_deeply \@full_poll_handlers, \@expected_poll_handlers,
 for my $module ( sort keys %test_for ) {
     my $test = $test_for{ $module };
 
-    my @method_list = eval { RPC::ExtDirect->get_method_list($module) };
+    my @method_list = sort eval { RPC::ExtDirect->get_method_list($module) };
     is $@, '', "$module get_method_list eval $@";
 
-    my @expected_list = @{ $test->{methods} };
+    my @expected_list = sort @{ $test->{methods} };
 
-    is_deeply \@method_list, \@expected_list,
-                          "$module get_method_list() deeply";
+    is_deeply \@method_list, \@expected_list, "$module get_method_list() deeply"
+        or diag explain \@method_list;
 
     my %expected_parameter_for = %{ $test->{list  } };
 
@@ -178,7 +176,8 @@ for my $module ( sort keys %test_for ) {
         delete $parameters{referent};
 
         is_deeply \%parameters, $expected_ref,
-            "$module get_method_parameters() deeply";
+            "$module get_method_parameters() deeply"
+            or diag explain \%parameters;
     };
 };
 
