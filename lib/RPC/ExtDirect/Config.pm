@@ -139,7 +139,6 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'request_class_deserialize',
     fallback => 'request_class',
-    default  => 'RPC::ExtDirect::Request',
 }, {
     # This is a special case - can be overridden but
     # doesn't fall back to request_class

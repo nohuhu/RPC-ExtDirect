@@ -98,7 +98,7 @@ sub decode_form {
     return [ $request ];
 }
 
-RPC::ExtDirect::Util::Accessor::create_accessors(
+RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => ['config'],
 );
 

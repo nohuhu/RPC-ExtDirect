@@ -63,7 +63,7 @@ my $accessors = [qw/
     is_named
 /];
 
-RPC::ExtDirect::Util::Accessor::create_accessors(
+RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => $accessors,
 );
 
