@@ -36,6 +36,34 @@ sub new {
     return $self;
 }
 
+### PUBLIC INSTANCE METHOD (CONSTRUCTOR) ###
+#
+# Create a new Config instance from existing one (clone it)
+#
+
+sub clone {
+    my ($self) = @_;
+    
+    my $clone = bless {}, ref $self;
+    
+    @$clone{ keys %$self } = values %$self;
+    
+    return $clone;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Re-parse the global vars
+#
+
+sub read_global_vars {
+    my ($self) = @_;
+    
+    $self->_parse_global_vars();
+    
+    return $self;
+}
+
 ############## PRIVATE METHODS BELOW ##############
 
 #
@@ -60,28 +88,24 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'debug_api',
     fallback => 'debug',
-    default  => undef,
 }, {
     package  => 'RPC::ExtDirect::EventProvider',
     var      => 'DEBUG',
     type     => 'scalar',
     setter   => 'debug_eventprovider',
     fallback => 'debug',
-    default  => undef,
 }, {
     package  => 'RPC::ExtDirect::Serialize',
     var      => 'DEBUG',
     type     => 'scalar',
     setter   => 'debug_serialize',
     fallback => 'debug',
-    default  => undef,
 }, {
     package  => 'RPC::ExtDirect::Deserialize',
     var      => 'DEBUG',
     type     => 'scalar',
     setter   => 'debug_deserialize',
     fallback => 'debug',
-    default  => undef,
 }, {
     accessor => 'exception_class',
     default  => 'RPC::ExtDirect::Exception',
@@ -91,14 +115,12 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'exception_class_serialize',
     fallback => 'exception_class',
-    default  => undef,
 }, {
     package  => 'RPC::ExtDirect::Deserialize',
     var      => 'EXCEPTION_CLASS',
     type     => 'scalar',
     setter   => 'exception_class_deserialize',
     fallback => 'exception_class',
-    default  => undef,
 }, {
     accessor => 'event_class',
     default  => 'RPC::ExtDirect::Event',
@@ -108,7 +130,6 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'event_class_eventprovider',
     fallback => 'event_class',
-    default  => undef,
 }, {
     accessor => 'request_class',
     default  => 'RPC::ExtDirect::Request',
@@ -136,17 +157,14 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'serializer_class_eventprovider',
     fallback => 'serializer_class',
-    default  => undef,
 }, {
     accessor => 'json_options',
-    default  => undef,
 }, {
     package  => 'RPC::ExtDirect::Deserialize',
     var      => 'JSON_OPTIONS',
     type     => 'hash',
     setter   => 'json_options_deserialize',
     fallback => 'json_options',
-    default  => undef,
 }, {
     accessor => 'verbose_exceptions',
     default  => !1,  # In accordance with Ext.Direct spec
@@ -164,7 +182,6 @@ my $DEFINITIONS = [{
     default  => 'Ext.app.POLLING_API',
 }, {
     accessor => 'namespace',
-    default  => undef,
 }, {
     accessor => 'create_namespace',
     default  => !1,
@@ -192,13 +209,24 @@ my @package_globals = grep { $_->{var} } @$DEFINITIONS;
 
 ### PRIVATE INSTANCE METHOD ###
 #
+# Parse global package variables
+#
+
+sub _parse_global_vars {
+    my ($self) = @_;
+    
+    parse_global_flags(\@package_globals, $self);
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
 # Parse global package variables and apply default values
 #
 
 sub _init {
     my ($self) = @_;
     
-    parse_global_flags(\@package_globals, $self);
+    $self->_parse_global_vars();
     
     # Apply the defaults
     while ( my ($field, $def) = each %field_defaults ) {
@@ -208,23 +236,18 @@ sub _init {
     }
 }
 
-### 
-
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
-# Exports a deep copy of the definitions for easier testing
+# Exports a deep copy of the definitions for testing
 #
 
 sub _get_definitions {
     return [ map { +{ %$_ } } @$DEFINITIONS ];
 }
 
-RPC::ExtDirect::Util::Accessor::create_accessors(
-    simple => \@simple_accessors
-);
-
-RPC::ExtDirect::Util::Accessor::create_accessors(
-    defaultable => \@complex_accessors
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple  => \@simple_accessors,
+    complex => \@complex_accessors,
 );
 
 1;

@@ -64,7 +64,8 @@ sub parse_global_flags {
         my $field   = $flag->{setter};
         my $default = $flag->{default};
         
-        my $full_var = $package . '::' . $var;
+        my $have_default = exists $flag->{default};
+        my $full_var     = $package . '::' . $var;
         
         my ($value, $have_value);
         
@@ -112,7 +113,10 @@ END
         croak "Can't resolve the field name for var $full_var"
             unless $field;
         
-        $obj->$field($value) unless defined $obj->$field();
+        my $predicate = "has_$field";
+        
+        $obj->$field($value)
+            if $have_value || ($have_default && !$obj->$predicate());
     }
 }
 

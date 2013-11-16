@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 66;
+use Test::More tests => 67;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
@@ -224,7 +224,6 @@ my $tests = [{
         var     => 'EMPTY_ARRAY',
         type    => 'array',
         setter  => 'empty_array',
-        default => undef,
     },
 }, {
     name   => 'hash w/ values',
@@ -266,12 +265,13 @@ our $warn_msg;
 $SIG{__WARN__} = sub { $warn_msg = shift };
 
 for my $test ( @$tests ) {
-    my $name   = $test->{name};
-    my $regex  = $test->{regex};
-    my $result = $test->{result};
-    my $flag   = $test->{flag};
-    my $type   = $flag->{type};
-    my $field  = $flag->{setter};
+    my $name    = $test->{name};
+    my $regex   = $test->{regex};
+    my $result  = $test->{result};
+    my $flag    = $test->{flag};
+    my $type    = $flag->{type};
+    my $field   = $flag->{setter};
+    my $has_def = exists $flag->{default};
     
     my $obj = new Bar;
     
@@ -300,19 +300,19 @@ for my $test ( @$tests ) {
         }
         is_deeply $value, $result, "Var $name value matches";
     }
+    
+    if ( !$has_def ) {
+        my $predicate = "has_$field";
+        
+        is $obj->$predicate(), !1, "Var $name not defaulted";
+    }
 };
 
 my $bar = Bar->new( scalar_value => 'fred' );
 
-my $flag = {
-    package => 'Bar',
-    var     => 'SCALAR_VALUE',
-    type    => 'scalar',
-    setter  => 'scalar_value',
-    default => 'foo',
-};
+my $flag = $tests->[0]->{flag};
 
 RPC::ExtDirect::Util::parse_global_flags( [ $flag ], $bar );
 
-is $bar->scalar_value, 'fred', "Existing object value";
+is $bar->scalar_value, 1, "Existing object value overwritten";
 

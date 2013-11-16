@@ -1,7 +1,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 53;
+use Test::More tests => 61;
+
+# A stub for testing global vars handling
+package RPC::ExtDirect::API;
+
+our $DEBUG;
+
+package main;
 
 BEGIN { use_ok 'RPC::ExtDirect::Config' }
 
@@ -16,6 +23,7 @@ for my $def ( @$defs ) {
     my $specific = $def->{setter};
     my $fallback = $def->{fallback};
     my $default  = $def->{default};
+    my $have_def = exists $def->{default};
     
     # Simple accessor, test existence and default value
     if ($accessor) {
@@ -24,8 +32,8 @@ for my $def ( @$defs ) {
         
         is $@, '', "$accessor: simple accessor exists";
         
-        if (defined $default) {
-            is $value, $default, "$accessor: simple accessor default value matches";
+        if ($have_def) {
+            is $value, $default, "$accessor: simple accessor default value";
         }
     }
     
@@ -46,3 +54,22 @@ for my $def ( @$defs ) {
         is $@, '', "$fallback: defaultable fallback accessor exists";
     }
 }
+
+# Test cloning
+my $config = $cfg_class->new();
+my $clone  = $config->clone();
+
+ok $config ne $clone,      "Clone is not self";
+is_deeply $clone, $config, "Clone values match";
+
+$SIG{__WARN__} = sub {};
+
+package main;
+
+is $config->debug_api, !1, "Default global var value";
+
+$RPC::ExtDirect::API::DEBUG = 'foo';
+
+$config->read_global_vars();
+
+is $config->debug_api, 'foo', "Changed global var value";
