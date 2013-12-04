@@ -48,10 +48,9 @@ my %HOOK_FOR = ();
 #
 # This is a bit hacky, but we got to keep a reference to the API object
 # so that *compilation time* attributes would work as expected,
-# as well as configuration options for the RPC::ExtDirect::API class.
+# as well as the configuration options for the RPC::ExtDirect::API class.
 #
 {
-    warn "DEBUG: API redefined";
     my $api = RPC::ExtDirect::API->new();
     
     sub get_api { $api }
@@ -288,21 +287,11 @@ sub get_method_parameters {
         unless $action;
     
     my $method = $action->method($method_name);
-    my $attrs  = $method && $method->get_api_definition;
 
     croak "Can't find ExtDirect properties for method $method_name"
-        unless $attrs;
+        unless $method;
     
-    # Another set of compatibility kludges
-    $attrs->{package}     = $action->package;
-    $attrs->{method}      = delete $attrs->{name};
-    $attrs->{param_names} = delete $attrs->{params};
-    $attrs->{param_no}    = delete $attrs->{len};
-    $attrs->{pollHandler} = !!delete($attrs->{pollHandler}) || 0;
-    $attrs->{formHandler} = !!delete($attrs->{formHandler}) || 0;
-    $attrs->{param_no}    = undef if $attrs->{formHandler};
-
-    return %$attrs;
+    return $method->get_api_definition_compat();
 }
 
 1;

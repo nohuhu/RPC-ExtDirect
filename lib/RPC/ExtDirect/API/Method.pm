@@ -15,8 +15,6 @@ use RPC::ExtDirect::Util::Accessor;
 sub new {
     my ($class, $method) = @_;
     
-    $method->{config} ||= RPC::ExtDirect::Config->new();
-    
     return bless {
         %$method,
         is_named   => defined $method->{params},
@@ -50,6 +48,27 @@ sub get_api_definition {
     
     # No arguments specified means we're not checking them
     return { name => $self->name };
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return a hashref with backwards-compatible API definition
+# for this Method
+#
+
+sub get_api_definition_compat {
+    my ($self) = @_;
+    
+    my $attrs = $self->get_api_definition;
+    
+    $attrs->{method}      = delete $attrs->{name};
+    $attrs->{param_names} = delete $attrs->{params};
+    $attrs->{param_no}    = delete $attrs->{len};
+    $attrs->{pollHandler} = !!delete($attrs->{pollHandler}) || 0;
+    $attrs->{formHandler} = !!delete($attrs->{formHandler}) || 0;
+    $attrs->{param_no}    = undef if $attrs->{formHandler};
+    
+    return %$attrs;
 }
 
 my $accessors = [qw/

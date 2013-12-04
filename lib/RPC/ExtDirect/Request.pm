@@ -6,24 +6,30 @@ no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
-use RPC::ExtDirect ();          # No imports here
-use RPC::ExtDirect::Exception;  # Nothing gets imported there anyway
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect::Exception;
 use RPC::ExtDirect::Hook;
+use RPC::ExtDirect::Util::Accessor;
 use RPC::ExtDirect::Util qw/ clean_error_message /;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Turn on for debugging
 #
+# DEPRECATED. Use `debug_request` or `debug` Config options instead.
+#
 
-our $DEBUG = 0;
+our $DEBUG;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Exception class name so it could be configured
 #
+# DEPRECATED. Use `exception_class_request` or
+# `exception_class` Config options instead.
+#
 
-our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+our $EXCEPTION_CLASS;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
@@ -32,6 +38,8 @@ our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
 
 sub new {
     my ($class, $arguments) = @_;
+    
+    my $config = $arguments->{config} || RPC::ExtDirect::Config->new();
 
     # Need blessed object to call private methods
     my $self = bless {}, $class;
@@ -187,6 +195,26 @@ sub data {
          :                                ()
          ;
 }
+
+my $accessors = [qw/
+    action
+    method
+    package
+    referent
+    param_no
+    type
+    tid
+    state
+    where
+    message
+    upload
+    run_count
+    formHandler
+    pollHandler
+    before
+    instead
+    after
+/];
 
 ############## PRIVATE METHODS BELOW ##############
 

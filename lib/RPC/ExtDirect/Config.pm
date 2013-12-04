@@ -80,6 +80,9 @@ my $DEFINITIONS = [{
     accessor => 'api_method_class',
     default  => 'RPC::ExtDirect::API::Method',
 }, {
+    accessor => 'api_hook_class',
+    default  => 'RPC::ExtDirect::API::Hook',
+}, {
     accessor => 'debug',
     default  => !1,
 }, {
@@ -107,6 +110,12 @@ my $DEFINITIONS = [{
     setter   => 'debug_deserialize',
     fallback => 'debug',
 }, {
+    package  => 'RPC::ExtDirect::Request',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => 'debug_request',
+    fallback => 'debug',
+}, {
     accessor => 'exception_class',
     default  => 'RPC::ExtDirect::Exception',
 }, {
@@ -120,6 +129,12 @@ my $DEFINITIONS = [{
     var      => 'EXCEPTION_CLASS',
     type     => 'scalar',
     setter   => 'exception_class_deserialize',
+    fallback => 'exception_class',
+}, {
+    package  => 'RPC::ExtDirect::Request',
+    var      => 'EXCEPTION_CLASS',
+    type     => 'scalar',
+    setter   => 'exception_class_request',
     fallback => 'exception_class',
 }, {
     accessor => 'event_class',

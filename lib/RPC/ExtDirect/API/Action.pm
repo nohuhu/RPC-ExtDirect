@@ -15,7 +15,7 @@ use RPC::ExtDirect::Util::Accessor;
 sub new {
     my ($class, %params) = @_;
     
-    my $config = $params{config} || RPC::ExtDirect::Config->new();
+    my $config = $params{config};
     
     # For the caller, the 'action' parameter makes sense as the
     # Action's name, but from within the Action itself it's just
@@ -137,8 +137,9 @@ sub add_method {
         my $name = delete $method->{method} || delete $method->{name};
         
         $method = $m_class->new({
-            config => $config,
-            name   => $name,
+            config  => $config,
+            package => $self->package,
+            name    => $name,
             %$method,
         });
     }

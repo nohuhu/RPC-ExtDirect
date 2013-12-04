@@ -187,9 +187,13 @@ sub _decode_json {
 sub _request {
     my ($self, $params) = @_;
     
-    my $request_class = $self->config->request_class_deserialize;
+    my $config        = $self->config;
+    my $request_class = $config->request_class_deserialize;
     
-    return $request_class->new($params);
+    return $request_class->new({
+        config => $config,
+        %$params
+    });
 }
 
 ### PRIVATE INSTANCE METHOD ###

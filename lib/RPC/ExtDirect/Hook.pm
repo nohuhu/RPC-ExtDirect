@@ -5,9 +5,8 @@ use warnings;
 no  warnings 'uninitialized';           ## no critic
 
 use B;
-use Carp;
 
-use RPC::ExtDirect ();
+use RPC::ExtDirect::Util::Accessor;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
@@ -15,27 +14,18 @@ use RPC::ExtDirect ();
 #
 
 sub new {
-    my ($class, $type, $method_def) = @_;
+    my ($class, %params) = @_;
+    
+    my ($type, $coderef) = @params{qw/ type code /};
+    my $package = _package_from_coderef($coderef);
 
-    my $package = $method_def->{package};
-    my $method  = $method_def->{method};
-
-    my ($before, $instead, $after)
-        = map {
-                    RPC::ExtDirect->get_hook(
-                        type    => $_,
-                        package => $package,
-                        method  => $method,
-                    )
-              }
-              qw/ before instead after/;
-
-    my $self = bless {}, $class;
-
-    @$self{ qw/type   method_def   before   instead   after/ }
-        = (   $type, $method_def, $before, $instead, $after  );
-
-    return $self->hook ? $self : undef
+    my $self = bless {
+        package => $package,
+        type    => $type,
+        coderef => $coderef
+    }, $class;
+    
+    return $self;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -44,11 +34,22 @@ sub new {
 #
 
 sub run {
-    my ($self, $env, $arg, $result, $exception, $method_called) = @_;
-
-    my %hook_arg = %{ $self->method_def };
-
-    $hook_arg{code} = delete $hook_arg{referent};
+    my ($self, %params) = @_;
+    
+    my            ($api, $env, $arg, $result, $exception, $method_called) =
+        @params{qw/ api   env   arg   result   exception   method_called /};
+    
+    my $action_name = $self->action;
+    my $method_name = $self->method;
+    
+    my $method   = $api->get_method_by_name($action_name, $method_name);
+    my %hook_arg = $method->get_api_definition_compat();
+    
+    my $method_package = $hook_arg{package};
+    my $method_coderef = $hook_arg{code} = eval {
+        no strict 'refs';
+        *{ $method_package . '::' . $method_name }
+    };
 
     my @param_names = @{ $hook_arg{param_names} || [] };
 
@@ -61,18 +62,22 @@ sub run {
         if $self->type eq 'after';
 
     @hook_arg{ qw/before instead after/ }
-        = map { $self->$_ } qw/before instead after/;
+        = map {
+            $api->get_hook(
+                action => $action_name,
+                method => $method_name,
+                type   => $_,
+            )
+        } qw/before instead after/;
 
     # A drop of sugar
-    my $code        = $hook_arg{code};
-    my $package     = $hook_arg{package};
-    $hook_arg{orig} = sub { $code->($package, @$arg) };
+    $hook_arg{orig} = sub { $method_coderef->($method_package, @$arg) };
 
-    my $hook     = $self->hook;
-    my $hook_pkg = _package_from_coderef($hook);
+    my $hook_coderef = $self->coderef;
+    my $hook_pkg     = $self->package;
 
     # By convention, hooks are called as class methods
-    return $hook->($hook_pkg, %hook_arg);
+    return $hook_coderef->($hook_pkg, %hook_arg);
 }
 
 ### PUBLIC INSTANCE METHODS ###
@@ -80,19 +85,9 @@ sub run {
 # Read only getters
 #
 
-sub type       { shift->{type}       }
-sub before     { shift->{before}     }
-sub instead    { shift->{instead}    }
-sub after      { shift->{after}      }
-sub method_def { shift->{method_def} }
-
-sub hook    {
-    my ($self) = @_;
-
-    my $type = $self->type;
-
-    return $self->$type;
-}
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple => [qw/ type coderef package /],
+);
 
 ############## PRIVATE METHODS BELOW ##############
 

@@ -186,10 +186,8 @@ sub parse_attribute {
                 if $code ne 'NONE' && 'CODE' ne ref $code;
 
             $hooks{ $type } = {
-                package => $package,
-                method  => $symbol_name,
-                type    => $type,
-                code    => $code,
+                type => $type,
+                code => $code,
             };
         };
     };

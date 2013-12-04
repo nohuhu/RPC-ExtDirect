@@ -264,6 +264,21 @@ sub add_method {
 #         if $attribute_def->{pollHandler};
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the Method object by Action and Method name
+#
+
+sub get_method_by_name {
+    my ($self, $action_name, $method_name) = @_;
+    
+    my $action = $self->get_action_by_name($action_name);
+    
+    return unless $action;
+    
+    return $action->method($method_name);
+}
+
 my $accessors = [qw/
     config
 /];
