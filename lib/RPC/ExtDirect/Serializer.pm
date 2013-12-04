@@ -8,8 +8,6 @@ use Carp;
 use JSON ();
 
 use RPC::ExtDirect::Config;
-use RPC::ExtDirect::Request;
-use RPC::ExtDirect::Exception;
 
 use RPC::ExtDirect::Util::Accessor;
 use RPC::ExtDirect::Util qw/
@@ -23,8 +21,6 @@ use RPC::ExtDirect::Util qw/
 
 sub new {
     my ($class, %params) = @_;
-    
-    $params{config} ||= RPC::ExtDirect::Config->new();
     
     my $self = bless { %params }, $class;
     
@@ -190,6 +186,12 @@ sub _request {
     my $config        = $self->config;
     my $request_class = $config->request_class_deserialize;
     
+    # This is to avoid hard binding on RPC::ExtDirect::Request
+    if ( !$self->{_have_request_class} ) {
+        eval "require $request_class";
+        $self->{_have_request_class} = 1;
+    };
+    
     return $request_class->new({
         config => $config,
         %$params
@@ -213,8 +215,14 @@ sub _exception {
     my $exception_class    = $config->$getter_class();
     my $debug              = $config->$getter_debug();
     
-    $params->{debug}   = !!$debug           unless defined $params->{debug};
-    $params->{where}   = get_caller_info(2) unless defined $params->{where};
+    # Same reason as in _request()
+    if ( !$self->{_have_exception_class} ) {
+        eval "require $exception_class";
+        $self->{_have_exception_class} = 1;
+    };
+    
+    $params->{debug} = !!$debug           unless defined $params->{debug};
+    $params->{where} = get_caller_info(2) unless defined $params->{where};
     
     $params->{verbose} = $config->verbose_exceptions();
     

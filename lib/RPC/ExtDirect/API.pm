@@ -7,8 +7,6 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect::Config;
-use RPC::ExtDirect::API::Action;
-use RPC::ExtDirect::API::Method;
 use RPC::ExtDirect::Serializer;
 use RPC::ExtDirect::Util::Accessor;
 use RPC::ExtDirect;
@@ -42,15 +40,16 @@ sub import {
     my %param = @parameters;
        %param = map { lc $_ => delete $param{ $_ } } keys %param;
 
-    # Hook definitions are exported to RPC::ExtDirect hash
-    for my $type ( qw(before instead after) ) {
+    my $api = RPC::ExtDirect->get_api;
+    
+    for my $type ( $class->HOOK_TYPES ) {
         my $code = delete $param{ $type };
-
-        RPC::ExtDirect->add_hook( type => $type, code => $code )
+        
+        $api->add_hook( type => $type, code => $code )
             if $code;
     };
     
-    my $api_config = RPC::ExtDirect->get_api->config;
+    my $api_config = $api->config;
     
     for my $option ( keys %param ) {
         my $value = $param{$option};
@@ -58,6 +57,13 @@ sub import {
         $api_config->$option($value);
     }
 }
+
+### PUBLIC CLASS METHOD (ACCESSOR) ###
+#
+# Return the hook types supported by the API
+#
+
+sub HOOK_TYPES { qw/ before instead after/ }
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
@@ -170,16 +176,31 @@ sub actions { keys %{ $_[0]->{actions} } }
 sub add_action {
     my ($self, %params) = @_;
     
+    my $action_name = $params{action};
+    
+    $action_name = $self->_get_action_name( $params{package} )
+        unless defined $action_name;
+    
+    return $self->{actions}->{$action_name}
+        if $params{no_overwrite} && exists $self->{actions}->{$action_name};
+    
     my $config  = $self->config;
     my $a_class = $config->api_action_class();
-    my $action  = $params{action};
+    
+    # This is to avoid hard binding on the Action class
+    if ( !$self->{_have_action_class} ) {
+        eval "require $a_class";
+        $self->{_have_action_class} = 1;
+    };
+    
+    $self->_init_hooks(\%params);
     
     my $action_obj = $a_class->new(
         config => $config,
         %params,
     );
     
-    $self->{actions}->{$action} = $action_obj;
+    $self->{actions}->{$action_name} = $action_obj;
     
     return $action_obj;
 }
@@ -250,12 +271,8 @@ sub add_method {
     $params{params} = delete $params{param_names}
         if exists $params{param_names} and not exists $params{params};
     
-    # Go over the hooks and add them
-#     for my $hook_type ( qw/ before instead after / ) {
-#         next unless my $hook = $attribute_def->{$hook_type};
-# 
-#         $attribute_def->{$hook_type} = $class->add_hook(%$hook);
-#     }
+    # Go over the hooks and instantiate them
+    $self->_init_hooks(\%params);
     
     $action->add_method(\%params);
 
@@ -279,9 +296,87 @@ sub get_method_by_name {
     return $action->method($method_name);
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Add a hook instance
+#
+
+sub add_hook {
+    my ($self, %params) = @_;
+    
+    my              ($package, $method_name, $type, $code)
+        = @params{qw/ package   method        type   code /};
+    
+    # A bit kludgy but there's no point in duplicating
+    my $hook = do {
+        my $hook_def = { $type => { type => $type, code => $code } };
+        $self->_init_hooks($hook_def);
+        $hook_def->{$type}
+    };
+        
+    # For backwards compatibility, we support this indirect way
+    # of defining the hooks
+    if ( $package && $method_name ) {
+        my $action = $self->get_action_by_package($package);
+        
+        croak "Can't find the Action for package $package"
+            unless $action;
+        
+        my $method = $action->method($method_name);
+        
+        croak "Can't find Method $method_name"
+            unless $method;
+        
+        $method->$type($hook);
+    }
+    elsif ( $package ) {
+        my $action = $self->get_action_by_package($package);
+        
+        croak "Can't find the Action for package $package"
+            unless $action;
+        
+        $action->$type($hook);
+    }
+    else {
+        $self->$type($hook);
+    }
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the hook object by Method name, Action or package, and type
+#
+
+sub get_hook {
+    my ($self, %params) = @_;
+    
+    my              ($action_name, $package, $method_name, $type)
+        = @params{qw/ action        package   method        type/};
+    
+    my $action = $action_name ? $self->get_action_by_name($action_name)
+               :                $self->get_action_by_package($package)
+               ;
+    
+    croak "Can't find action for Method $method_name"
+        unless $action;
+    
+    my $method = $action->method($method_name);
+    
+    my $hook = $method->$type || $action->$type || $self->$type;
+    
+    return $hook;
+}
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Simple accessors
+#
+
 my $accessors = [qw/
     config
-/];
+/,
+    __PACKAGE__->HOOK_TYPES,
+];
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => $accessors,
@@ -357,6 +452,42 @@ sub _get_polling_api {
         type => 'polling',
         url  => $config->poll_path,
     };
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Instantiate the hooks in an Action or Method definition hashref
+#
+
+sub _init_hooks {
+    my ($self, $def) = @_;
+    
+    my $hook_class = $self->config->api_hook_class();
+    
+    # This is to avoid hard binding on RPC::ExtDirect::Hook
+    if ( !$self->{_have_hook_class} ) {
+        eval "require $hook_class";
+        $self->{_have_hook_class} = 1;
+    };
+    
+    for my $hook_type ( $self->HOOK_TYPES ) {
+        next unless my $hook = $def->{$hook_type};
+
+        $def->{$hook_type} = $hook_class->new(%$hook);
+    }
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Make an Action name from a package name (strip namespace)
+#
+
+sub _get_action_name {
+    my ($self, $action_name) = @_;
+    
+    $action_name =~ s/^.*:://;
+    
+    return $action_name;
 }
 
 1;

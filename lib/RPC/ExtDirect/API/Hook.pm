@@ -1,4 +1,4 @@
-package RPC::ExtDirect::Hook;
+package RPC::ExtDirect::API::Hook;
 
 use strict;
 use warnings;
@@ -18,11 +18,13 @@ sub new {
     
     my ($type, $coderef) = @params{qw/ type code /};
     my $package = _package_from_coderef($coderef);
-
+    
+    return undef if 'NONE' eq $coderef || !defined $package;
+    
     my $self = bless {
         package => $package,
         type    => $type,
-        coderef => $coderef
+        code    => $coderef,
     }, $class;
     
     return $self;
@@ -73,7 +75,7 @@ sub run {
     # A drop of sugar
     $hook_arg{orig} = sub { $method_coderef->($method_package, @$arg) };
 
-    my $hook_coderef = $self->coderef;
+    my $hook_coderef = $self->code;
     my $hook_pkg     = $self->package;
 
     # By convention, hooks are called as class methods
@@ -86,7 +88,7 @@ sub run {
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
-    simple => [qw/ type coderef package /],
+    simple => [qw/ type code package /],
 );
 
 ############## PRIVATE METHODS BELOW ##############

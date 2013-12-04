@@ -7,6 +7,13 @@ no  warnings 'uninitialized';           ## no critic
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
 
+### PUBLIC CLASS METHOD (ACCESSOR) ###
+#
+# Return the hook types supported by this Method class
+#
+
+sub HOOK_TYPES { qw/ before instead after / }
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Instantiate a new Method
@@ -59,16 +66,23 @@ sub get_api_definition {
 sub get_api_definition_compat {
     my ($self) = @_;
     
-    my $attrs = $self->get_api_definition;
+    my %attrs;
     
-    $attrs->{method}      = delete $attrs->{name};
-    $attrs->{param_names} = delete $attrs->{params};
-    $attrs->{param_no}    = delete $attrs->{len};
-    $attrs->{pollHandler} = !!delete($attrs->{pollHandler}) || 0;
-    $attrs->{formHandler} = !!delete($attrs->{formHandler}) || 0;
-    $attrs->{param_no}    = undef if $attrs->{formHandler};
+    $attrs{package}     = $self->package;
+    $attrs{method}      = $self->name;
+    $attrs{param_names} = $self->params;
+    $attrs{param_no}    = $self->len;
+    $attrs{pollHandler} = $self->pollHandler || 0;
+    $attrs{formHandler} = $self->formHandler || 0;
+    $attrs{param_no}    = undef if $attrs{formHandler};
     
-    return %$attrs;
+    for my $type ( $self->HOOK_TYPES ) {
+        my $hook = $self->$type;
+        
+        $attrs{$type} = $hook->code if $hook;
+    }
+    
+    return %attrs;
 }
 
 my $accessors = [qw/
@@ -80,7 +94,10 @@ my $accessors = [qw/
     pollHandler
     is_ordered
     is_named
-/];
+    package
+/,
+    __PACKAGE__->HOOK_TYPES,
+];
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => $accessors,

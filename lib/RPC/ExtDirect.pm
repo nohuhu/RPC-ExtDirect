@@ -29,22 +29,6 @@ our $VERSION = '3.00';
 
 our $DEBUG;
 
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Contains poll handler method names in order that they were defined
-#
-
-my @POLL_HANDLERS = ();
-
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Holds hook definitions. It has to be stored separately from
-# method definitions because global scope hooks can be added
-# *after* package attributes are processed.
-#
-
-my %HOOK_FOR = ();
-
 #
 # This is a bit hacky, but we got to keep a reference to the API object
 # so that *compilation time* attributes would work as expected,
@@ -77,20 +61,28 @@ sub import {
        %param = map { lc $_ => delete $param{ $_ } } keys %param;
 
     my ($package, $filename, $line) = caller();
+    
+    my $api = $class->get_api;
 
     # Store Action (class) name as an alias for a package
-    if ( exists $param{action} or exists $param{class} ) {
-        my $alias = defined $param{action} ? $param{action} : $param{class};
-
-        __PACKAGE__->add_action($package, $alias);
-    };
+    my $action_name = defined $param{action} ? $param{action}
+                    : defined $param{class}  ? $param{class}
+                    :                          undef
+                    ;
+    
+    # We don't want to overwrite the existing Action, if any
+    $api->add_action(
+        package      => $package,
+        action       => $action_name,
+        no_overwrite => 1,
+    );
 
     # Store package level hooks
-    for my $type ( qw/ before instead after / ) {
+    for my $type ( $api->HOOK_TYPES ) {
         my $code = $param{ $type };
 
-        $class->add_hook( package => $package, type => $type, code => $code )
-            if $code;
+        $api->add_hook( package => $package, type => $type, code => $code )
+            if defined $code;
     };
 }
 
@@ -115,25 +107,17 @@ END
 
 ### PUBLIC CLASS METHOD ###
 #
-# Add a hook to global hash
+# Add a hook to the global API
 #
 
 sub add_hook {
     my ($class, %params) = @_;
 
-    my $package = $params{package};
-    my $method  = $params{method};
-    my $type    = $params{type};
-    my $code    = $params{code};
+    my $api = $class->get_api();
+    
+    $api->add_hook(%params);
 
-    my $hook_key = $method  ? $package . '::' . $method  . '::' . $type
-                 : $package ? $package . '::' . 'global' . '::' . $type
-                 :            'global' .                   '::' . $type
-                 ;
-
-    $HOOK_FOR{ $hook_key } = $code;
-
-    return $code;
+    return $params{code};
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -144,16 +128,10 @@ sub add_hook {
 sub get_hook {
     my ($class, %params) = @_;
 
-    my $package = $params{package};
-    my $method  = $params{method};
-    my $type    = $params{type};
-
-    my $code = $HOOK_FOR{ $package . '::' . $method  . '::' . $type }
-            || $HOOK_FOR{ $package . '::' . 'global' . '::' . $type }
-            || $HOOK_FOR{ 'global' . '::'                   . $type }
-            ;
-
-    return $code eq 'NONE' ? undef : $code;
+    my $api  = $class->get_api();
+    my $hook = $api->get_hook(%params);
+    
+    return $hook ? $hook->code : undef;
 }
 
 ### PUBLIC CLASS METHOD ###

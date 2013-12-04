@@ -7,6 +7,13 @@ no  warnings 'uninitialized';           ## no critic
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
 
+### PUBLIC CLASS METHOD (ACCESSOR) ###
+#
+# Return the hook types supported by this Action class
+#
+
+sub HOOK_TYPES { qw/ before instead after / }
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Create a new Action instance
@@ -134,6 +141,12 @@ sub add_method {
     if ( 'HASH' eq ref $method ) {
         my $m_class = $config->api_method_class();
         
+        # This is to avoid hard binding on RPC::ExtDirect::API::Method
+        if ( !$self->{_have_method_class} ) {
+            eval "require $m_class";
+            $self->{_have_method_class} = 1;
+        }
+        
         my $name = delete $method->{method} || delete $method->{name};
         
         $method = $m_class->new({
@@ -147,7 +160,7 @@ sub add_method {
         $method->config($config);
     }
     
-    my $m_name = $method->name();
+    my $m_name = $method->name;
     
     $self->{methods}->{ $m_name } = $method;
     
@@ -165,7 +178,13 @@ sub method {
     return $self->{methods}->{$name};
 }
 
-my $accessors = [qw/ config name package /];
+my $accessors = [qw/
+    config
+    name
+    package
+/,
+    __PACKAGE__->HOOK_TYPES,
+];
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => $accessors,
