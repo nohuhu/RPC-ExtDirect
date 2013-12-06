@@ -6,7 +6,10 @@ use Test::More tests => 65;
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
-BEGIN { use_ok 'RPC::ExtDirect::Deserialize'; }
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
+
+BEGIN { use_ok 'RPC::ExtDirect::Serializer'; }
 
 # Test modules are simple and effective
 use lib 't/lib';
@@ -23,11 +26,18 @@ for my $test ( @$tests ) {
     my $expect  = $test->{result};
     my $run_exp = $test->{run};
 
-    # Set the debug flags
-    local $RPC::ExtDirect::Request::DEBUG     = $debug;
-    local $RPC::ExtDirect::Deserialize::DEBUG = $debug;
+    my $api    = RPC::ExtDirect->get_api;
+    my $config = RPC::ExtDirect::Config->new(
+        debug_request     => $debug,
+        debug_deserialize => $debug,
+    );
 
-    my $requests = eval { RPC::ExtDirect::Deserialize->$method($data) };
+    my $serializer = RPC::ExtDirect::Serializer->new(
+        api    => $api,
+        config => $config,
+    );
+
+    my $requests = eval { $serializer->$method($data) };
 
     is     $@, '',               "$name $method() requests eval $@";
     ok ref $requests eq 'ARRAY', "$name $method requests is ARRAY";
@@ -71,7 +81,7 @@ __DATA__
       run    => [ '' ],
       result => [ { type  => 'exception', action => undef,
                     tid   => undef,       method => undef,
-              where => 'RPC::ExtDirect::Deserialize->decode_post',
+              where => 'RPC::ExtDirect::Serializer->decode_post',
               message => q!ExtDirect error decoding POST data: '!.
                          q!, or } expected while parsing object/hash!.
                          q!, at character offset 16 (before !.
