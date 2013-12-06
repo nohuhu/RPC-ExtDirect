@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 67;
+use Test::More tests => 76;
 
 # A stub for testing global vars handling
 package RPC::ExtDirect::API;
@@ -38,12 +38,18 @@ for my $def ( @$defs ) {
     }
     
     # Defaultable accessor, check existence of specific getter
-    if ($specific) {
+    if ( $specific ) {
+        my $setters = 'ARRAY' eq ref($specific) ? $specific
+                    :                             [ $specific ]
+                    ;
+
         my $config = $cfg_class->new();
         
-        eval { $config->$specific() };
-        
-        is $@, '', "$specific: defaultable specific accessor exists";
+        for my $setter ( @$setters ) {
+            eval { $config->$setter() };
+            
+            is $@, '', "$setter: defaultable specific accessor exists";
+        }
     }
     
     if ($fallback) {

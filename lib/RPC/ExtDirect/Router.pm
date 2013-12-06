@@ -4,90 +4,113 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
 
-use Carp;
-
-use RPC::ExtDirect::Deserialize;
-use RPC::ExtDirect::Serialize;
-use RPC::ExtDirect::Request;
-use RPC::ExtDirect::Exception;
+use RPC::ExtDirect::Util::Accessor;
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Turn this on for debug output
 #
+# DEPRECATED. Use `debug_router` or `debug` Config options instead.
+#
 
-our $DEBUG = 0;
+our $DEBUG;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Serializer class name so it could be configured
 #
-# TODO This is hacky hack, find another way to inject
-# new functionality (all class names)
+# DEPRECATED. Use `serializer_class_router` or `serializer_class`
+# Config options instead.
 #
 
-our $SERIALIZER_CLASS = 'RPC::ExtDirect::Serialize';
+our $SERIALIZER_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Deserializer class name so it could be configured
 #
+# DEPRECATED. Use `deserializer_class_router` or `deserializer_class`
+# Config options instead.
+#
 
-our $DESERIALIZER_CLASS = 'RPC::ExtDirect::Deserialize';
+our $DESERIALIZER_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Exception class name so it could be configured
 #
+# DEPRECATED. Use `exception_class_deserialize` or `exception_class`
+# Config options instead.
+#
 
-our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+our $EXCEPTION_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Request class name so it could be configured
 #
+# DEPRECATED. Use `request_class_deserialize` or `request_class`
+# Config options instead.
+#
 
-our $REQUEST_CLASS = 'RPC::ExtDirect::Request';
+our $REQUEST_CLASS;
 
-### PUBLIC CLASS METHOD ###
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
+#
+# Create a new Router object with defaults for API and Config
+#
+
+sub new {
+    my ($class, %params) = @_;
+    
+    $params{config} ||= RPC::ExtDirect::Config->new();
+    $params{api}    ||= RPC::ExtDirect->get_api();
+    
+    return bless { %params }, $class;
+}
+
+### PUBLIC CLASS/INSTANCE METHOD ###
 #
 # Routes the request(s) and returns serialized responses
+#
+# Note that the preferred way to call this method is on the Router
+# object instance, but we support the class-based way for backwards
+# compatibility.
+#
+# Be aware that the only supported way to configure the Router
+# is to pass a Config object to the constructor and then call route()
+# on the instance.
 #
 
 sub route {
     my ($class, $input, $env) = @_;
-
-    #
-    # It's a bit awkward to turn this off for the whole sub,
-    # but enclosing `local` in a block won't work
-    #
-    no strict 'refs';       ## no critic
-
-    # Set debug flags
-    local ${$DESERIALIZER_CLASS.'::DEBUG'} = $DEBUG;
-    local ${$SERIALIZER_CLASS.'::DEBUG'}   = $DEBUG;
-    local ${$EXCEPTION_CLASS.'::DEBUG'}    = $DEBUG;
-    local ${$REQUEST_CLASS.'::DEBUG'}      = $DEBUG;
     
-    # Propagate class names
-    local ${$DESERIALIZER_CLASS.'::REQUEST_CLASS'}   = $REQUEST_CLASS;
-    local ${$DESERIALIZER_CLASS.'::EXCEPTION_CLASS'} = $EXCEPTION_CLASS;
-    local ${$SERIALIZER_CLASS.'::EXCEPTION_CLASS'}   = $EXCEPTION_CLASS;
-    local ${$REQUEST_CLASS.'::EXCEPTION_CLASS'}      = $EXCEPTION_CLASS;
+    my $self = ref($class) ? $class : $class->new();
     
     # Decode requests
-    my ($has_upload, $requests) = $class->_decode_requests($input);
+    my ($has_upload, $requests) = $self->_decode_requests($input);
 
     # Run requests and collect responses
-    my $responses = $class->_run_requests($env, $requests);
+    my $responses = $self->_run_requests($env, $requests);
 
     # Serialize responses
-    my $result = $class->_serialize_responses($responses);
+    my $result = $self->_serialize_responses($responses);
 
-    my $http_response = $class->_format_response($result, $has_upload);
+    my $http_response = $self->_format_response($result, $has_upload);
     
     return $http_response;
 }
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Read-write accessors.
+#
+
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple => [qw/ api config /],
+);
 
 ############## PRIVATE METHODS BELOW ##############
 
@@ -97,15 +120,25 @@ sub route {
 #
 
 sub _decode_requests {
-    my ($class, $input) = @_;
+    my ($self, $input) = @_;
     
     # $input can be scalar containing POST data,
     # or a hashref containing form data
     my $has_form   = ref $input eq 'HASH';
     my $has_upload = $has_form && $input->{extUpload} eq 'true';
+    
+    my $config = $self->config;
+    my $api    = $self->api;
+    
+    my $deserializer_class = $config->deserializer_class_router;
+    
+    eval "require $deserializer_class";
+    
+    my $deserializer 
+        = $deserializer_class->new( config => $config, api => $api );
 
-    my $requests = $has_form ? $DESERIALIZER_CLASS->decode_form($input)
-                 :             $DESERIALIZER_CLASS->decode_post($input)
+    my $requests = $has_form ? $deserializer->decode_form($input)
+                 :             $deserializer->decode_post($input)
                  ;
     
     return ($has_upload, $requests);
@@ -117,7 +150,7 @@ sub _decode_requests {
 #
 
 sub _run_requests {
-    my ($class, $env, $requests) = @_;
+    my ($self, $env, $requests) = @_;
     
     # Run the requests
     $_->run($env) for @$requests;
@@ -134,9 +167,19 @@ sub _run_requests {
 #
 
 sub _serialize_responses {
-    my ($class, $responses) = @_;
+    my ($self, $responses) = @_;
+    
+    my $api    = $self->api;
+    my $config = $self->config;
+    
+    my $serializer_class = $config->serializer_class_router;
+    
+    eval "require $serializer_class";
+    
+    my $serializer
+        = $serializer_class->new( config => $config, api => $api );
 
-    my $result = $SERIALIZER_CLASS->serialize(0, @$responses);
+    my $result = $serializer->serialize(0, @$responses);
     
     return $result;
 }
@@ -147,10 +190,11 @@ sub _serialize_responses {
 #
 
 sub _format_response {
-    my ($class, $result, $has_upload) = @_;
+    my ($self, $result, $has_upload) = @_;
     
     # Wrap in HTML if that was form upload request
-    $result = _wrap_in_html($result) if $has_upload;
+    $result = "<html><body><textarea>$result</textarea></body></html>"
+        if $has_upload;
 
     # Form upload responses are JSON wrapped in HTML, not plain JSON
     my $content_type = $has_upload ? 'text/html' : 'application/json';
@@ -166,20 +210,6 @@ sub _format_response {
         ],
         [ $result ],
     ];
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Wraps response text in HTML; used with form requests
-#
-
-sub _wrap_in_html {
-    my ($json) = @_;
-
-    # Actually wrap in soft HTML blankets
-    my $html = "<html><body><textarea>$json</textarea></body></html>";
-
-    return $html;
 }
 
 1;

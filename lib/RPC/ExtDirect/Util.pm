@@ -61,7 +61,7 @@ sub parse_global_flags {
         my $package = $flag->{package};
         my $var     = $flag->{var};
         my $type    = $flag->{type};
-        my $field   = $flag->{setter};
+        my $fields  = $flag->{setter};
         my $default = $flag->{default};
         
         my $have_default = exists $flag->{default};
@@ -97,26 +97,54 @@ sub parse_global_flags {
         }
         
         if ( $have_value ) {
-            warn <<END;
+            my $warning = <<"END";
+
 The package global variable $full_var is deprecated
 and is going to be removed in the next RPC::ExtDirect version.
-Use the `$field` config option with the $caller_pkg
+END
+            
+            if ( 'ARRAY' eq ref $fields ) {
+                
+                my $tpl = <<"END";
+Use $caller_pkg instance with the following config options instead:
+%s
+
+    my \$config = $caller_pkg->new(
+%s
+    );
+
+END
+                my $w1 = join ', ', map { "`$_`" } @$fields;
+                my $w2 = join "\n", map { "\t\t$_ => ..." } @$fields;
+                
+                $warning .= sprintf $tpl, $w1, $w2;
+            }
+            else {
+                $warning .= <<"END";
+Use the `$fields` config option with the $caller_pkg
 instance instead:
 
-    my \$obj = $caller_pkg->new(
-            $field => ...
+    my \$config = $caller_pkg->new(
+            $fields => ...
     );
     
 END
+            }
+            
+            warn $warning;
         }
 
         croak "Can't resolve the field name for var $full_var"
-            unless $field;
+            unless $fields;
         
-        my $predicate = "has_$field";
+        $fields = [ $fields ] unless 'ARRAY' eq ref $fields;
         
-        $obj->$field($value)
-            if $have_value || ($have_default && !$obj->$predicate());
+        for my $field ( @$fields ) {
+            my $predicate = "has_$field";
+        
+            $obj->$field($value)
+                if $have_value || ($have_default && !$obj->$predicate());
+        }
     }
 }
 

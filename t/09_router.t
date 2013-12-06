@@ -4,6 +4,8 @@ no  warnings 'uninitialized';
 
 use Test::More tests => 25;
 
+use RPC::ExtDirect::Config;
+
 BEGIN { use_ok 'RPC::ExtDirect::Router'; }
 
 # Test modules are simple
@@ -19,16 +21,24 @@ for my $test ( @$tests ) {
     my $input  = $test->{input};
     my $expect = $test->{output};
 
-    local $RPC::ExtDirect::Router::DEBUG = $debug;
+    my $config = RPC::ExtDirect::Config->new(
+        debug_serialize => $debug,
+        debug_deserialize => $debug,
+        debug_request => $debug,
+    );
 
-    my $result = eval { RPC::ExtDirect::Router->route($input) };
+    my $router = RPC::ExtDirect::Router->new(
+        config => $config,
+    );
+
+    my $result = eval { $router->route($input) };
 
     # Remove whitespace
     s/\s//g for ( $expect->[2]->[0], $result->[2]->[0] );
 
     # Remove reference addresses. On different platforms
     # stringified reference has different length so we're
-    # trying to compensate for it here
+    # trying to compensate for that here
     if ( $result->[2]->[0] =~ /HASH\(/ ) {
         my $ref_len = length({} . '') - length 'HASH(blessed)';
 
@@ -40,10 +50,9 @@ for my $test ( @$tests ) {
 
     is        $@,      '',      "$name eval $@";
     is ref    $result, 'ARRAY', "$name result ARRAY";
-    is_deeply $result, $expect, "$name result deep";
+    is_deeply $result, $expect, "$name result deep"
+        or diag explain $result;
 };
-
-exit 0;
 
 __DATA__
 [
@@ -54,14 +63,14 @@ __DATA__
                     200,
                     [
                         'Content-Type', 'application/json',
-                        'Content-Length', 221,
+                        'Content-Length', 222,
                     ],
                 [
                 q|{"action":"Foo","message":"encountered object |.
                 q|'foo=HASH(0x10088fca0)', but neither allow_blessed|.
                 q| nor convert_blessed settings are enabled","method"|.
                 q|:"foo_blessed","tid":1,"type":"exception","where":|.
-                q|"RPC::ExtDirect::Serialize"}|,
+                q|"RPC::ExtDirect::Serializer"}|,
                 ],
                 ],
     },
@@ -69,7 +78,7 @@ __DATA__
       input  => '{"something":"invalid":"here"}',
       output => [ 200,
                   [ 'Content-Type', 'application/json',
-                    'Content-Length', 250,
+                    'Content-Length', 249,
                   ],
                   [ q|{"action":null,|.
                     q|"message":"ExtDirect error decoding POST data: |.
@@ -77,7 +86,7 @@ __DATA__
                     q|character offset 22 (before \":\"here\"}\")'",|.
                     q|"method":null,"tid":null,|.
                     q|"type":"exception",|.
-                    q|"where":"RPC::ExtDirect::Deserialize->decode_post"}|
+                    q|"where":"RPC::ExtDirect::Serializer->decode_post"}|
                   ],
                 ],
     },

@@ -116,6 +116,11 @@ my $DEFINITIONS = [{
     setter   => 'debug_request',
     fallback => 'debug',
 }, {
+    package  => 'RPC::ExtDirect::Router',
+    var      => 'DEBUG',
+    type     => 'scalar',
+    setter   => [qw/ debug_serialize debug_deserialize debug_request /],
+}, {
     accessor => 'exception_class',
     default  => 'RPC::ExtDirect::Exception',
 }, {
@@ -166,11 +171,26 @@ my $DEFINITIONS = [{
     setter   => 'serializer_class_api',
     fallback => 'serializer_class',
 }, {
+    package  => 'RPC::ExtDirect::Router',
+    var      => 'SERIALIZER_CLASS',
+    type     => 'scalar',
+    setter   => 'serializer_class_router',
+    fallback => 'serializer_class',
+}, {
     package  => 'RPC::ExtDirect::EventProvider',
     var      => 'SERIALIZER_CLASS',
     type     => 'scalar',
     setter   => 'serializer_class_eventprovider',
     fallback => 'serializer_class',
+}, {
+    accessor => 'deserializer_class',
+    default  => 'RPC::ExtDirect::Serializer',
+}, {
+    package  => 'RPC::ExtDirect::Router',
+    var      => 'DESERIALIZER_CLASS',
+    type     => 'scalar',
+    setter   => 'deserializer_class_router',
+    fallback => 'deserializer_class',
 }, {
     accessor => 'json_options',
 }, {
