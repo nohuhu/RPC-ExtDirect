@@ -6,9 +6,9 @@ use Test::More tests => 11;
 use lib 't/lib';
 use RPC::ExtDirect::Test::PollProvider;
 
-BEGIN { use_ok 'RPC::ExtDirect::EventProvider'; }
+use RPC::ExtDirect::Config;
 
-local $RPC::ExtDirect::EventProvider::DEBUG = 1;
+BEGIN { use_ok 'RPC::ExtDirect::EventProvider'; }
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: '$@'";
@@ -21,7 +21,15 @@ for my $test ( @$tests ) {
     local $RPC::ExtDirect::Test::PollProvider::WHAT_YOURE_HAVING
             = $password;
 
-    my $result = eval { RPC::ExtDirect::EventProvider->poll() };
+    my $config = RPC::ExtDirect::Config->new(
+        debug_serialize => 1,
+    );
+
+    my $provider = RPC::ExtDirect::EventProvider->new(
+        config => $config,
+    );
+
+    my $result = eval { $provider->poll() };
 
     # Remove whitespace
     s/\s//g for ( $expect, $result );

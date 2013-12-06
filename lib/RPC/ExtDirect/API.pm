@@ -364,6 +364,30 @@ sub get_hook {
     return $hook;
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the list of all installed poll handlers
+#
+
+sub get_poll_handlers {
+    my ($self) = @_;
+    
+    my @handlers;
+    
+    my @actions = $self->actions;
+    
+    ACTION:
+    for my $name ( @actions ) {
+        my $action = $self->get_action_by_name($name);
+        
+        my @methods = $action->polling_methods();
+        
+        push @handlers, map { $action->method($_) } @methods;
+    }
+    
+    return @handlers;
+}
+
 ### PUBLIC INSTANCE METHODS ###
 #
 # Simple accessors

@@ -4,14 +4,10 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
-use Carp;
-
-use RPC::ExtDirect ();       # No imports needed here
-use RPC::ExtDirect::Serialize;
-use RPC::ExtDirect::Event;
+use RPC::ExtDirect::Util::Accessor;
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
 use RPC::ExtDirect::NoEvents;
-use RPC::ExtDirect::Hook;
-use RPC::ExtDirect::Request::PollHandler;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -52,39 +48,67 @@ our $EVENT_CLASS;
 
 our $REQUEST_CLASS;
 
-### PUBLIC CLASS METHOD ###
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
+#
+# Create a new EventProvider object with default API and Config
+#
+
+sub new {
+    my ($class, %params) = @_;
+    
+    $params{config} ||= RPC::ExtDirect::Config->new();
+    $params{api}    ||= RPC::ExtDirect->get_api();
+    
+    return bless { %params }, $class;
+}
+
+### PUBLIC CLASS/INSTANCE METHOD ###
 #
 # Runs all poll handlers in succession, collects the Events returned
 # by them and returns serialized representation suitable for passing
 # on to client side.
 #
+# Note that the preferred way to call this method is on the EventProvider
+# object instance, but we support the class-based way for backwards
+# compatibility.
+#
+# Be aware that the only supported way to configure the EventProvider
+# is to pass a Config object to the constructor and then call poll()
+# on the instance.
+#
 
 sub poll {
     my ($class, $env) = @_;
     
-    no strict 'refs';
-
-    # First set the debug flag
-    local ${$SERIALIZER_CLASS.'::DEBUG'} = $DEBUG;
-
-    my @poll_handlers = $class->_get_poll_handlers();
+    my $self = ref($class) ? $class : $class->new();
+    
+    my @poll_handlers = $self->_get_poll_handlers();
 
     # Even if we have nothing to poll, we must return a stub Event
     # or client side will throw an unhandled JavaScript exception
-    return $class->_no_events unless @poll_handlers;
+    return $self->_no_events unless @poll_handlers;
 
     # Run all the handlers and collect their outputs
-    my @results = $class->_run_handlers($env, \@poll_handlers);
+    my @results = $self->_run_handlers($env, \@poll_handlers);
 
     # No events returned by handlers? We still gotta return something.
-    return $class->_no_events unless @results;
+    return $self->_no_events unless @results;
 
     # Polling results are always JSON; no content type needed
-    my $serialized = $class->_serialize_results(@results);
+    my $serialized = $self->_serialize_results(@results);
 
     # And if serialization fails we have to return something positive
-    return $serialized || $class->_no_events;
+    return $serialized || $self->_no_events;
 }
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Read-write accessors
+#
+
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple => [qw/ api config /],
+);
 
 ############## PRIVATE METHODS BELOW ##############
 
@@ -94,20 +118,20 @@ sub poll {
 #
 
 sub _get_poll_handlers {
-    my ($class) = @_;
+    my ($self) = @_;
 
     # Compile the list of poll handler
-    my @handler_refs = RPC::ExtDirect->get_poll_handlers();
+    my @handlers = $self->api->get_poll_handlers();
 
     # Compile the list of poll handler references
-    my @poll_handlers;
-    for my $handler_ref ( @handler_refs ) {
-        my $req = $class->_create_request($handler_ref);
+    my @poll_requests;
+    for my $handler ( @handlers ) {
+        my $req = $self->_create_request($handler);
 
-        push @poll_handlers, $req if $req;
+        push @poll_requests, $req if $req;
     };
     
-    return @poll_handlers;
+    return @poll_requests;
 }
 
 ### PRIVATE CLASS METHOD ###
@@ -116,13 +140,22 @@ sub _get_poll_handlers {
 #
 
 sub _create_request {
-    my ($class, $handler) = @_;
+    my ($self, $handler) = @_;
     
-    my ($action, $method) = @$handler;
+    my $config      = $self->config;
+    my $api         = $self->api;
+    my $action_name = $handler->action;
+    my $method_name = $handler->name;
     
-    my $req = $REQUEST_CLASS->new({
-        action  => $action,
-        method  => $method,
+    my $request_class = $config->request_class_eventprovider;
+    
+    eval "require $request_class";
+    
+    my $req = $request_class->new({
+        config => $config,
+        api    => $api,
+        action => $action_name,
+        method => $method_name,
     });
     
     return $req;
@@ -134,7 +167,7 @@ sub _create_request {
 #
 
 sub _run_handlers {
-    my ($class, $env, $requests) = @_;
+    my ($self, $env, $requests) = @_;
     
     # Run the requests
     $_->run($env) for @$requests;
@@ -151,17 +184,27 @@ sub _run_handlers {
 #
 
 sub _serialize_results {
-    my ($class, @results) = @_;
-
+    my ($self, @results) = @_;
+    
     # Fortunately, client side does understand more than on event
     # batched as array
     my $final_result = @results > 1 ? [ @results ]
                      :                  $results[0]
                      ;
+    
+    my $config = $self->config;
+    my $api    = $self->api;
+    
+    my $serializer_class = $config->serializer_class_eventprovider;
+    
+    eval "require $serializer_class";
+    
+    my $serializer = $serializer_class->new(
+        config => $config,
+        api    => $api,
+    );
 
-    my $json = eval {
-        $SERIALIZER_CLASS->serialize( 1, $final_result )
-    };
+    my $json = eval { $serializer->serialize( 1, $final_result ) };
 
     return $json;
 }
@@ -172,60 +215,25 @@ sub _serialize_results {
 #
 
 sub _no_events {
-    my ($class) = @_;
+    my ($self) = @_;
+    
+    my $config = $self->config;
+    my $api    = $self->api;
+    
+    my $serializer_class = $config->serializer_class_eventprovider;
+    
+    eval "require $serializer_class";
+    
+    my $serializer = $serializer_class->new(
+        config => $config,
+        api    => $api,
+    );
 
     my $no_events  = RPC::ExtDirect::NoEvents->new();
     my $result     = $no_events->result();
-    my $serialized = $SERIALIZER_CLASS->serialize(0, $result);
+    my $serialized = $serializer->serialize(0, $result);
 
     return $serialized;
 }
 
-### PRIVATE PACKAGE SUBROUTINE ###
-#
-# Run specified hook
-#
-
-sub __run_hook {
-    my ($hook, $handler, $env, $output, $exception) = @_;
-
-    my %params = %$handler;
-
-    # Poll handlers are only passed env object as parameter
-    $params{arg} = [ $env ];
-
-    $params{code} = delete $params{referent};
-    $params{orig} = sub {
-        my ($code, $package, $arg) = @params{ qw/code package arg/ };
-
-        return $code->($package, $arg);
-    };
-}
-
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::EventProvider - Collects Events and returns serialized stream
-
-=head1 SYNOPSIS
-
-This module is not intended to be used directly.
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

@@ -162,7 +162,7 @@ my $DEFINITIONS = [{
 }, {
     # This is a special case - can be overridden but
     # doesn't fall back to request_class
-    accessor => 'request_class_events',
+    accessor => 'request_class_eventprovider',
     default  => 'RPC::ExtDirect::Request::PollHandler',
 }, {
     accessor => 'serializer_class',

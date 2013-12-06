@@ -7,8 +7,6 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
-use Carp;
-
 use base 'RPC::ExtDirect::Request';
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
@@ -73,12 +71,9 @@ sub _prepare_method_arguments {
 #
 
 sub _do_run_method {
-    my ($self, $env, $arg) = @_;
+    my ($self, %params) = @_;
     
-    my $package  = $self->package;
-    my $referent = $self->referent;
-    
-    my @events = $referent->($package, @$arg);
+    my @events = $self->SUPER::_do_run_method(%params);
     
     return [@events];
 }

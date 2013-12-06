@@ -59,7 +59,7 @@ our $REQUEST_CLASS;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Create a new Router object with defaults for API and Config
+# Create a new Router object with default API and Config
 #
 
 sub new {
