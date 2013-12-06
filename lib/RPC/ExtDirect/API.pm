@@ -176,10 +176,10 @@ sub actions { keys %{ $_[0]->{actions} } }
 sub add_action {
     my ($self, %params) = @_;
     
-    my $action_name = $params{action};
+    $params{action} = $self->_get_action_name( $params{package} )
+        unless defined $params{action};
     
-    $action_name = $self->_get_action_name( $params{package} )
-        unless defined $action_name;
+    my $action_name = $params{action};
     
     return $self->{actions}->{$action_name}
         if $params{no_overwrite} && exists $self->{actions}->{$action_name};
@@ -188,10 +188,7 @@ sub add_action {
     my $a_class = $config->api_action_class();
     
     # This is to avoid hard binding on the Action class
-    if ( !$self->{_have_action_class} ) {
-        eval "require $a_class";
-        $self->{_have_action_class} = 1;
-    };
+    eval "require $a_class";
     
     $self->_init_hooks(\%params);
     
@@ -465,10 +462,7 @@ sub _init_hooks {
     my $hook_class = $self->config->api_hook_class();
     
     # This is to avoid hard binding on RPC::ExtDirect::Hook
-    if ( !$self->{_have_hook_class} ) {
-        eval "require $hook_class";
-        $self->{_have_hook_class} = 1;
-    };
+    eval "require $hook_class";
     
     for my $hook_type ( $self->HOOK_TYPES ) {
         next unless my $hook = $def->{$hook_type};

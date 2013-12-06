@@ -95,7 +95,7 @@ sub decode_form {
 }
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
-    simple => ['config'],
+    simple => [qw/ config api /],
 );
 
 ############## PRIVATE METHODS BELOW ##############
@@ -183,17 +183,15 @@ sub _decode_json {
 sub _request {
     my ($self, $params) = @_;
     
+    my $api           = $self->api;
     my $config        = $self->config;
     my $request_class = $config->request_class_deserialize;
     
-    # This is to avoid hard binding on RPC::ExtDirect::Request
-    if ( !$self->{_have_request_class} ) {
-        eval "require $request_class";
-        $self->{_have_request_class} = 1;
-    };
+    eval "require $request_class";
     
-    return $request_class->new({
+    return $request_class->new({        
         config => $config,
+        api    => $api,
         %$params
     });
 }
@@ -215,11 +213,7 @@ sub _exception {
     my $exception_class    = $config->$getter_class();
     my $debug              = $config->$getter_debug();
     
-    # Same reason as in _request()
-    if ( !$self->{_have_exception_class} ) {
-        eval "require $exception_class";
-        $self->{_have_exception_class} = 1;
-    };
+    eval "require $exception_class";
     
     $params->{debug} = !!$debug           unless defined $params->{debug};
     $params->{where} = get_caller_info(2) unless defined $params->{where};

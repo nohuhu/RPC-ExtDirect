@@ -85,8 +85,32 @@ sub get_api_definition_compat {
     return %attrs;
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Return a reference to the actual code for this Method
+#
+
+sub code {
+    my ($self) = @_;
+    
+    my $package = $self->package;
+    my $name    = $self->name;
+    
+    eval "require $package";
+    
+    no strict 'refs';
+    
+    return *{ $package . '::' . $name }{CODE};
+}
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Read-write accessors
+#
+
 my $accessors = [qw/
     config
+    action
     name
     params
     len

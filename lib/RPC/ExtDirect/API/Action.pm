@@ -4,6 +4,8 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
+use Carp;
+
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
 
@@ -30,6 +32,16 @@ sub new {
     my $name    = $params{action};
     my $package = $params{package};
     my $methods = $params{methods} || [];
+    
+    # These checks are mostly for debugging
+    do {
+        $DB::single = 1;
+        croak "Can't create an Action without a name!"
+    }
+        unless defined $name;
+    
+    croak "Can't create an Action without the package!"
+        unless defined $package;
     
     # We accept :: in Action names so that the API would feel
     # more natural on the Perl side, but convert them to dots
@@ -142,16 +154,14 @@ sub add_method {
         my $m_class = $config->api_method_class();
         
         # This is to avoid hard binding on RPC::ExtDirect::API::Method
-        if ( !$self->{_have_method_class} ) {
-            eval "require $m_class";
-            $self->{_have_method_class} = 1;
-        }
+        eval "require $m_class";
         
         my $name = delete $method->{method} || delete $method->{name};
         
         $method = $m_class->new({
             config  => $config,
             package => $self->package,
+            action  => $self->name,
             name    => $name,
             %$method,
         });

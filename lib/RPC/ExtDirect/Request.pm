@@ -7,8 +7,6 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect::Config;
-use RPC::ExtDirect::Exception;
-use RPC::ExtDirect::Hook;
 use RPC::ExtDirect::Util::Accessor;
 use RPC::ExtDirect::Util qw/ clean_error_message /;
 
@@ -31,6 +29,13 @@ our $DEBUG;
 
 our $EXCEPTION_CLASS;
 
+### PUBLIC CLASS METHOD (ACCESSOR) ###
+#
+# Return the list of supported hook types
+#
+
+sub HOOK_TYPES { qw/ before instead after / }
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of RPC::ExtDirect::Request
@@ -39,62 +44,62 @@ our $EXCEPTION_CLASS;
 sub new {
     my ($class, $arguments) = @_;
     
-    my $config = $arguments->{config} || RPC::ExtDirect::Config->new();
+    my $api    = delete $arguments->{api};
+    my $config = delete $arguments->{config};
 
     # Need blessed object to call private methods
-    my $self = bless {}, $class;
+    my $self = bless {
+        api    => $api,
+        config => $config,
+    }, $class;
 
     # Unpack and validate arguments
-    my ($action, $method, $tid, $data, $type, $upload)
+    my ($action_name, $method_name, $tid, $data, $type, $upload)
         = eval { $self->_unpack_arguments($arguments) };
     
     return $self->_exception({
-        debug   => $DEBUG,
-        action  => $action,
-        method  => $method,
+        action  => $action_name,
+        method  => $method_name,
         tid     => $tid,
-        message => $@->[0]
+        message => $@->[0],
     }) if $@;
 
-    # Look up method parameters
-    my %parameters = eval {
-        $self->_get_method_parameters(
-            action => $action,
-            method => $method
-        )
-    };
+    # Look up the Method
+    my $method_ref = $api->get_method_by_name($action_name, $method_name);
     
     return $self->_exception({
-        debug   => $DEBUG,
-        action  => $action,
-        method  => $method,
+        action  => $action_name,
+        method  => $method_name,
         tid     => $tid,
         message => 'ExtDirect action or method not found'
-    }) if $@;
+    }) unless $method_ref;
 
     # Check if arguments passed in $data are of right kind
     my $exception = $self->_check_arguments(
-        action     => $action,
-        method     => $method,
-        tid        => $tid,
-        data       => $data,
-        parameters =>\%parameters
+        action_name => $action_name,
+        method_name => $method_name,
+        method_ref  => $method_ref,
+        tid         => $tid,
+        data        => $data,
     );
     
     return $exception if defined $exception;
-
-    # Assign attributes
-    my @attrs        = qw(action method package referent param_no
-                          param_names formHandler pollHandler
-                          tid arguments type data upload run_count);
-    @$self{ @attrs } =  ($action, $method,         $parameters{package},
-                         $parameters{referent},    $parameters{param_no},
-                         $parameters{param_names}, $parameters{formHandler},
-                         $parameters{pollHandler},
-                         $tid, $data, $type, $data, $upload, 0);
-
-    # Hooks should be already defined by now
-    $self->_init_hooks(%parameters);
+    
+    # Bulk assignment for brevity
+    @$self{ qw/ tid   type   data   upload   method_ref  run_count/ }
+        = (    $tid, $type, $data, $upload, $method_ref, 0 );
+    
+    # Finally, resolve the hooks; it's easier to do that upfront
+    # since it involves API lookup
+    for my $hook_type ( $class->HOOK_TYPES ) {
+        my $hook = $api->get_hook(
+            action => $action_name,
+            method => $method_name,
+            type   => $hook_type,
+        );
+        
+        $self->$hook_type($hook) if $hook;
+    }
 
     return $self;
 }
@@ -113,30 +118,35 @@ sub run {
             if $self->run_count > 0;
     
     # Set the flag
-    $self->{run_count} = 1;
+    $self->run_count(1);
 
     # Prepare the arguments
     my @arg = $self->_prepare_method_arguments($env);
+    
+    my %params = (
+        api        => $self->api,
+        method_ref => $self->method_ref,
+        env        => $env,
+        arg        => \@arg,
+    );
 
     my ($run_method, $callee, $result, $exception) = (1);
 
     # Run "before" hook if we got one
-    ($result, $exception, $run_method)
-        = $self->_run_before_hook(env => $env, arg => \@arg)
-            if $self->before;
+    ($result, $exception, $run_method) = $self->_run_before_hook(%params)
+        if $self->before && $self->before->runnable;
 
     # If there is "instead" hook, call it instead of the method
-    ($result, $exception, $callee) = $self->_run_method(env => $env, arg => \@arg)
-            if $run_method;
+    ($result, $exception, $callee) = $self->_run_method(%params)
+        if $run_method;
 
     # Finally, run "after" hook if we got one
     $self->_run_after_hook(
-        env       => $env,
-        arg       => \@arg,
+        %params,
         result    => $result,
         exception => $exception,
         callee    => $callee
-    ) if $self->after;
+    ) if $self->after && $self->after->runnable;
 
     # Fail gracefully if method call was unsuccessful
     return $self->_process_exception($env, $exception)
@@ -152,9 +162,9 @@ sub run {
 #
 # If method call was successful, returns result hashref.
 # If an error occured, returns exception hashref. It will contain
-# error-specific message only if $DEBUG is set. This is somewhat weird
-# requirement in ExtDirect specification. If $DEBUG is not set, exception
-# hashref will contain generic error message.
+# error-specific message only if we're debugging. This is somewhat weird
+# requirement in ExtDirect specification. If the debug config option
+# is not set, the exception hashref will contain generic error message.
 #
 
 sub result {
@@ -162,30 +172,6 @@ sub result {
 
     return $self->_get_result_hashref();
 }
-
-### PUBLIC INSTANCE METHODS ###
-#
-# Read-only getters.
-#
-
-sub action      { $_[0]->{action}      }
-sub method      { $_[0]->{method}      }
-sub package     { $_[0]->{package}     }
-sub referent    { $_[0]->{referent}    }
-sub param_no    { $_[0]->{param_no}    }
-sub type        { $_[0]->{type}        }
-sub tid         { $_[0]->{tid}         }
-sub state       { $_[0]->{state}       }
-sub where       { $_[0]->{where}       }
-sub message     { $_[0]->{message}     }
-sub upload      { $_[0]->{upload}      }
-sub run_count   { $_[0]->{run_count}   }
-sub formHandler { $_[0]->{formHandler} }
-sub pollHandler { $_[0]->{pollHandler} }
-sub before      { $_[0]->{before}      }
-sub instead     { $_[0]->{instead}     }
-sub after       { $_[0]->{after}       }
-sub param_names { @{ $_[0]->{param_names} || [] } }
 
 sub data {
     my ($self) = @_;
@@ -196,12 +182,15 @@ sub data {
          ;
 }
 
+### PUBLIC INSTANCE METHODS ###
+#
+# Read-write accessors.
+#
+
 my $accessors = [qw/
-    action
-    method
-    package
-    referent
-    param_no
+    config
+    api
+    method_ref
     type
     tid
     state
@@ -209,12 +198,13 @@ my $accessors = [qw/
     message
     upload
     run_count
-    formHandler
-    pollHandler
-    before
-    instead
-    after
-/];
+/,
+    __PACKAGE__->HOOK_TYPES,
+];
+
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple => $accessors,
+);
 
 ############## PRIVATE METHODS BELOW ##############
 
@@ -226,6 +216,11 @@ my $accessors = [qw/
 sub _exception {
     my ($self, $params) = @_;
     
+    my $config   = $self->config;
+    my $ex_class = $config->exception_class_request;
+    
+    eval "require $ex_class";
+    
     my $where = $params->{where};
 
     if ( !$where ) {
@@ -234,21 +229,11 @@ sub _exception {
         $params->{where} = $package . '->' . $sub;
     };
     
-    return $EXCEPTION_CLASS->new($params);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Return parameters for method being called.
-#
-
-sub _get_method_parameters {
-    my ($self, %params) = @_;
-    
-    my $action = $params{action};
-    my $method = $params{method};
-    
-    return RPC::ExtDirect->get_method_parameters($action, $method);
+    return $ex_class->new({
+        config => $config,
+        debug  => $config->debug_request,
+        %$params
+    });
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -264,12 +249,13 @@ sub _set_error {
         my ($package, $sub) = (caller 1)[3] =~ / \A (.*) :: (.*?) \z /xms;
         $where = $package . '->' . $sub;
     };
+    
+    my $method_ref = $self->method_ref;
 
     # We need newborn Exception object to tear its guts out
     my $ex = $self->_exception({
-        debug   => $DEBUG,
-        action  => $self->action,
-        method  => $self->method,
+        action  => $method_ref->action,
+        method  => $method_ref->name,
         tid     => $self->tid,
         message => $msg,
         where   => $where
@@ -294,10 +280,6 @@ sub _set_error {
 sub _unpack_arguments {
     my ($self, $arg) = @_;
 
-    # Check if $arg is valid
-    croak [ "ExtDirect input error: invalid input" ]
-        if !defined $arg || ref $arg ne 'HASH';
-
     # Unpack and normalize arguments
     my $action = $arg->{extAction} || $arg->{action};
     my $method = $arg->{extMethod} || $arg->{method};
@@ -308,11 +290,11 @@ sub _unpack_arguments {
                :                               undef
                ;
 
-    # Check required arguments
-    croak [ "ExtDirect action (class name) required" ]
+    # Throwing arrayref so that die() wouldn't add file/line to the string
+    die [ "ExtDirect action (class name) required" ]
         unless defined $action && length $action > 0;
 
-    croak [ "ExtDirect method name required" ]
+    die [ "ExtDirect method name required" ]
         unless defined $method && length $method > 0;
 
     return ($action, $method, $tid, $data, $type, $upload);
@@ -326,76 +308,72 @@ sub _unpack_arguments {
 sub _check_arguments {
     my ($self, %params) = @_;
     
-    my $action     = $params{action};
-    my $method     = $params{method};
-    my $tid        = $params{tid};
-    my $data       = $params{data};
-    my $method_def = $params{parameters};
+    my $action_name = $params{action_name};
+    my $method_name = $params{method_name};
+    my $method_ref  = $params{method_ref};
+    my $tid         = $params{tid};
+    my $data        = $params{data};
+
+    my $param_names = $method_ref->params;
+    my $len         = $method_ref->len;
+
+    # Event poll handlers return Event objects instead of plain data;
+    # there is no sense in calling them directly
+    if ( $method_ref->pollHandler ) {
+        return $self->_exception({
+            action  => $action_name,
+            method  => $method_name,
+            tid     => $tid,
+            message => "ExtDirect pollHandler method ".
+                       "$action_name.$method_name should not ".
+                       "be called directly"
+        });
+    }
+
+    # There's not much to check for formHandler methods
+    elsif ( $method_ref->formHandler ) {
+        if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
+             !exists $data->{extMethod} )
+        {
+            return $self->_exception({
+                action  => $action_name,
+                method  => $method_name,
+                tid     => $tid,
+                message => "ExtDirect formHandler method ".
+                           "$action_name.$method_name should only ".
+                           "be called with form submits"
+            })
+        }
+    }
 
     # Check if we have right $data type for method's calling convention
-    if ( defined $method_def->{param_names} ) {
-        my $param_names = $method_def->{param_names};
-
+    # If the params list is empty, we skip the check
+    elsif ( defined $param_names && @$param_names ) {
         if ( not $self->_check_params($param_names, $data) ) {
             return $self->_exception({
-                debug   => $DEBUG,
-                action  => $action,
-                method  => $method,
+                action  => $action_name,
+                method  => $method_name,
                 tid     => $tid,
-                message => "ExtDirect method $action.$method ".
+                message => "ExtDirect method $action_name.$method_name ".
                            "needs named parameters: " .
                            join( ', ', @$param_names )
             });
         }
-    };
+    }
 
     # Check if we have enough data for the method with numbered arguments
-    if ( $method_def->{param_no} ) {
-        my $defined_param_no = $method_def->{param_no};
-        my $real_param_no    = @$data;
+    elsif ( defined $len ) {
+        my $real_len = @$data;
 
-        if ( $real_param_no < $defined_param_no ) {
+        if ( $real_len < $len ) {
             return $self->_exception({
-                debug   => $DEBUG,
-                action  => $action,
-                method  => $method,
+                action  => $action_name,
+                method  => $method_name,
                 tid     => $tid,
-                message => "ExtDirect method $action.$method ".
-                           "needs $defined_param_no ".
-                           "arguments instead of $real_param_no"
+                message => "ExtDirect method $action_name.$method_name ".
+                           "needs $len arguments instead of $real_len"
             });
         }
-    };
-
-    # There's not much to check for formHandler methods
-    if ( $method_def->{formHandler} ) {
-        if ( ref $data ne 'HASH' || !exists $data->{extAction} ||
-             !exists $data->{extMethod} )
-        {
-            return $self->_exception({
-                debug   => $DEBUG,
-                action  => $action,
-                method  => $method,
-                tid     => $tid,
-                message => "ExtDirect formHandler method ".
-                           "$action.$method should only ".
-                           "be called with form submits"
-            })
-        }
-    };
-
-    # Event poll handlers return Event objects instead of plain data;
-    # there is no sense in calling them directly
-    if ( $method_def->{pollHandler} ) {
-        return $self->_exception({
-            debug   => $DEBUG,
-            action  => $action,
-            method  => $method,
-            tid     => $tid,
-            message => "ExtDirect pollHandler method ".
-                       "$action.$method should not ".
-                       "be called directly"
-        });
     };
 
     # undef means no exception
@@ -431,12 +409,14 @@ sub _check_params {
 
 sub _prepare_method_arguments {
     my ($self, $env) = @_;
+    
+    my $method_ref = $self->method_ref;
 
     my @arg;
 
     # Deal with form handlers first
-    if ( $self->formHandler ) {
-        # Data should be hashref here
+    if ( $method_ref->formHandler ) {
+        # Data should be a hashref here
         my $data = $self->{data};
 
         # Ensure there are no runaway ExtDirect generic parameters
@@ -454,8 +434,8 @@ sub _prepare_method_arguments {
     }
 
     # Pluck the named arguments and stash them into @arg
-    elsif ( $self->param_names ) {
-        my @names = $self->param_names;
+    elsif ( $method_ref->params ) {
+        my @names = @{ $method_ref->params };
         my $data  = $self->{data};
         my %tmp;
         @tmp{ @names } = @$data{ @names };
@@ -465,29 +445,14 @@ sub _prepare_method_arguments {
     }
 
     # Ensure we're passing the right number of arguments
-    elsif ( defined $self->param_no ) {
+    elsif ( defined $method_ref->len ) {
         my @data = $self->data;
-        @arg     = splice @data, 0, $self->param_no;
+        @arg     = splice @data, 0, $method_ref->len;
 
         push @arg, $env;
     };
 
     return @arg;
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Init Request hooks
-#
-
-sub _init_hooks {
-    my ($self, %params) = @_;
-    
-    my @hook_types = qw/ before instead after /;
-    @$self{ @hook_types }
-        = map { RPC::ExtDirect::Hook->new($_, \%params) } @hook_types;
-    
-    return $self;
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -498,18 +463,15 @@ sub _init_hooks {
 sub _run_before_hook {
     my ($self, %params) = @_;
     
-    my $env = $params{env};
-    my $arg = $params{arg};
-    
     my ($run_method, $result, $exception) = (1);
     
     # This hook may die() with an Exception
-    my $hook_result = eval { $self->before->run($env, $arg) };
+    my $hook_result = eval { $self->before->run( %params ) };
 
     # If "before" hook died, cancel Method call
     if ( $@ ) {
         $exception  = $@;
-        $run_method = '';
+        $run_method = !1;
     };
 
     # If "before" hook returns anything but number 1,
@@ -517,7 +479,7 @@ sub _run_before_hook {
     # the actual method
     if ( $hook_result ne '1' ) {
         $result     = $hook_result;
-        $run_method = '';
+        $run_method = !1;
     };
     
     return ($result, $exception, $run_method);
@@ -531,19 +493,14 @@ sub _run_before_hook {
 sub _run_method {
     my ($self, %params) = @_;
     
-    my $env = $params{env};
-    my $arg = $params{arg};
-    
-    # We call methods by code reference
-    my $package  = $self->package;
-    my $referent = $self->referent;
+    # We call methods by code reference    
+    my $code     = $params{method_ref}->code;
+    my $hook     = $self->instead;
+    my $run_hook = $hook && $hook->runnable;
 
-    my $callee = $self->instead ? $self->instead->instead
-               :                  $referent
-               ;
-
-    my $result = $self->instead ? eval { $self->instead->run($env, $arg)   }
-               :                  eval { $self->_do_run_method($env, $arg) }
+    my $callee = $run_hook ? $hook->code : $code;
+    my $result = $run_hook ? eval { $hook->run(%params)            }
+               :             eval { $self->_do_run_method(%params) }
                ;
     
     return ($result, $@, $callee);
@@ -555,12 +512,14 @@ sub _run_method {
 #
 
 sub _do_run_method {
-    my ($self, $env, $arg) = @_;
+    my ($self, %params) = @_;
     
-    my $package  = $self->package;
-    my $referent = $self->referent;
+    my $env     = $params{env};
+    my $arg     = $params{arg};
+    my $package = $params{method_ref}->package;
+    my $code    = $params{method_ref}->code;
     
-    return $referent->($package, @$arg);
+    return $code->($package, @$arg);
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -571,17 +530,11 @@ sub _do_run_method {
 sub _run_after_hook {
     my ($self, %params) = @_;
     
-    my $env       = $params{env};
-    my $arg       = $params{arg};
-    my $result    = $params{result};
-    my $exception = $params{exception};
-    my $callee    = $params{callee};
-
+    # Localize so that we don't clobber the $@
+    local $@;
+    
     # Return value and exceptions are ignored
-    eval {
-        $self->after->run($env, $arg, $result, $exception, $callee)
-    };
-    $@ = '';
+    eval { $self->after->run(%params) };
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -591,12 +544,14 @@ sub _run_after_hook {
 
 sub _get_result_hashref {
     my ($self) = @_;
+    
+    my $method_ref = $self->method_ref;
 
     my $result_ref = {
         type   => 'rpc',
         tid    => $self->tid,
-        action => $self->action,
-        method => $self->method,
+        action => $method_ref->action,
+        method => $method_ref->name,
         result => $self->{result},  # To avoid collisions
     };
 
@@ -613,9 +568,10 @@ sub _process_exception {
 
     # Stringify exception and treat it as error message
     my $msg = clean_error_message("$exception");
-
+    
     # Report actual package and method in case we're debugging
-    my $where = $self->package .'->'. $self->method;
+    my $method_ref = $self->method_ref;
+    my $where      = $method_ref->package .'->'. $method_ref->name;
 
     return $self->_set_error($msg, $where);
 }

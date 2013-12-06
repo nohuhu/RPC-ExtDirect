@@ -4,6 +4,9 @@ use warnings;
 use Data::Dumper;
 local $Data::Dumper::Indent = 1;
 
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
+
 ### Testing successful requests
 
 use Test::More tests => 65;
@@ -27,7 +30,8 @@ for my $test ( @$tests ) {
                 };
 
     # Set debug flag according to test
-    local $RPC::ExtDirect::Request::DEBUG = $debug;
+    $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug, );
+    $data->{api}    = RPC::ExtDirect->get_api();
 
     # Try to create object
     my $request = eval { RPC::ExtDirect::Request->new($data) };

@@ -4,9 +4,12 @@ use warnings;
 use Data::Dumper;
 local $Data::Dumper::Indent = 1;
 
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
+
 ### Testing invalid inputs
 
-use Test::More tests => 102;
+use Test::More tests => 95;
 
 BEGIN { use_ok 'RPC::ExtDirect::Request'; }
 
@@ -29,8 +32,9 @@ for my $test ( @$tests ) {
         = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt)
                 };
 
-    # Set debug flag according to test
-    local $RPC::ExtDirect::Request::DEBUG = $debug;
+    # Set debug flag according to the test
+    $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug );
+    $data->{api}    = RPC::ExtDirect->get_api();
 
     # Try to create object
     my $request = eval { RPC::ExtDirect::Request->new($data) };
@@ -94,18 +98,6 @@ __DATA__
                     where   => 'ExtDirect',
                     message => 'An error has occured while processing '.
                                'request', },
-    },
-    # Null input, debug on
-    {
-        name   => 'Null input, debug on', debug  => 1, ran_ok => '',
-        data   => undef,
-        isa    => 'RPC::ExtDirect::Exception',
-        result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
-                    where   => 'RPC::ExtDirect::Request->new',
-                    message => 'ExtDirect input error: invalid input', },
     },
     # Invalid input 1, debug on
     {
