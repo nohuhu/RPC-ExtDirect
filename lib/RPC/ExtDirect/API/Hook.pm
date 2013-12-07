@@ -54,17 +54,24 @@ sub run {
     
     my %hook_arg = $method_ref->get_api_definition_compat();
 
-    $hook_arg{arg} = $arg;
-    $hook_arg{env} = $env;
+    $hook_arg{arg}  = $arg;
+    $hook_arg{env}  = $env;
+    $hook_arg{code} = $method_coderef;
 
     # Result and exception are passed to "after" hook only
     @hook_arg{ qw/result   exception   method_called/ }
               = ($result, $exception, $callee)
         if $self->type eq 'after';
 
-    my @hook_types = $self->HOOK_TYPES;
-    @hook_arg{ @hook_types }
-        = map { my $h = $method_ref->$_; $h ? $h->code : () } @hook_types;
+    for my $type ( $self->HOOK_TYPES ) {
+        my $hook = $api->get_hook(
+            action => $action_name,
+            method => $method_name,
+            type   => $type,
+        );
+        
+        $hook_arg{ $type } = $hook ? $hook->code : undef;
+    }
 
     # A drop of sugar
     $hook_arg{orig} = sub { $method_coderef->($method_pkg, @$arg) };

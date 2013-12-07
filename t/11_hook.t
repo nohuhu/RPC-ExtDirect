@@ -53,7 +53,7 @@ use RPC::ExtDirect::API before => \&before_hook, after => \&after_hook;
                             after  => \&main::after_hook );
 }
 
-BEGIN { use_ok 'RPC::ExtDirect::Hook' };
+BEGIN { use_ok 'RPC::ExtDirect::API::Hook' };
 
 # These variables get set when hooks are called
 my ($before, $after, $modify, $throw_up, $cancel);
