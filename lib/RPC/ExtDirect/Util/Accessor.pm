@@ -26,13 +26,18 @@ sub mk_accessors {
     my $complexes = $params{complex};
     
     for my $prop ( @$complexes ) {
-        my $specific = $prop->{setter};
+        my $setters  = $prop->{setter};
         my $fallback = $prop->{fallback};
         
-        my $accessor  = _complex_accessor($specific, $fallback);
-        my $predicate = _predicate($specific);
+        $setters = [ $setters ] unless 'ARRAY' eq ref $setters;
         
-        eval "package $caller_class; $accessor; $predicate; 1";
+        for my $specific ( @$setters ) {
+            my $accessor  = _complex_accessor($specific, $fallback);
+            my $predicate = _predicate($specific);
+        
+            eval "package $caller_class; no warnings 'redefine'; " .
+                 "$accessor; $predicate; 1";
+        }
     }
 }
 

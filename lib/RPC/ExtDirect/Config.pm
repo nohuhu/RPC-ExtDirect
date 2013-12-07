@@ -89,7 +89,7 @@ my $DEFINITIONS = [{
     package  => 'RPC::ExtDirect::API',
     var      => 'DEBUG',
     type     => 'scalar',
-    setter   => 'debug_api',
+    setter   => [qw/ debug_api debug_serialize /],
     fallback => 'debug',
 }, {
     package  => 'RPC::ExtDirect::EventProvider',
@@ -278,6 +278,8 @@ sub _init {
 sub _get_definitions {
     return [ map { +{ %$_ } } @$DEFINITIONS ];
 }
+
+$DB::single = 1;
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple  => \@simple_accessors,

@@ -9,7 +9,6 @@ use Carp;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Serializer;
 use RPC::ExtDirect::Util::Accessor;
-use RPC::ExtDirect;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -39,6 +38,8 @@ sub import {
 
     my %param = @parameters;
        %param = map { lc $_ => delete $param{ $_ } } keys %param;
+
+    eval { require RPC::ExtDirect };
 
     my $api = RPC::ExtDirect->get_api;
     
@@ -105,19 +106,12 @@ sub get_remoting_api {
         $config ||= $self->config;
     }
     else {
+        eval { require RPC::ExtDirect };
+
         $self     = RPC::ExtDirect->get_api();
         $config ||= $self->config->clone();
         
         $config->read_global_vars();
-        
-        # This method used to set Serializer debug flag to whatever
-        # API's global DEBUG variable was. This was a somewhat
-        # convoluted approach, and we're trying to get away from it.
-        # However we got to keep compatibility with previous versions
-        # at least for package globals, but only for them - if somebody
-        # is using new Config-based approach they should set both API
-        # and Serializer debug flags separately in the Config instance.
-        $config->debug_serialize(1) if $config->debug_api;
     }
     
     # Get REMOTING_API hashref

@@ -10,7 +10,7 @@ use Carp;
 use Attribute::Handlers;
 
 # Can't `use` here to avoid circular dependency
-require RPC::ExtDirect::API;
+use RPC::ExtDirect::API;
 use RPC::ExtDirect::Util;
 
 ### PACKAGE VARIABLE ###
@@ -35,6 +35,7 @@ our $DEBUG;
 # as well as the configuration options for the RPC::ExtDirect::API class.
 #
 {
+    $DB::single = 1;
     my $api = RPC::ExtDirect::API->new();
     
     sub get_api { $api }
