@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 77;
+use Test::More tests => 83;
 
 # A stub for testing global vars handling
 package RPC::ExtDirect::API;
@@ -61,8 +61,31 @@ for my $def ( @$defs ) {
     }
 }
 
-# Test cloning
+# Adding accessors on the fly
+
 my $config = $cfg_class->new();
+
+$config->add_accessors(
+    simple  => 'blerg',
+    complex => [{
+        accessor => 'frob',
+        fallback => 'blerg',
+    }],
+);
+
+ok $config->can('blerg'), "Added simple accessor";
+ok $config->can('frob'),  "Added complex accessor";
+
+$config->blerg('cluck');
+
+is $config->frob(), 'cluck', "Complex accessor fallback value matches";
+
+$config->frob('blurb');
+
+is $config->frob(), 'blurb', "Complex accessor own value matches";
+
+# Cloning
+$config = $cfg_class->new();
 my $clone  = $config->clone();
 
 ok $config ne $clone,      "Clone is not self";

@@ -35,7 +35,6 @@ our $DEBUG;
 # as well as the configuration options for the RPC::ExtDirect::API class.
 #
 {
-    $DB::single = 1;
     my $api = RPC::ExtDirect::API->new();
     
     sub get_api { $api }

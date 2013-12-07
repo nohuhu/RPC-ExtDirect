@@ -64,6 +64,21 @@ sub read_global_vars {
     return $self;
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Add specified accessors to the Config instance class
+#
+
+sub add_accessors {
+    my ($self, %params) = @_;
+    
+    RPC::ExtDirect::Util::Accessor->mk_accessors(
+        class  => ref $self,
+        ignore => 1,
+        %params,
+    );
+}
+
 ############## PRIVATE METHODS BELOW ##############
 
 #
@@ -203,11 +218,14 @@ my $DEFINITIONS = [{
     accessor => 'verbose_exceptions',
     default  => !1,  # In accordance with Ext.Direct spec
 }, {
+    accessor => 'api_path',
+    default  => '/extdirect_api',
+}, {
     accessor => 'router_path',
-    default  => '/extdirectrouter',
+    default  => '/extdirect_router',
 }, {
     accessor => 'poll_path',
-    default  => '/extdirectevents',
+    default  => '/extdirect_events',
 }, {
     accessor => 'remoting_var',
     default  => 'Ext.app.REMOTING_API',
@@ -279,11 +297,10 @@ sub _get_definitions {
     return [ map { +{ %$_ } } @$DEFINITIONS ];
 }
 
-$DB::single = 1;
-
 RPC::ExtDirect::Util::Accessor::mk_accessors(
-    simple  => \@simple_accessors,
-    complex => \@complex_accessors,
+    simple    => \@simple_accessors,
+    complex   => \@complex_accessors,
+    overwrite => 1,
 );
 
 1;

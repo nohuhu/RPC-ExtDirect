@@ -4,44 +4,87 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
 
+use Carp;
+
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
 # Generate either simple accessors, or complex ones, or both
 #
 
 sub mk_accessors {
+    # Support class method calling convention for convenience
+    shift if $_[0] eq __PACKAGE__;
+    
     my (%params) = @_;
     
-    my $caller_class = caller();
+    $params{class} ||= caller();
     
     my $simplexes = $params{simple};
     
-    for my $prop ( @$simplexes ) {
-        my $accessor  = _simple_accessor($prop);
-        my $predicate = _predicate($prop);
-        
-        eval "package $caller_class; $accessor; $predicate; 1";
+    $simplexes = [ $simplexes ] unless 'ARRAY' eq ref $simplexes;
+    
+    for my $accessor ( @$simplexes ) {
+        _create_accessor(
+            type     => 'simple',
+            accessor => $accessor,
+            %params,
+        );
     }
     
     my $complexes = $params{complex};
     
     for my $prop ( @$complexes ) {
-        my $setters  = $prop->{setter};
-        my $fallback = $prop->{fallback};
+        my $setters  = $prop->{setter} || $prop->{accessor};
         
         $setters = [ $setters ] unless 'ARRAY' eq ref $setters;
         
         for my $specific ( @$setters ) {
-            my $accessor  = _complex_accessor($specific, $fallback);
-            my $predicate = _predicate($specific);
-        
-            eval "package $caller_class; no warnings 'redefine'; " .
-                 "$accessor; $predicate; 1";
+            _create_accessor(
+                type     => 'complex',
+                accessor => $specific,
+                fallback => $prop->{fallback},
+                %params,
+            );
         }
     }
 }
 
+# This is a convenience shortcut, too, as I always forget if
+# the sub name is singular or plural...
+*mk_accessor = *mk_accessors;
+
 ############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE PACKAGE SUBROUTINE ###
+#
+# Create an accessor
+#
+
+sub _create_accessor {
+    my (%params) = @_;
+    
+    my $class     = $params{class};
+    my $overwrite = $params{overwrite};
+    my $ignore    = $params{ignore};
+    my $type      = $params{type};
+    my $accessor  = $params{accessor};
+    my $fallback  = $params{fallback};
+
+    if ( $class->can($accessor) ) {
+        croak "Accessor $accessor already exists in class $class"
+            if !$overwrite && !$ignore;
+    
+        return if $ignore && !$overwrite;
+    }
+    
+    my $accessor_fn  = $type eq 'complex' ? _complex($accessor, $fallback)
+                     :                      _simplex($accessor)
+                     ;
+    my $predicate_fn = _predicate($accessor);
+    
+    eval "package $class; no warnings 'redefine'; " .
+         "$accessor_fn; $predicate_fn; 1";
+}
 
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
@@ -69,7 +112,7 @@ sub _predicate {
 # to the object property, the rest will be ignored.
 #
 
-sub _simple_accessor {
+sub _simplex {
     my ($prop) = @_;
     
     return "
@@ -96,7 +139,7 @@ sub _simple_accessor {
 # with one argument.
 #
 
-sub _complex_accessor {
+sub _complex {
     my ($specific, $fallback) = @_;
     
     return "

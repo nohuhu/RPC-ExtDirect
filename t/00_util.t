@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 67;
+use Test::More tests => 72;
 
 BEGIN {
     use_ok 'RPC::ExtDirect::Util';
@@ -22,6 +22,9 @@ sub new {
 sub bleh {
     return RPC::ExtDirect::Util::get_caller_info($_[1]);
 }
+
+# This one is to test existing sub handling
+sub fred {}
 
 RPC::ExtDirect::Util::Accessor::mk_accessors( simple => ['bar', 'baz'] );
 
@@ -53,6 +56,51 @@ is $foo->{bar}, 'qux', "Simple setter value match";
 $res = eval { $foo->bar() };
 
 is $res, 'qux', "Simple getter after setter value match";
+
+# Existing methods w/o overwrite
+
+eval {
+    RPC::ExtDirect::Util::Accessor::mk_accessors(
+        class  => 'Foo',
+        simple => ['fred'],
+    )
+};
+
+my $regex = qr/^Accessor fred already exists in class Foo/;
+
+like $@, $regex, "Existing method w/o overwrite died";
+
+# Existing methods w/o overwrite but w/ ignore
+
+eval {
+    RPC::ExtDirect::Util::Accessor->mk_accessor(
+        class  => 'Foo',
+        simple => 'fred',
+        ignore => 1,
+    )
+};
+
+is $@, '', "Existing method w/o ovr w/ ignore didn't die";
+
+$foo->fred('frob');
+
+is $foo->fred(), undef, "Existing method w/o ovr w/ ignore didn't ovr";
+
+# Existing methods w/ overwrite
+
+eval {
+    RPC::ExtDirect::Util::Accessor->mk_accessors(
+        class     => 'Foo',
+        simple    => ['fred'],
+        overwrite => 1,
+    );
+};
+
+is $@, '', "Existing method w/ overwrite didn't die";
+
+$foo->fred('blerg');
+
+is $foo->fred(), 'blerg', "Existing method overwritten";
 
 # Complex accessors
 
