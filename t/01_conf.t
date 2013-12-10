@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 83;
+use Test::More tests => 87;
 
 # A stub for testing global vars handling
 package RPC::ExtDirect::API;

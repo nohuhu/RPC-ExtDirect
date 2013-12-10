@@ -215,17 +215,23 @@ my $DEFINITIONS = [{
     setter   => 'json_options_deserialize',
     fallback => 'json_options',
 }, {
+    accessor => 'router_class',
+    default  => 'RPC::ExtDirect::Router',
+}, {
+    accessor => 'eventprovider_class',
+    default  => 'RPC::ExtDirect::EventProvider',
+}, {
     accessor => 'verbose_exceptions',
     default  => !1,  # In accordance with Ext.Direct spec
 }, {
     accessor => 'api_path',
-    default  => '/extdirect_api',
+    default  => '/extdirectapi',
 }, {
     accessor => 'router_path',
-    default  => '/extdirect_router',
+    default  => '/extdirectrouter',
 }, {
     accessor => 'poll_path',
-    default  => '/extdirect_events',
+    default  => '/extdirectevents',
 }, {
     accessor => 'remoting_var',
     default  => 'Ext.app.REMOTING_API',

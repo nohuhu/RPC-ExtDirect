@@ -84,9 +84,69 @@ sub new {
     }, $class;
 }
 
-### PUBLIC CLASS METHOD ###
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Returns JavaScript chunk for REMOTING_API
+# Init a new API object and populate it from the supplied hashref
+#
+
+sub new_from_hashref {
+    my ($class, %params) = @_;
+    
+    my $api_href = delete $params{api_href};
+    
+    my $self = $class->new(%params);
+    
+    $self->init_from_hashref($api_href);
+    
+    return $self;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Initialize the API from a hashref
+#
+
+sub init_from_hashref {
+    my ($self, $api) = @_;
+    
+    for my $package ( keys %$api ) {
+        my $action_def = $api->{$package};
+        
+        my $action = $self->add_action(
+            action       => $action_def->{action},
+            package      => $package,
+            no_overwrite => 1,
+        );
+        
+        for my $hook_type ( $self->HOOK_TYPES ) {
+            my $hook_code = $action_def->{$hook_type};
+            
+            if ( $hook_code ) {
+                $self->add_hook(
+                    package => $package,
+                    type    => $hook_type,
+                    code    => $hook_code,
+                );
+            }
+        }
+        
+        my $methods = $action_def->{methods};
+        
+        for my $method_name ( keys %$methods ) {
+            my $method_def = $methods->{ $method_name };
+            
+            $self->add_method(
+                package => $package,
+                method  => $method_name,
+                %$method_def
+            );
+        }
+    }
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Returns the JavaScript chunk for REMOTING_API
 #
 
 sub get_remoting_api {
@@ -218,7 +278,7 @@ sub get_action_by_package {
     my @actions = $self->actions;
     
     for my $name ( @actions ) {
-        my $action = $self->get_action_by_name($name);
+        my $action = $self->{actions}->{$name};
         
         return $action if $action->package eq $package;
     }

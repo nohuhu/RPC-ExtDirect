@@ -24,20 +24,17 @@ sub HOOK_TYPES { qw/ before instead after / }
 sub new {
     my ($class, %params) = @_;
     
-    my $config = $params{config};
+    my $config = delete $params{config};
     
     # For the caller, the 'action' parameter makes sense as the
     # Action's name, but from within the Action itself it's just
     # the name
-    my $name    = $params{action};
-    my $package = $params{package};
-    my $methods = $params{methods} || [];
+    my $name    = delete $params{action};
+    my $package = delete $params{package};
+    my $methods = delete $params{methods} || [];
     
     # These checks are mostly for debugging
-    do {
-        $DB::single = 1;
-        croak "Can't create an Action without a name!"
-    }
+    croak "Can't create an Action without a name!"
         unless defined $name;
     
     croak "Can't create an Action without the package!"
@@ -53,6 +50,7 @@ sub new {
         name    => $name,
         package => $package,
         methods => {},
+        %params,
     }, $class;
     
     $self->add_method($_) for @$methods;
