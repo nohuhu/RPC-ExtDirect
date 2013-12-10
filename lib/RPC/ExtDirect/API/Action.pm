@@ -37,9 +37,6 @@ sub new {
     croak "Can't create an Action without a name!"
         unless defined $name;
     
-    croak "Can't create an Action without the package!"
-        unless defined $package;
-    
     # We accept :: in Action names so that the API would feel
     # more natural on the Perl side, but convert them to dots
     # anyway to be compatible with JavaScript

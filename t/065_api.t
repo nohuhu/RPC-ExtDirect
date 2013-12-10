@@ -1,4 +1,4 @@
-# Test API initialization from a hashref
+# Test remote API initialization from a hashref (no packages)
 
 use strict;
 use warnings;
@@ -9,7 +9,8 @@ use RPC::ExtDirect::Config;
 use RPC::ExtDirect::API;
 
 my $api_def = {
-    'RPC::ExtDirect::Test::Foo' => {
+    'Foo' => {
+        remote  => 1,
         methods => {
             foo_foo     => { len => 1 },
             foo_bar     => { len => 2 },
@@ -18,14 +19,16 @@ my $api_def = {
             foo_zero    => { len => 0 },
         },
     },
-    'RPC::ExtDirect::Test::Bar' => {
+    'Bar' => {
+        remote  => 1,
         methods => {
             bar_bar => { len => 5 },
             bar_foo => { len => 4 },
             bar_baz => { formHandler => 1 },
         },
     },
-    'RPC::ExtDirect::Test::Qux' => {
+    'Qux' => {
+        remote  => 1,
         methods => {
             foo_foo => { len => 1 },
             bar_bar => { len => 5 },
@@ -35,7 +38,8 @@ my $api_def = {
             foo_baz => { params => [qw/ foo bar baz /] },
         },
     },
-    'RPC::ExtDirect::Test::PollProvider' => {
+    'PollProvider' => {
+        remote  => 1,
         methods => {
             foo => { pollHandler => 1 },
         },
@@ -105,6 +109,6 @@ my $remoting_api = eval { $api->get_remoting_api() };
 # Remove whitespace
 s/\s//g for ( $expected, $remoting_api );
 
-is $@,            '',        "remoting_api() 4 eval $@";
-is $remoting_api, $expected, "remoting_api() 4 result";
+is $@,            '',        "remoting_api() 5 eval $@";
+is $remoting_api, $expected, "remoting_api() 5 result";
 

@@ -109,16 +109,19 @@ sub new_from_hashref {
 sub init_from_hashref {
     my ($self, $api) = @_;
     
-    for my $package ( keys %$api ) {
-        my $action_def = $api->{$package};
+    for my $key ( keys %$api ) {
+        my $action_def  = $api->{$key};
+        my $remote      = $action_def->{remote};
+        my $package     = $remote ? undef : $key;
+        my $action_name = $remote ? $key  : $action_def->{action};
         
         my $action = $self->add_action(
-            action       => $action_def->{action},
+            action       => $action_name,
             package      => $package,
             no_overwrite => 1,
         );
         
-        for my $hook_type ( $self->HOOK_TYPES ) {
+        for my $hook_type ( $remote ? () : $self->HOOK_TYPES ) {
             my $hook_code = $action_def->{$hook_type};
             
             if ( $hook_code ) {
@@ -136,6 +139,7 @@ sub init_from_hashref {
             my $method_def = $methods->{ $method_name };
             
             $self->add_method(
+                action  => $action_name,
                 package => $package,
                 method  => $method_name,
                 %$method_def
@@ -295,21 +299,25 @@ sub get_action_by_package {
 sub add_method {
     my ($self, %params) = @_;
     
-    my $package = delete $params{package};
+    my $package     = delete $params{package};
+    my $action_name = delete $params{action};
     
     # Try to find the Action by the package name
-    my $action = $self->get_action_by_package($package);
+    my $action = $action_name ? $self->get_action_by_name($action_name)
+               :                $self->get_action_by_package($package)
+               ;
     
-    # If Action is not found, create a new one using the last chunk
-    # of the package name
+    # If Action is not found, create a new one
     if ( !$action ) {
-        my $action_name = $package;
+        if ( !$action_name ) {
+            $action_name = $package;
             $action_name =~ s/ \A .* :: //xms;
+        }
             
-            $action = $self->add_action(
-                action  => $action_name,
-                package => $package,
-            );
+        $action = $self->add_action(
+            action  => $action_name,
+            package => $package,
+        );
     }
     
     # For historical reasons, we support both param_no and len
@@ -326,10 +334,6 @@ sub add_method {
     $self->_init_hooks(\%params);
     
     $action->add_method(\%params);
-
-    # We use the array to keep track of the order
-#     push @POLL_HANDLERS, $qualified_name
-#         if $attribute_def->{pollHandler};
 }
 
 ### PUBLIC INSTANCE METHOD ###
