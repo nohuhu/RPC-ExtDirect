@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 87;
+use Test::More tests => 89;
 
 # A stub for testing global vars handling
 package RPC::ExtDirect::API;
@@ -83,6 +83,16 @@ is $config->frob(), 'cluck', "Complex accessor fallback value matches";
 $config->frob('blurb');
 
 is $config->frob(), 'blurb', "Complex accessor own value matches";
+
+# Setting options in bulk
+
+$config->set_options(
+    blerg => 'blam',
+    frob  => 'frab',
+);
+
+is $config->blerg(), 'blam', "Bulk setter value 1 matches";
+is $config->frob(),  'frab', "Bulk setter value 2 matches";
 
 # Cloning
 $config = $cfg_class->new();

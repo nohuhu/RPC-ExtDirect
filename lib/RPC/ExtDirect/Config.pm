@@ -77,6 +77,25 @@ sub add_accessors {
         ignore => 1,
         %params,
     );
+    
+    return $self;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Set the options in bulk by calling relevant setters
+#
+
+sub set_options {
+    my $self = shift;
+    
+    my %options = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
+    
+    while ( my ($option, $value) = each %options ) {
+        $self->$option($value);
+    }
+    
+    return $self;
 }
 
 ############## PRIVATE METHODS BELOW ##############
