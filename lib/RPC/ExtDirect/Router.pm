@@ -151,14 +151,16 @@ sub _decode_requests {
 
 sub _run_requests {
     my ($self, $env, $requests) = @_;
-    
-    # Run the requests
-    $_->run($env) for @$requests;
 
-    # Collect responses
-    my $responses = [ map { $_->result() } @$requests ];
+    my @responses;
     
-    return $responses;
+    # Run the requests, collect the responses
+    for my $request ( @$requests ) {
+        $request->run($env);
+        push @responses, $request->result();
+    }
+
+    return \@responses;
 }
 
 ### PRIVATE INSTANCE METHOD ###

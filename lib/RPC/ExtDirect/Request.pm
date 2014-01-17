@@ -119,13 +119,19 @@ sub run {
     
     # Set the flag
     $self->run_count(1);
+    
+    my $method_ref = $self->method_ref;
 
     # Prepare the arguments
-    my @arg = $self->_prepare_method_arguments($env);
+    my @arg = $method_ref->prepare_method_arguments(
+        env    => $env,
+        input  => $self->{data},
+        upload => $self->upload,
+    );
     
     my %params = (
         api        => $self->api,
-        method_ref => $self->method_ref,
+        method_ref => $method_ref,
         env        => $env,
         arg        => \@arg,
     );
@@ -400,59 +406,6 @@ sub _check_params {
 
     # Got 'em all
     return 1;
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Prepares method arguments to be passed along to the method
-#
-
-sub _prepare_method_arguments {
-    my ($self, $env) = @_;
-    
-    my $method_ref = $self->method_ref;
-
-    my @arg;
-
-    # Deal with form handlers first
-    if ( $method_ref->formHandler ) {
-        # Data should be a hashref here
-        my $data = $self->{data};
-
-        # Ensure there are no runaway ExtDirect generic parameters
-        my @runaway_params = qw(action method extAction extMethod
-                                extTID extUpload _uploads);
-        delete @$data{ @runaway_params };
-
-        # Add uploads if there are any
-        $data->{file_uploads} = $self->upload
-            if $self->upload;
-
-        $data->{_env} = $env;
-
-        @arg = %$data;
-    }
-
-    # Pluck the named arguments and stash them into @arg
-    elsif ( $method_ref->params ) {
-        my @names = @{ $method_ref->params };
-        my $data  = $self->{data};
-        my %tmp;
-        @tmp{ @names } = @$data{ @names };
-        $tmp{_env} = $env;
-
-        @arg = %tmp;
-    }
-
-    # Ensure we're passing the right number of arguments
-    elsif ( defined $method_ref->len ) {
-        my @data = $self->data;
-        @arg     = splice @data, 0, $method_ref->len;
-
-        push @arg, $env;
-    };
-
-    return @arg;
 }
 
 ### PRIVATE INSTANCE METHOD ###
