@@ -56,30 +56,6 @@ sub _check_arguments {
 
 ### PRIVATE INSTANCE METHOD ###
 #
-# Prepares method arguments to be passed along to the method
-#
-
-sub _prepare_method_arguments {
-    my ($self, $env) = @_;
-    
-    return ($env);
-}
-   
-### PRIVATE INSTANCE METHOD ###
-#
-# Actually run the method or hook and return result
-#
-
-sub _do_run_method {
-    my ($self, %params) = @_;
-    
-    my @events = $self->SUPER::_do_run_method(%params);
-    
-    return [@events];
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
 # Handles errors
 #
 

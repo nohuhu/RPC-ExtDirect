@@ -118,15 +118,22 @@ sub code {
 # and input data; return the result or die with exception
 #
 
+# We accept named parameters here to keep signature compat
+# with the corresponding Hook method
 sub run {
-    my ($self, %arg) = @_;
+    my ($self, %params) = @_;
     
-    my $env   = $arg{env};
-    my $input = $arg{data};
+    my $arg     = $params{arg};
+    my $package = $self->package;
+    my $code    = $self->code;
     
-    my @method_arg = $self->prepare_method_arguments($env, $input);
-    
-    
+    # pollHandler methods should always be called in a list context
+    if ( $self->pollHandler ) {
+        return [ $code->($package, @$arg) ];
+    }
+    else {
+        return $code->($package, @$arg);
+    }
 }
 
 ### PUBLIC INSTANCE METHOD ###

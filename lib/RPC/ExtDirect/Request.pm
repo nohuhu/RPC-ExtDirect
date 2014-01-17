@@ -123,7 +123,7 @@ sub run {
     my $method_ref = $self->method_ref;
 
     # Prepare the arguments
-    my @arg = $method_ref->prepare_method_arguments(
+    my @method_arg = $method_ref->prepare_method_arguments(
         env    => $env,
         input  => $self->{data},
         upload => $self->upload,
@@ -133,7 +133,7 @@ sub run {
         api        => $self->api,
         method_ref => $method_ref,
         env        => $env,
-        arg        => \@arg,
+        arg        => \@method_arg,
     );
 
     my ($run_method, $callee, $result, $exception) = (1);
@@ -440,39 +440,21 @@ sub _run_before_hook {
 
 ### PRIVATE INSTANCE METHOD ###
 #
-# Runs "instead" hook if it exists, or the mehtod itself
+# Runs "instead" hook if it exists, or the method itself
 #
 
 sub _run_method {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
     # We call methods by code reference    
-    my $code     = $params{method_ref}->code;
     my $hook     = $self->instead;
     my $run_hook = $hook && $hook->runnable;
 
-    my $callee = $run_hook ? $hook->code : $code;
-    my $result = $run_hook ? eval { $hook->run(%params)            }
-               :             eval { $self->_do_run_method(%params) }
-               ;
+    my $callee    = $run_hook ? $hook : $self->method_ref;
+    my $result    = eval { $callee->run(%arg) };
+    my $exception = $@;
     
-    return ($result, $@, $callee);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Actually run the method or hook and return result
-#
-
-sub _do_run_method {
-    my ($self, %params) = @_;
-    
-    my $env     = $params{env};
-    my $arg     = $params{arg};
-    my $package = $params{method_ref}->package;
-    my $code    = $params{method_ref}->code;
-    
-    return $code->($package, @$arg);
+    return ($result, $exception, $callee->code);
 }
 
 ### PRIVATE INSTANCE METHOD ###
