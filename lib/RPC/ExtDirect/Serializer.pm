@@ -20,16 +20,16 @@ use RPC::ExtDirect::Util qw/
 #
 
 sub new {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    my $self = bless { %params }, $class;
+    my $self = bless { %arg }, $class;
     
     return $self;
 }
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Serializes the data passed to it in JSON
+# Serialize the data passed to it in JSON
 #
 
 sub serialize {
@@ -58,6 +58,7 @@ sub decode_post {
     my ($self, $post_text) = @_;
 
     # Try to decode data, return Exception upon failure
+    local $@;
     my $data = eval { $self->_decode_json($post_text) };
 
     if ( $@ ) {
@@ -119,6 +120,7 @@ sub _clean_msg {
 sub _encode_response {
     my ($self, $response, $suppress_exceptions) = @_;
     
+    local $@;
     my $text = eval { $self->_encode_json($response) };
 
     if ( $@ and not $suppress_exceptions ) {
@@ -136,6 +138,7 @@ sub _encode_response {
             message   => $msg,
         });
         
+        local $@;
         $text = eval { $self->_encode_json( $exception->result() ) };
     };
     
@@ -181,7 +184,7 @@ sub _decode_json {
 #
 
 sub _request {
-    my ($self, $params) = @_;
+    my ($self, $arg) = @_;
     
     my $api           = $self->api;
     my $config        = $self->config;
@@ -192,7 +195,7 @@ sub _request {
     return $request_class->new({        
         config => $config,
         api    => $api,
-        %$params
+        %$arg
     });
 }
 
@@ -202,9 +205,9 @@ sub _request {
 #
 
 sub _exception {
-    my ($self, $params) = @_;
+    my ($self, $arg) = @_;
     
-    my $direction = $params->{direction};
+    my $direction = $arg->{direction};
 
     my $config    = $self->config;
     my $getter_class = "exception_class_$direction";
@@ -215,42 +218,12 @@ sub _exception {
     
     eval "require $exception_class";
     
-    $params->{debug} = !!$debug           unless defined $params->{debug};
-    $params->{where} = get_caller_info(2) unless defined $params->{where};
+    $arg->{debug} = !!$debug           unless defined $arg->{debug};
+    $arg->{where} = get_caller_info(2) unless defined $arg->{where};
     
-    $params->{verbose} = $config->verbose_exceptions();
+    $arg->{verbose} = $config->verbose_exceptions();
     
-    return $exception_class->new($params);
+    return $exception_class->new($arg);
 }
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::Serializer - Ext.Direct wire protocol handling
-
-=head1 SYNOPSIS
-
-This module is not intended to be directly. Rather, you can affect its
-behavior by passing certain options to other class constructors.
-
-=head1 OPTIONS
-
-TBA
-
-=head1 AUTHOR
-
-Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2013 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut

@@ -17,13 +17,13 @@ sub HOOK_TYPES { qw/ before instead after / }
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Instantiate new Hook object
+# Instantiate a new Hook object
 #
 
 sub new {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    my ($type, $coderef) = @params{qw/ type code /};
+    my ($type, $coderef) = @arg{qw/ type code /};
     my $package = _package_from_coderef($coderef);
     
     my $self = bless {
@@ -42,10 +42,10 @@ sub new {
 #
 
 sub run {
-    my ($self, %params) = @_;
+    my ($self, %args) = @_;
     
     my ($api, $env, $arg, $result, $exception, $method_ref, $callee)
-        = @params{qw/api env arg result exception method_ref callee/};
+        = @args{qw/api env arg result exception method_ref callee/};
     
     my $action_name    = $method_ref->action;
     my $method_name    = $method_ref->name;
@@ -85,7 +85,7 @@ sub run {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Read only getters
+# Simple read-write accessors
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(

@@ -10,7 +10,7 @@ use RPC::ExtDirect::Util::Accessor;
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Initializes new instance of Event.
+# Initialize a new Event instance
 #
 
 sub new {
@@ -19,7 +19,7 @@ sub new {
     # Allow passing either ordered parameters, or hashref,
     # or even a hash. This is to allow Mooseish and other
     # popular invocation patterns without having to pile on
-    # argument converters
+    # argument converters or doing some other nonsense.
     my ($name, $data);
     
     if ( @_ == 1 ) {
@@ -36,10 +36,10 @@ sub new {
         $data = $_[1];
     }
     elsif ( @_ % 2 == 0 ) {
-        my %params = @_;
+        my %arg = @_;
         
-        $name = $params{name};
-        $data = $params{data};
+        $name = $arg{name};
+        $data = $arg{data};
     }
 
     croak "Ext.Direct Event name is required"
@@ -55,7 +55,7 @@ sub new {
 # A stub for duck typing. Does nothing, returns failure.
 #
 
-sub run { '' }
+sub run { !1 }
 
 ### PUBLIC INSTANCE METHOD ###
 #
@@ -75,7 +75,7 @@ sub result {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Accessor methods
+# Simple read-write accessors
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
@@ -90,7 +90,7 @@ __END__
 
 =head1 NAME
 
-RPC::ExtDirect::Event - The way to pass data to client side
+RPC::ExtDirect::Event - The way to push data to the client side
 
 =head1 SYNOPSIS
  

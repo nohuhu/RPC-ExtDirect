@@ -27,24 +27,29 @@ our $DEBUG;
 #
 
 sub import {
-    my ($class, @parameters) = @_;
+    my ($class, @args) = @_;
 
     # Nothing to do
-    return unless @parameters;
+    return unless @args;
 
     # Only hash-like arguments are supported
-    croak 'Odd number of parameters in RPC::ExtDirect::API::import()'
-        unless (@parameters % 2) == 0;
+    croak 'Odd number of arguments in RPC::ExtDirect::API::import()'
+        unless (@args % 2) == 0;
 
-    my %param = @parameters;
-       %param = map { lc $_ => delete $param{ $_ } } keys %param;
-
-    eval { require RPC::ExtDirect };
+    my %arg = @args;
+       %arg = map { lc $_ => delete $arg{ $_ } } keys %arg;
+    
+    # In most cases that's a formality since RPC::ExtDirect
+    # should be already required elsewhere; some test scripts
+    # may not load it on purpose so we guard against that
+    # just in case. We don't want to `use` RPC::ExtDirect above,
+    # because that would create a circular dependency.
+    require RPC::ExtDirect;
 
     my $api = RPC::ExtDirect->get_api;
     
     for my $type ( $class->HOOK_TYPES ) {
-        my $code = delete $param{ $type };
+        my $code = delete $arg{ $type };
         
         $api->add_hook( type => $type, code => $code )
             if $code;
@@ -52,8 +57,8 @@ sub import {
     
     my $api_config = $api->config;
     
-    for my $option ( keys %param ) {
-        my $value = $param{$option};
+    for my $option ( keys %arg ) {
+        my $value = $arg{$option};
         
         $api_config->$option($value);
     }
@@ -74,12 +79,12 @@ sub HOOK_TYPES { qw/ before instead after/ }
 sub new {
     my $class = shift;
     
-    my %params = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
+    my %arg = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
     
-    $params{config} ||= RPC::ExtDirect::Config->new();
+    $arg{config} ||= RPC::ExtDirect::Config->new();
     
     return bless {
-        %params,
+        %arg,
         actions => {},
     }, $class;
 }
@@ -90,11 +95,11 @@ sub new {
 #
 
 sub new_from_hashref {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    my $api_href = delete $params{api_href};
+    my $api_href = delete $arg{api_href};
     
-    my $self = $class->new(%params);
+    my $self = $class->new(%arg);
     
     $self->init_from_hashref($api_href);
     
@@ -107,10 +112,10 @@ sub new_from_hashref {
 #
 
 sub init_from_hashref {
-    my ($self, $api) = @_;
+    my ($self, $api_href) = @_;
     
-    for my $key ( keys %$api ) {
-        my $action_def  = $api->{$key};
+    for my $key ( keys %$api_href ) {
+        my $action_def  = $api_href->{ $key };
         my $remote      = $action_def->{remote};
         my $package     = $remote ? undef : $key;
         my $action_name = $remote ? $key  : $action_def->{action};
@@ -154,23 +159,22 @@ sub init_from_hashref {
 #
 
 sub get_remoting_api {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
     my ($self, $config);
     
     # There is an option to pass config externally; mainly for testing
-    $config = $params{config};
+    $config = $arg{config};
     
-    # Backwards compatibility: if called as a class method,
-    # operate on the "global" API object instead, and create
-    # a new Config instance as well to take care of possibly-set
-    # global variables
+    # Backwards compatibility: if called as a class method, operate on
+    # the "global" API object instead, and create a new Config instance
+    # as well to take care of possibly-modified-since global variables
     if ( ref $class ) {
         $self     = $class;
         $config ||= $self->config;
     }
     else {
-        eval { require RPC::ExtDirect };
+        require RPC::ExtDirect;
 
         $self     = RPC::ExtDirect->get_api();
         $config ||= $self->config->clone();
@@ -232,15 +236,15 @@ sub actions { keys %{ $_[0]->{actions} } }
 #
 
 sub add_action {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
-    $params{action} = $self->_get_action_name( $params{package} )
-        unless defined $params{action};
+    $arg{action} = $self->_get_action_name( $arg{package} )
+        unless defined $arg{action};
     
-    my $action_name = $params{action};
+    my $action_name = $arg{action};
     
-    return $self->{actions}->{$action_name}
-        if $params{no_overwrite} && exists $self->{actions}->{$action_name};
+    return $self->{actions}->{ $action_name }
+        if $arg{no_overwrite} && exists $self->{actions}->{ $action_name };
     
     my $config  = $self->config;
     my $a_class = $config->api_action_class();
@@ -248,14 +252,14 @@ sub add_action {
     # This is to avoid hard binding on the Action class
     eval "require $a_class";
     
-    $self->_init_hooks(\%params);
+    $self->_init_hooks(\%arg);
     
     my $action_obj = $a_class->new(
         config => $config,
-        %params,
+        %arg,
     );
     
-    $self->{actions}->{$action_name} = $action_obj;
+    $self->{actions}->{ $action_name } = $action_obj;
     
     return $action_obj;
 }
@@ -266,9 +270,9 @@ sub add_action {
 #
 
 sub get_action_by_name {
-    my ($self, $name) = @_;
+    my ($self, $action_name) = @_;
     
-    return $self->{actions}->{$name};
+    return $self->{actions}->{ $action_name };
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -279,11 +283,7 @@ sub get_action_by_name {
 sub get_action_by_package {
     my ($self, $package) = @_;
     
-    my @actions = $self->actions;
-    
-    for my $name ( @actions ) {
-        my $action = $self->{actions}->{$name};
-        
+    for my $action ( values %{ $self->{actions} } ) {
         return $action if $action->package eq $package;
     }
     
@@ -297,10 +297,10 @@ sub get_action_by_package {
 #
 
 sub add_method {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
-    my $package     = delete $params{package};
-    my $action_name = delete $params{action};
+    my $package     = delete $arg{package};
+    my $action_name = delete $arg{action};
     
     # Try to find the Action by the package name
     my $action = $action_name ? $self->get_action_by_name($action_name)
@@ -324,16 +324,16 @@ sub add_method {
     # parameters for ordered methods, and both params and
     # param_names for named methods.
     # However the Method definition needs normalized input.
-    $params{len} = delete $params{param_no}
-        if exists $params{param_no} and not exists $params{len};
+    $arg{len} = delete $arg{param_no}
+        if exists $arg{param_no} and not exists $arg{len};
     
-    $params{params} = delete $params{param_names}
-        if exists $params{param_names} and not exists $params{params};
+    $arg{params} = delete $arg{param_names}
+        if exists $arg{param_names} and not exists $arg{params};
     
     # Go over the hooks and instantiate them
-    $self->_init_hooks(\%params);
+    $self->_init_hooks(\%arg);
     
-    $action->add_method(\%params);
+    $action->add_method(\%arg);
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -357,10 +357,10 @@ sub get_method_by_name {
 #
 
 sub add_hook {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
-    my              ($package, $method_name, $type, $code)
-        = @params{qw/ package   method        type   code /};
+    my           ($package, $method_name, $type, $code)
+        = @arg{qw/ package   method        type   code /};
     
     # A bit kludgy but there's no point in duplicating
     my $hook = do {
@@ -403,10 +403,10 @@ sub add_hook {
 #
 
 sub get_hook {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
-    my              ($action_name, $package, $method_name, $type)
-        = @params{qw/ action        package   method        type/};
+    my           ($action_name, $package, $method_name, $type)
+        = @arg{qw/ action        package   method        type/};
     
     my $action = $action_name ? $self->get_action_by_name($action_name)
                :                $self->get_action_by_package($package)
@@ -432,15 +432,12 @@ sub get_poll_handlers {
     
     my @handlers;
     
-    my @actions = $self->actions;
-    
     ACTION:
-    for my $name ( @actions ) {
-        my $action = $self->get_action_by_name($name);
+    for my $action ( values %{ $self->{actions} } ) {
+        my @methods = map { $action->method($_) }
+                          $action->polling_methods();
         
-        my @methods = $action->polling_methods();
-        
-        push @handlers, map { $action->method($_) } @methods;
+        push @handlers, @methods;
     }
     
     return @handlers;
@@ -448,7 +445,7 @@ sub get_poll_handlers {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Simple accessors
+# Simple read-write accessors
 #
 
 my $accessors = [qw/
@@ -465,21 +462,17 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 
 ### PRIVATE CLASS METHOD ###
 #
-# Prepares REMOTING_API hashref
+# Prepare REMOTING_API hashref
 #
 
 sub _get_remoting_api {
     my ($self, $config) = @_;
 
-    my @actions = $self->actions;
-
     # Compile the list of "actions"
     my %api;
     
     ACTION:
-    for my $name ( @actions ) {
-        my $action = $self->get_action_by_name($name);
-        
+    while ( my ($name, $action) = each %{ $self->{actions} } ) {
         # Get the list of methods for Action
         my @methods = $action->remoting_api;
 
@@ -510,14 +503,11 @@ sub _get_remoting_api {
 sub _get_polling_api {
     my ($self, $config) = @_;
     
-    my @actions = $self->actions;
-    
     # Check if we have any poll handlers in our definitions
     my $has_poll_handlers;
+    
     ACTION:
-    for my $name ( @actions ) {
-        my $action = $self->get_action_by_name($name);
-        
+    while ( my ($name, $action) = each %{ $self->{actions} } ) {
         $has_poll_handlers = $action->has_pollHandlers;
 
         last ACTION if $has_poll_handlers;

@@ -8,10 +8,10 @@ use base 'RPC::ExtDirect::Event';
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Initializes new instance of NoEvents. This is a stub event
+# Initialize a new instance of NoEvents. This is a stub event
 # we have to return when there are no actual events returned
 # by the poll handlers. Certain Ext JS versions had a bug that
-# resulted in JavaScript exception thrown when an empty array
+# resulted in a JavaScript exception thrown when an empty array
 # of events was returned; returning one stub event instead
 # works around that problem.
 #

@@ -8,8 +8,6 @@
 
 package RPC::ExtDirect::Deserialize;
 
-use strict;
-
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set it to true value to turn on debugging

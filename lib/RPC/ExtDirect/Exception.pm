@@ -15,22 +15,19 @@ use RPC::ExtDirect::Util qw/ clean_error_message get_caller_info /;
 #
 
 sub new {
-    my ($class, $arguments) = @_;
+    my ($class, $arg) = @_;
 
-    # Unpack the arguments
-    my $where   = $arguments->{where};
-    my $message = $arguments->{message};
+    my $where   = $arg->{where};
+    my $message = $arg->{message};
 
-    # Need the object to call private methods
     my $self = bless {
-        debug   => $arguments->{debug},
-        action  => $arguments->{action},
-        method  => $arguments->{method},
-        tid     => $arguments->{tid},
-        verbose => $arguments->{verbose},
+        debug   => $arg->{debug},
+        action  => $arg->{action},
+        method  => $arg->{method},
+        tid     => $arg->{tid},
+        verbose => $arg->{verbose},
     }, $class;
 
-    # Store the information internally
     $self->_set_error($message, $where);
 
     return $self;
@@ -56,7 +53,7 @@ sub result {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Accessor methods
+# Simple read-write accessors
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
@@ -80,7 +77,7 @@ sub _set_error {
     $self->{message} = $message;
 
     # Ensure fall through for caller methods
-    return '';
+    return !1;
 }
 
 ### PRIVATE INSTANCE METHOD ###

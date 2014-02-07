@@ -6,7 +6,7 @@ no  warnings 'uninitialized';       ## no critic
 
 use Carp;
 
-### PRIVATE PACKAGE SUBROUTINE ###
+### NON-EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # Generate either simple accessors, or complex ones, or both
 #
@@ -15,11 +15,11 @@ sub mk_accessors {
     # Support class method calling convention for convenience
     shift if $_[0] eq __PACKAGE__;
     
-    my (%params) = @_;
+    my (%arg) = @_;
     
-    $params{class} ||= caller();
+    $arg{class} ||= caller();
     
-    my $simplexes = $params{simple};
+    my $simplexes = $arg{simple};
     
     $simplexes = [ $simplexes ] unless 'ARRAY' eq ref $simplexes;
     
@@ -27,11 +27,11 @@ sub mk_accessors {
         _create_accessor(
             type     => 'simple',
             accessor => $accessor,
-            %params,
+            %arg,
         );
     }
     
-    my $complexes = $params{complex};
+    my $complexes = $arg{complex};
     
     for my $prop ( @$complexes ) {
         my $setters  = $prop->{setter} || $prop->{accessor};
@@ -43,7 +43,7 @@ sub mk_accessors {
                 type     => 'complex',
                 accessor => $specific,
                 fallback => $prop->{fallback},
-                %params,
+                %arg,
             );
         }
     }
@@ -61,14 +61,14 @@ sub mk_accessors {
 #
 
 sub _create_accessor {
-    my (%params) = @_;
+    my (%arg) = @_;
     
-    my $class     = $params{class};
-    my $overwrite = $params{overwrite};
-    my $ignore    = $params{ignore};
-    my $type      = $params{type};
-    my $accessor  = $params{accessor};
-    my $fallback  = $params{fallback};
+    my $class     = $arg{class};
+    my $overwrite = $arg{overwrite};
+    my $ignore    = $arg{ignore};
+    my $type      = $arg{type};
+    my $accessor  = $arg{accessor};
+    my $fallback  = $arg{fallback};
 
     if ( $class->can($accessor) ) {
         croak "Accessor $accessor already exists in class $class"

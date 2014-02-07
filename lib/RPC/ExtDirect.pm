@@ -1,7 +1,5 @@
 package RPC::ExtDirect;
 
-use 5.006;
-
 use strict;
 use warnings;
 no  warnings 'uninitialized';       ## no critic
@@ -9,7 +7,6 @@ no  warnings 'uninitialized';       ## no critic
 use Carp;
 use Attribute::Handlers;
 
-# Can't `use` here to avoid circular dependency
 use RPC::ExtDirect::API;
 use RPC::ExtDirect::Util;
 
@@ -18,7 +15,7 @@ use RPC::ExtDirect::Util;
 # Version of this module.
 #
 
-our $VERSION = '3.00';
+our $VERSION = '3.00_001';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -29,11 +26,9 @@ our $VERSION = '3.00';
 
 our $DEBUG;
 
-#
 # This is a bit hacky, but we got to keep a reference to the API object
 # so that *compilation time* attributes would work as expected,
 # as well as the configuration options for the RPC::ExtDirect::API class.
-#
 {
     my $api = RPC::ExtDirect::API->new();
     
@@ -43,31 +38,32 @@ our $DEBUG;
 
 ### PUBLIC PACKAGE SUBROUTINE ###
 #
-# Provides facility to assign package-level (action) properties.
-# Despite its name, does not import anything in caller package
+# Provides a facility to assign package-level (action) properties.
+# Despite its name, does not import anything to the caller package's
+# namespace.
 #
 
 sub import {
-    my ($class, @params) = @_;
+    my ($class, @args) = @_;
 
     # Nothing to do
-    return unless @params;
+    return unless @args;
 
     # Only hash-like arguments are supported
-    croak "Odd number of parameters in RPC::ExtDirect::import()"
-        unless (@params % 2) == 0;
+    croak "Odd number of arguments in RPC::ExtDirect::import()"
+        unless (@args % 2) == 0;
 
-    my %param = @params;
-       %param = map { lc $_ => delete $param{ $_ } } keys %param;
+    my %arg = @args;
+       %arg = map { lc $_ => delete $arg{ $_ } } keys %arg;
 
     my ($package, $filename, $line) = caller();
     
     my $api = $class->get_api;
 
     # Store Action (class) name as an alias for a package
-    my $action_name = defined $param{action} ? $param{action}
-                    : defined $param{class}  ? $param{class}
-                    :                          undef
+    my $action_name = defined $arg{action} ? $arg{action}
+                    : defined $arg{class}  ? $arg{class}
+                    :                        undef
                     ;
     
     # We don't want to overwrite the existing Action, if any
@@ -79,7 +75,7 @@ sub import {
 
     # Store package level hooks
     for my $type ( $api->HOOK_TYPES ) {
-        my $code = $param{ $type };
+        my $code = $arg{ $type };
 
         $api->add_hook( package => $package, type => $type, code => $code )
             if defined $code;
@@ -90,8 +86,9 @@ sub import {
 #
 # Define ExtDirect attribute subroutine and export it into UNIVERSAL
 # namespace. Attribute processing phase depends on the perl version
-# we're running
+# we're running under.
 #
+
 {
     my $phase = $] >= 5.012 ? 'BEGIN' : 'CHECK';
     my $pkg   = __PACKAGE__;
@@ -109,27 +106,31 @@ END
 #
 # Add a hook to the global API
 #
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
+#
 
 sub add_hook {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
 
     my $api = $class->get_api();
     
-    $api->add_hook(%params);
+    $api->add_hook(%arg);
 
-    return $params{code};
+    return $arg{code};
 }
 
 ### PUBLIC CLASS METHOD ###
 #
 # Return hook coderef by package and method, with hierarchical lookup.
 #
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
+#
 
 sub get_hook {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
 
     my $api  = $class->get_api();
-    my $hook = $api->get_hook(%params);
+    my $hook = $api->get_hook(%arg);
     
     return $hook ? $hook->code : undef;
 }
@@ -137,6 +138,8 @@ sub get_hook {
 ### PUBLIC CLASS METHOD ###
 #
 # Adds Action name as an alias for a package
+#
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
 #
 
 sub add_action {
@@ -194,7 +197,9 @@ sub get_poll_handlers {
 
 ### PUBLIC CLASS METHOD ###
 #
-# Adds a method to internal storage
+# Adds a method to the global API
+#
+# DEPRECATED. See RPC::ExtDirect::API for replacement.
 #
 
 sub add_method {
@@ -230,8 +235,8 @@ sub get_method_list {
         # method names; when it is called with empty @_
         # it returns the list of Action::method pairs.
         # Not sure what was the original intent here but we
-        # got keep the compatibility. The whole method is
-        # deprecated anyway.
+        # got to keep up compatibility. The whole method is
+        # deprecated anyway...
         my $tpl = $action_name ? "" : $name.'::';
         
         push @list, map { $tpl.$_ } $action->methods;

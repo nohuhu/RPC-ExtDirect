@@ -63,17 +63,17 @@ our $REQUEST_CLASS;
 #
 
 sub new {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    $params{config} ||= RPC::ExtDirect::Config->new();
-    $params{api}    ||= RPC::ExtDirect->get_api();
+    $arg{config} ||= RPC::ExtDirect::Config->new();
+    $arg{api}    ||= RPC::ExtDirect->get_api();
     
-    return bless { %params }, $class;
+    return bless { %arg }, $class;
 }
 
 ### PUBLIC CLASS/INSTANCE METHOD ###
 #
-# Routes the request(s) and returns serialized responses
+# Route the request(s) and return serialized responses
 #
 # Note that the preferred way to call this method is on the Router
 # object instance, but we support the class-based way for backwards

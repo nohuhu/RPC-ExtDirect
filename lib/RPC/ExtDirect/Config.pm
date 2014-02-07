@@ -17,19 +17,19 @@ use RPC::ExtDirect::Util qw/ parse_global_flags /;
 sub new {
     my $class = shift;
     
-    my %params;
+    my %arg;
     
     if ( @_ == 1 and 'HASH' eq ref $_[0] ) {
-        %params = %{ $_[0] };
+        %arg = %{ $_[0] };
     }
     elsif ( @_ % 2 == 0 ) {
-        %params = @_;
+        %arg = @_;
     }
     elsif ( @_ != 0 ) {
-        croak "Odd number of parameters in RPC::ExtDirect::Config->new()";
+        croak "Odd number of arguments in RPC::ExtDirect::Config->new()";
     }
     
-    my $self = bless { %params }, $class;
+    my $self = bless { %arg }, $class;
     
     $self->_init();
     
@@ -39,6 +39,7 @@ sub new {
 ### PUBLIC INSTANCE METHOD (CONSTRUCTOR) ###
 #
 # Create a new Config instance from existing one (clone it)
+# We're only doing shallow copying here.
 #
 
 sub clone {
@@ -70,12 +71,12 @@ sub read_global_vars {
 #
 
 sub add_accessors {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
     RPC::ExtDirect::Util::Accessor->mk_accessors(
         class  => ref $self,
         ignore => 1,
-        %params,
+        %arg,
     );
     
     return $self;
@@ -194,8 +195,8 @@ my $DEFINITIONS = [{
     setter   => 'request_class_deserialize',
     fallback => 'request_class',
 }, {
-    # This is a special case - can be overridden but
-    # doesn't fall back to request_class
+    # This is a special case - can be overridden
+    # but doesn't fall back to request_class
     accessor => 'request_class_eventprovider',
     default  => 'RPC::ExtDirect::Request::PollHandler',
 }, {
@@ -315,7 +316,7 @@ sub _init {
 
 ### PRIVATE PACKAGE SUBROUTINE ###
 #
-# Exports a deep copy of the definitions for testing
+# Export a deep copy of the definitions for testing
 #
 
 sub _get_definitions {

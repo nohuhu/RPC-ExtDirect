@@ -10,7 +10,7 @@ our @EXPORT = qw/
     deparse_api
 /;
 
-### PUBLIC PACKAGE SUBROUTINE ###
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # Deparse and normalize a JavaScript string with Ext.Direct API
 # declaration into Perl data structures suitable for deep comparison
@@ -37,6 +37,11 @@ sub deparse_api {
 
     return [ @parts ];
 }
+
+### NON EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Sort the Method hashrefs on an Action object
+#
 
 sub sort_action_methods {
     my ($api_href) = @_;

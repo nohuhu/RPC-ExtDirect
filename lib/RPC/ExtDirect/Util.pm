@@ -14,7 +14,7 @@ our @EXPORT_OK = qw/
     parse_global_flags
 /;
 
-### PUBLIC PACKAGE SUBROUTINE ###
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # Clean croak() and die() messages of file/line information
 #
@@ -33,9 +33,9 @@ sub clean_error_message {
     return $msg;
 }
 
-### PUBLIC PACKAGE SUBROUTINE ###
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
-# Return formatted call stack part to use in exception
+# Return formatted call stack part to use in exceptions
 #
 
 sub get_caller_info {
@@ -46,9 +46,9 @@ sub get_caller_info {
     return $package . '->' . $sub;
 }
 
-### PUBLIC PACKAGE SUBROUTINE ###
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
-# Fetch the values of the (deprecated) global flags,
+# Fetch the values of the (deprecated) global flags into an object,
 # giving a warning when they're used
 #
 
@@ -148,7 +148,7 @@ END
     }
 }
 
-### PUBLIC PACKAGE SUBROUTINE ###
+### NON-EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # Parse ExtDirect attribute, perform sanity checks and return
 # the attribute hashref

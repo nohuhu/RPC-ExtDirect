@@ -15,9 +15,9 @@ use base 'RPC::ExtDirect::Request';
 #
 
 sub new {
-    my ($class, $arguments) = @_;
+    my ($class, $arg) = @_;
     
-    my $self = $class->SUPER::new($arguments);
+    my $self = $class->SUPER::new($arg);
     
     # We can't return exceptions from poll handler anyway
     return $self->{message} ? undef : $self;
@@ -33,10 +33,10 @@ sub result {
 
     my $events = $self->{result};
     
-    # A hook can return something that is not event list
+    # A hook can return something that is not an event list
     $events = [] unless 'ARRAY' eq ref $events;
     
-    return @$events ? map { $_->result } @$events : ();
+    return map { $_->result } @$events;
 }
 
 ############## PRIVATE METHODS BELOW ##############
@@ -47,8 +47,7 @@ sub result {
 #
 
 sub _check_arguments {
-    my ($self, %params) = @_;
-    
+
     # There are no parameters to poll handlers
     # so we return undef which means no error
     return undef;       ## no critic

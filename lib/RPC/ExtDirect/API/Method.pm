@@ -17,22 +17,23 @@ sub HOOK_TYPES { qw/ before instead after / }
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
-# Instantiate a new Method
+# Instantiate a new Method object
 #
 
 sub new {
-    my ($class, $method) = @_;
+    my ($class, $method_def) = @_;
     
-    my $pollHandler = $method->{pollHandler};
-    my $formHandler = $method->{formHandler};
+    my $pollHandler = $method_def->{pollHandler};
+    my $formHandler = $method_def->{formHandler};
+    
     my $is_named
-        = defined $method->{params} && !$pollHandler && !$formHandler;
+        = defined $method_def->{params} && !$pollHandler && !$formHandler;
     
     my $is_ordered
-        = defined $method->{len} && !$pollHandler && !$formHandler;
+        = defined $method_def->{len} && !$pollHandler && !$formHandler;
     
     return bless {
-        %$method,
+        %$method_def,
         is_named   => $is_named,
         is_ordered => $is_ordered,
     }, $class;
@@ -40,7 +41,7 @@ sub new {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Return a hashref with API definition for this Method
+# Return a hashref with the API definition for this Method
 #
 
 sub get_api_definition {
@@ -117,17 +118,18 @@ sub code {
 # Run the Method code using the provided Environment object
 # and input data; return the result or die with exception
 #
-
-# We accept named parameters here to keep signature compat
+# We accept named parameters here to keep the signature compatible
 # with the corresponding Hook method
+#
+
 sub run {
-    my ($self, %params) = @_;
+    my ($self, %args) = @_;
     
-    my $arg     = $params{arg};
+    my $arg     = $args{arg};
     my $package = $self->package;
     my $code    = $self->code;
     
-    # pollHandler methods should always be called in a list context
+    # pollHandler methods should always be called in the list context
     if ( $self->pollHandler ) {
         return [ $code->($package, @$arg) ];
     }
@@ -181,7 +183,7 @@ sub prepare_formHandler_arguments {
     # Data should be a hashref here
     my %data = %$input;
 
-    # Ensure there are no runaway ExtDirect generic parameters
+    # Ensure there are no runaway ExtDirect form parameters
     my @runaway_params = qw(action method extAction extMethod
                             extTID extUpload _uploads);
     delete @data{ @runaway_params };
@@ -247,7 +249,7 @@ sub prepare_default_arguments {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Read-write accessors
+# Simple read-write accessors
 #
 
 my $accessors = [qw/

@@ -54,18 +54,18 @@ our $REQUEST_CLASS;
 #
 
 sub new {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    $params{config} ||= RPC::ExtDirect::Config->new();
-    $params{api}    ||= RPC::ExtDirect->get_api();
+    $arg{config} ||= RPC::ExtDirect::Config->new();
+    $arg{api}    ||= RPC::ExtDirect->get_api();
     
-    return bless { %params }, $class;
+    return bless { %arg }, $class;
 }
 
 ### PUBLIC CLASS/INSTANCE METHOD ###
 #
-# Runs all poll handlers in succession, collects the Events returned
-# by them and returns serialized representation suitable for passing
+# Run all poll handlers in succession, collect the Events returned
+# by them and return serialized representation suitable for passing
 # on to client side.
 #
 # Note that the preferred way to call this method is on the EventProvider
@@ -82,16 +82,16 @@ sub poll {
     
     my $self = ref($class) ? $class : $class->new();
     
-    my @poll_handlers = $self->_get_poll_handlers();
+    my @poll_requests = $self->_get_poll_requests();
 
     # Even if we have nothing to poll, we must return a stub Event
     # or client side will throw an unhandled JavaScript exception
-    return $self->_no_events unless @poll_handlers;
+    return $self->_no_events unless @poll_requests;
 
-    # Run all the handlers and collect their outputs
-    my @results = $self->_run_handlers($env, \@poll_handlers);
+    # Run all the requests and collect their results
+    my @results = $self->_run_requests($env, \@poll_requests);
 
-    # No events returned by handlers? We still gotta return something.
+    # No events returned by the handlers? We still gotta return something.
     return $self->_no_events unless @results;
 
     # Polling results are always JSON; no content type needed
@@ -103,7 +103,7 @@ sub poll {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Read-write accessors
+# Simple read-write accessors
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
@@ -112,18 +112,18 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 
 ############## PRIVATE METHODS BELOW ##############
 
-### PRIVATE CLASS METHOD ###
+### PRIVATE INSTANCE METHOD ###
 #
-# Return the list of poll handlers
+# Return a list of Request::PollHandler objects
 #
 
-sub _get_poll_handlers {
+sub _get_poll_requests {
     my ($self) = @_;
 
-    # Compile the list of poll handler
+    # Compile the list of poll handler Methods
     my @handlers = $self->api->get_poll_handlers();
 
-    # Compile the list of poll handler references
+    # Now create the corresponding Request objects
     my @poll_requests;
     for my $handler ( @handlers ) {
         my $req = $self->_create_request($handler);
@@ -134,9 +134,9 @@ sub _get_poll_handlers {
     return @poll_requests;
 }
 
-### PRIVATE CLASS METHOD ###
+### PRIVATE INSTANCE METHOD ###
 #
-# Create Request off poll handler
+# Create Request off a poll handler
 #
 
 sub _create_request {
@@ -161,12 +161,12 @@ sub _create_request {
     return $req;
 }
 
-### PRIVATE CLASS METHOD ###
+### PRIVATE INSTANCE METHOD ###
 #
-# Run poll handlers and collect results
+# Run poll requests and collect results
 #
 
-sub _run_handlers {
+sub _run_requests {
     my ($self, $env, $requests) = @_;
     
     # Run the requests
@@ -180,7 +180,7 @@ sub _run_handlers {
 
 ### PRIVATE CLASS METHOD ###
 #
-# Serialize result
+# Serialize results
 #
 
 sub _serialize_results {

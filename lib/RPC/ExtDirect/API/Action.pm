@@ -22,16 +22,15 @@ sub HOOK_TYPES { qw/ before instead after / }
 #
 
 sub new {
-    my ($class, %params) = @_;
+    my ($class, %arg) = @_;
     
-    my $config = delete $params{config};
+    my $config = delete $arg{config};
     
-    # For the caller, the 'action' parameter makes sense as the
-    # Action's name, but from within the Action itself it's just
-    # the name
-    my $name    = delete $params{action};
-    my $package = delete $params{package};
-    my $methods = delete $params{methods} || [];
+    # For the caller, the 'action' parameter makes sense as the Action's
+    # name, but within the Action itself it's just "name" for clarity
+    my $name    = delete $arg{action};
+    my $package = delete $arg{package};
+    my $methods = delete $arg{methods} || [];
     
     # These checks are mostly for debugging
     croak "Can't create an Action without a name!"
@@ -47,7 +46,7 @@ sub new {
         name    => $name,
         package => $package,
         methods => {},
-        %params,
+        %arg,
     }, $class;
     
     $self->add_method($_) for @$methods;
@@ -57,7 +56,7 @@ sub new {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Merge method definitions from incoming Action
+# Merge method definitions from incoming Action object
 #
 
 sub merge {
@@ -85,10 +84,12 @@ sub methods { keys %{ $_[0]->{methods} } }
 sub remoting_methods {
     my ($self) = @_;
     
-    my @methods = grep { !$self->method($_)->pollHandler }
-                       $self->methods;
+    my @method_names = map  {   $_->[0]                 }
+                       grep {  !$_->[1]->pollHandler    }
+                       map  { [ $_, $self->method($_) ] }
+                            $self->methods;
     
-    return @methods;
+    return @method_names;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -99,10 +100,12 @@ sub remoting_methods {
 sub polling_methods {
     my ($self) = @_;
     
-    my @methods = grep { $self->method($_)->pollHandler }
-                       $self->methods;
+    my @method_names = map  {   $_->[0]                 }
+                       grep {   $_->[1]->pollHandler    }
+                       map  { [ $_, $self->method($_) ] }
+                            $self->methods;
     
-    return @methods;
+    return @method_names;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -114,10 +117,10 @@ sub polling_methods {
 sub remoting_api {
     my ($self) = @_;
     
-    my @methods = map { $self->method($_)->get_api_definition }
-                      $self->remoting_methods;
+    my @method_defs = map { $self->method($_)->get_api_definition }
+                          $self->remoting_methods;
     
-    return @methods;
+    return @method_defs;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -174,14 +177,19 @@ sub add_method {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Returns Client::API::Method object by name
+# Returns a Method object by name
 #
 
 sub method {
-    my ($self, $name) = @_;
+    my ($self, $method_name) = @_;
 
-    return $self->{methods}->{$name};
+    return $self->{methods}->{ $method_name };
 }
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Simple read-write accessors
+#
 
 my $accessors = [qw/
     config

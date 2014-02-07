@@ -42,10 +42,10 @@ sub HOOK_TYPES { qw/ before instead after / }
 #
 
 sub new {
-    my ($class, $arguments) = @_;
+    my ($class, $arg) = @_;
     
-    my $api    = delete $arguments->{api};
-    my $config = delete $arguments->{config};
+    my $api    = delete $arg->{api};
+    my $config = delete $arg->{config};
 
     # Need blessed object to call private methods
     my $self = bless {
@@ -55,7 +55,7 @@ sub new {
 
     # Unpack and validate arguments
     my ($action_name, $method_name, $tid, $data, $type, $upload)
-        = eval { $self->_unpack_arguments($arguments) };
+        = eval { $self->_unpack_arguments($arg) };
     
     return $self->_exception({
         action  => $action_name,
@@ -179,6 +179,11 @@ sub result {
     return $self->_get_result_hashref();
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the data represented as a list
+#
+
 sub data {
     my ($self) = @_;
 
@@ -190,7 +195,7 @@ sub data {
 
 ### PUBLIC INSTANCE METHODS ###
 #
-# Read-write accessors.
+# Simple read-write accessors.
 #
 
 my $accessors = [qw/
@@ -220,25 +225,26 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 #
 
 sub _exception {
-    my ($self, $params) = @_;
+    my ($self, $arg) = @_;
     
     my $config   = $self->config;
     my $ex_class = $config->exception_class_request;
     
     eval "require $ex_class";
     
-    my $where = $params->{where};
+    my $where = $arg->{where};
 
     if ( !$where ) {
         my ($package, $sub)
             = (caller 1)[3] =~ / \A (.*) :: (.*?) \z /xms;
-        $params->{where} = $package . '->' . $sub;
+        $arg->{where} = $package . '->' . $sub;
     };
     
     return $ex_class->new({
-        config => $config,
-        debug  => $config->debug_request,
-        %$params
+        config  => $config,
+        debug   => $config->debug_request,
+        verbose => $config->verbose_exceptions,
+        %$arg
     });
 }
 
@@ -275,7 +281,7 @@ sub _set_error {
     bless $self, ref $ex;
 
     # Humbly return failure to be propagated upwards
-    return '';
+    return !1;
 }
 
 ### PRIVATE INSTANCE METHOD ###
@@ -312,13 +318,13 @@ sub _unpack_arguments {
 #
 
 sub _check_arguments {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
-    my $action_name = $params{action_name};
-    my $method_name = $params{method_name};
-    my $method_ref  = $params{method_ref};
-    my $tid         = $params{tid};
-    my $data        = $params{data};
+    my $action_name = $arg{action_name};
+    my $method_name = $arg{method_name};
+    my $method_ref  = $arg{method_ref};
+    my $tid         = $arg{tid};
+    my $data        = $arg{data};
 
     my $param_names = $method_ref->params;
     my $len         = $method_ref->len;
@@ -414,12 +420,13 @@ sub _check_params {
 #
 
 sub _run_before_hook {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
     my ($run_method, $result, $exception) = (1);
     
     # This hook may die() with an Exception
-    my $hook_result = eval { $self->before->run( %params ) };
+    local $@;
+    my $hook_result = eval { $self->before->run(%arg) };
 
     # If "before" hook died, cancel Method call
     if ( $@ ) {
@@ -428,7 +435,7 @@ sub _run_before_hook {
     };
 
     # If "before" hook returns anything but number 1,
-    # treat it as Ext.Direct response and do not call
+    # treat it as an Ext.Direct response and do not call
     # the actual method
     if ( $hook_result ne '1' ) {
         $result     = $hook_result;
@@ -447,10 +454,11 @@ sub _run_method {
     my ($self, %arg) = @_;
     
     # We call methods by code reference    
-    my $hook     = $self->instead;
-    my $run_hook = $hook && $hook->runnable;
-
+    my $hook      = $self->instead;
+    my $run_hook  = $hook && $hook->runnable;
     my $callee    = $run_hook ? $hook : $self->method_ref;
+    
+    local $@;
     my $result    = eval { $callee->run(%arg) };
     my $exception = $@;
     
@@ -463,18 +471,18 @@ sub _run_method {
 #
 
 sub _run_after_hook {
-    my ($self, %params) = @_;
+    my ($self, %arg) = @_;
     
     # Localize so that we don't clobber the $@
     local $@;
     
     # Return value and exceptions are ignored
-    eval { $self->after->run(%params) };
+    eval { $self->after->run(%arg) };
 }
 
 ### PRIVATE INSTANCE METHOD ###
 #
-# Returns result hashref
+# Return result hashref
 #
 
 sub _get_result_hashref {
