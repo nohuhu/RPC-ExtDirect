@@ -41,11 +41,16 @@ sub new {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Return a hashref with the API definition for this Method
+# Return a hashref with the API definition for this Method,
+# or an empty list
 #
 
 sub get_api_definition {
-    my ($self) = @_;
+    my ($self, $env) = @_;
+    
+    # By default we're not using the environment object,
+    # but user can override this method to make permission
+    # and/or other kind of checks
     
     # Poll handlers are not declared in the API
     return if $self->pollHandler;

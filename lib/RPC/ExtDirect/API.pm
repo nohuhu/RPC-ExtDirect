@@ -166,6 +166,9 @@ sub get_remoting_api {
     # There is an option to pass config externally; mainly for testing
     $config = $arg{config};
     
+    # Environment object is optional
+    my $env = $arg{env};
+    
     # Backwards compatibility: if called as a class method, operate on
     # the "global" API object instead, and create a new Config instance
     # as well to take care of possibly-modified-since global variables
@@ -183,10 +186,10 @@ sub get_remoting_api {
     }
     
     # Get REMOTING_API hashref
-    my $remoting_api = $self->_get_remoting_api($config);
+    my $remoting_api = $self->_get_remoting_api($config, $env);
 
     # Get POLLING_API hashref
-    my $polling_api  = $self->_get_polling_api($config);
+    my $polling_api  = $self->_get_polling_api($config, $env);
 
     # Return empty string if we got nothing to declare
     return '' if !$remoting_api && !$polling_api;
@@ -466,15 +469,16 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 #
 
 sub _get_remoting_api {
-    my ($self, $config) = @_;
+    my ($self, $config, $env) = @_;
 
-    # Compile the list of "actions"
     my %api;
     
+    my %actions = %{ $self->{actions} };
+    
     ACTION:
-    while ( my ($name, $action) = each %{ $self->{actions} } ) {
+    while ( my ($name, $action) = each %actions ) {
         # Get the list of methods for Action
-        my @methods = $action->remoting_api;
+        my @methods = $action->remoting_api($env);
 
         next ACTION unless @methods;
         
@@ -501,14 +505,16 @@ sub _get_remoting_api {
 #
 
 sub _get_polling_api {
-    my ($self, $config) = @_;
+    my ($self, $config, $env) = @_;
     
     # Check if we have any poll handlers in our definitions
     my $has_poll_handlers;
     
+    my %actions = %{ $self->{actions} };
+    
     ACTION:
-    while ( my ($name, $action) = each %{ $self->{actions} } ) {
-        $has_poll_handlers = $action->has_pollHandlers;
+    while ( my ($name, $action) = each %actions ) {
+        $has_poll_handlers = $action->has_pollHandlers($env);
 
         last ACTION if $has_poll_handlers;
     };
@@ -516,7 +522,7 @@ sub _get_polling_api {
     # No sense in setting up polling if there ain't no Event providers
     return undef unless $has_poll_handlers;         ## no critic
     
-    # Got poll handlers, return definition
+    # Got poll handlers, return definition hashref
     return {
         type => 'polling',
         url  => $config->poll_path,

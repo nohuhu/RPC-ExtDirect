@@ -115,10 +115,19 @@ sub polling_methods {
 #
 
 sub remoting_api {
-    my ($self) = @_;
+    my ($self, $env) = @_;
     
-    my @method_defs = map { $self->method($_)->get_api_definition }
-                          $self->remoting_methods;
+    # Guard against user overrides returning undefs instead of
+    # empty lists
+    my @method_names = $self->remoting_methods;
+    my @method_defs;
+    
+    for my $method_name ( @method_names ) {
+        my $method = $self->method($method_name);
+        my $def    = $method->get_api_definition($env);
+        
+        push @method_defs, $def if $def;
+    }
     
     return @method_defs;
 }
@@ -129,7 +138,10 @@ sub remoting_api {
 #
 
 sub has_pollHandlers {
-    my ($self) = @_;
+    my ($self, $env) = @_;
+    
+    # By default we're not using the env object here,
+    # but user override may do so
     
     my @methods = $self->polling_methods;
     
