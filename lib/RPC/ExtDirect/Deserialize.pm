@@ -47,4 +47,53 @@ our $REQUEST_CLASS;
 
 our %JSON_OPTIONS;
 
+### PUBLIC CLASS METHOD ###
+#
+# Turns JSONified POST request(s) into array of instantiated
+# RPC::ExtDirect::Request (Exception) objects. Returns reference
+# to array.
+#
+# DEPRECATED. Use RPC::ExtDirect::Serializer->decode_post() instead.
+#
+
+sub decode_post {
+    shift; # class name
+    
+    warn __PACKAGE__.'->decode_post class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->decode_post ' .
+                     'instance method instead';
+    
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
+    
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
+    
+    return $serializer->decode_post(@_);
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Instantiates Request based on form submitted to ExtDirect handler
+# Returns arrayref with single Request.
+#
+# DEPRECATED. Use RPC::ExtDirect::Serializer->decode_form() instead.
+#
+
+sub decode_form {
+    shift; # class name
+    
+    warn __PACKAGE__.'->decode_form class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->decode_form ' .
+                     'instance method instead';
+    
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
+    
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
+    
+    return $serializer->decode_form(@_);
+}
+
 1;

@@ -29,4 +29,29 @@ our $DEBUG;
 
 our $EXCEPTION_CLASS;
 
+### PUBLIC CLASS METHOD ###
+#
+# Serialize the passed data into JSON form
+#
+# DEPRECATED. Use RPC::ExtDirect::Serializer->serializer instance method
+# instead.
+#
+
+sub serialize {
+    # Class name
+    shift;
+    
+    warn __PACKAGE__.'->serialize class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->serialize ' .
+                     'instance method instead';
+    
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
+    
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
+    
+    return $serializer->serialize(@_);
+}
+
 1;

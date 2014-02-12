@@ -44,8 +44,8 @@ sub HOOK_TYPES { qw/ before instead after / }
 sub new {
     my ($class, $arg) = @_;
     
-    my $api    = delete $arg->{api};
-    my $config = delete $arg->{config};
+    my $api    = delete $arg->{api}    || RPC::ExtDirect->get_api();
+    my $config = delete $arg->{config} || RPC::ExtDirect::Config->new();
 
     # Need blessed object to call private methods
     my $self = bless {

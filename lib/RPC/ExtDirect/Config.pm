@@ -99,6 +99,69 @@ sub set_options {
     return $self;
 }
 
+#
+# Note to self: the four deprecated methods below are *intentionally*
+# left verbose and not collapsed to some helper sub.
+#
+
+### PUBLIC CLASS METHOD ###
+#
+# Return the default router path; provided for compatibility with 2.x
+#
+# DEPRECATED. Use `router_path` method on a Config instance instead.
+#
+
+sub get_router_path {
+    warn __PACKAGE__."->get_router_path class method is deprecated; " .
+                     "use router_path instance method instead";
+    
+    return __PACKAGE__->new->router_path;
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Return the default poll path; provided for compatibility with 2.x
+#
+# DEPRECATED. Use `poll_path` method on a Config instance instead.
+#
+
+sub get_poll_path {
+    warn __PACKAGE__."->get_poll_path class method is deprecated; " .
+                     "use poll_path instance method instead";
+    
+    return __PACKAGE__->new->poll_path;
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Return the default remoting variable name; provided for
+# compatibility with 2.x
+#
+# DEPRECATED. Use `remoting_var` method on a Config instance instead.
+#
+
+sub get_remoting_var {
+    warn __PACKAGE__."->get_remoting_var class method is deprecated; " .
+                     "use remoting_var instance method instead";
+
+    return __PACKAGE__->new->remoting_var;
+}
+
+### PUBLIC CLASS METHOD ###
+#
+# Return the default polling variable name; provided for
+# compatibility with 2.x
+#
+# DEPRECATED. Use `polling_var` method on a Config instance instead.
+#
+
+sub get_polling_var {
+    warn __PACKAGE__."->get_polling_var class method is deprecated; " .
+                     "use polling_var instance method instead";
+    
+    return __PACKAGE__->new->polling_var;
+}
+
 ############## PRIVATE METHODS BELOW ##############
 
 #
