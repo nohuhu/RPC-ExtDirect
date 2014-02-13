@@ -393,38 +393,3 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 );
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::Config - Default options for ExtDirect API
-
-=head1 SYNOPSIS
-
-This module is not intended to be used directly.
-
-=head1 DESCRIPTION
-
-This module should be subclassed by implementations of particular
-Web environment gateways to provide reasonable defaults.
-
-=head1 SUBROUTINES/METHODS
-
-No subroutines exported by default. None are expected to be called directly.
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

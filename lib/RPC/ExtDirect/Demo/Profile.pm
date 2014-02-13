@@ -1,5 +1,8 @@
 package RPC::ExtDirect::Demo::Profile;
 
+use strict;
+use warnings;
+
 use RPC::ExtDirect Action => 'Profile';
 
 sub updateBasicInfo : ExtDirect(formHandler) {

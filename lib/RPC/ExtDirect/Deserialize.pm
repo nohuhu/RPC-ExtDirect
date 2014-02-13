@@ -8,6 +8,10 @@
 
 package RPC::ExtDirect::Deserialize;
 
+use strict;
+use warnings;
+no  warnings 'uninitialized';       ## no critic
+
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set it to true value to turn on debugging
