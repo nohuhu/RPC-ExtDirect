@@ -6,6 +6,8 @@ no  warnings 'once';
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 64;
 }
@@ -17,10 +19,9 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Request;
+use RPC::ExtDirect::Request;
 
 # Test modules are so simple they can't fail
-use lib 't/lib2';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;
@@ -57,10 +58,9 @@ for my $test ( @$tests ) {
     # Try to get results
     my $result = eval { $request->result() };
 
-    is        $@,      '',               "$name result() eval $@";
-    ok        $result,                   "$name result() not empty";
-    is_deeply $result, $expected_result, "$name result() deep"
-        or diag explain "Expected: ", $expected_result, "Actual: ", $result;
+    is      $@,      '',               "$name result() eval $@";
+    ok      $result,                   "$name result() not empty";
+    is_deep $result, $expected_result, "$name result() deep";
 };
 
 __DATA__

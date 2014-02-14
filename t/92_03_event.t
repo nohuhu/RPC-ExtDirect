@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use RPC::ExtDirect::Test::Util;
 
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 18;
@@ -14,8 +15,8 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Event;
-require RPC::ExtDirect::NoEvents;
+use RPC::ExtDirect::Event;
+use RPC::ExtDirect::NoEvents;
 
 # Test Event with data
 
@@ -33,9 +34,9 @@ my $expected_result = {
 
 my $real_result = eval { $event->result() };
 
-is        $@, '',                         "Event result() eval $@";
-ok        $real_result,                   "Event result() not empty";
-is_deeply $real_result, $expected_result, "Event result() deep";
+is      $@, '',                         "Event result() eval $@";
+ok      $real_result,                   "Event result() not empty";
+is_deep $real_result, $expected_result, "Event result() deep";
 
 # Test Event without data
 
@@ -53,9 +54,9 @@ $expected_result = {
 
 $real_result = eval { $event->result() };
 
-is        $@, '',                         "Event result() eval $@";
-ok        $real_result,                   "Event result() not empty";
-is_deeply $real_result, $expected_result, "Event result() deep";
+is      $@, '',                         "Event result() eval $@";
+ok      $real_result,                   "Event result() not empty";
+is_deep $real_result, $expected_result, "Event result() deep";
 
 # Test the stub
 
@@ -73,8 +74,7 @@ $expected_result = {
 
 $real_result = eval { $no_events->result() };
 
-is        $@, '',                         "NoEvents result() eval $@";
-ok        $real_result,                   "NoEvents result() not empty";
-is_deeply $real_result, $expected_result, "NoEvents result() deep";
+is      $@, '',                         "NoEvents result() eval $@";
+ok      $real_result,                   "NoEvents result() not empty";
+is_deep $real_result, $expected_result, "NoEvents result() deep";
 
-exit 0;

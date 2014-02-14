@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More tests => 6;
 
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::API;
 
@@ -63,7 +64,7 @@ my $api_def = {
     },
 };
 
-my $expected_authorized = q~
+my $expected_authorized = deparse_api q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
@@ -97,7 +98,7 @@ Ext.app.REMOTE_EVENT_API = {
 };
 ~;
 
-my $expected_anonymous = q~
+my $expected_anonymous = deparse_api q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Foo":[
@@ -140,20 +141,15 @@ isa_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 
-my $remoting_api = eval { $api->get_remoting_api() };
+my $remoting_api = deparse_api eval { $api->get_remoting_api() };
 
-# Remove whitespace
-s/\s//g for ( $expected_anonymous, $remoting_api );
+is      $@,            '',                  "anon remoting_api() 6 eval $@";
+is_deep $remoting_api, $expected_anonymous, "anon remoting_api() 6 result";
 
-is $@,            '',                  "anon remoting_api() 6 eval $@";
-is $remoting_api, $expected_anonymous, "anon remoting_api() 6 result";
-
-$remoting_api = eval {
+$remoting_api = deparse_api eval {
     $api->get_remoting_api( env => { user => 'foo' } )
 };
 
-s/\s//g for ( $expected_authorized, $remoting_api );
-
-is $@,            '',                   "authz remoting_api 6 eval $@";
-is $remoting_api, $expected_authorized, "authz remoting_api 6 result";
+is      $@,            '',                   "authz remoting_api 6 eval $@";
+is_deep $remoting_api, $expected_authorized, "authz remoting_api 6 result";
 

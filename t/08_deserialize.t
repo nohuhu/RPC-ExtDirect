@@ -1,18 +1,15 @@
 use strict;
 use warnings;
 
-use Test::More tests => 65;
+use Test::More tests => 64;
 
-use Data::Dumper;
-$Data::Dumper::Indent = 1;
-
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect;
 
-BEGIN { use_ok 'RPC::ExtDirect::Serializer'; }
+use RPC::ExtDirect::Serializer;
 
 # Test modules are simple and effective
-use lib 't/lib';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
@@ -49,20 +46,16 @@ for my $test ( @$tests ) {
 
     my $runs    = eval { [ map { $_->run()    } @$requests ] };
 
-    is     $@, '',               "$name $method() runs eval $@";
-    ok ref $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
-    is_deeply $runs, $run_exp,   "$name $method() runs deep";
+    is      $@, '',               "$name $method() runs eval $@";
+    ok ref  $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
+    is_deep $runs, $run_exp,   "$name $method() runs deep";
 
     my $results = eval { [ map { $_->result() } @$requests ] };
 
-    is     $@, '',               "$name $method() results eval $@";
-    ok ref $results eq 'ARRAY',  "$name $method() results is ARRAY";
-
-    is_deeply $results, $expect, "$name $method() results deep"
-        or print Data::Dumper->Dump( [$results], ['results'] );
+    is      $@, '',              "$name $method() results eval $@";
+    ok ref  $results eq 'ARRAY', "$name $method() results is ARRAY";
+    is_deep $results, $expect,   "$name $method() results deep";
 };
-
-exit 0;
 
 __DATA__
 [

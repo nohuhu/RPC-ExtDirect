@@ -1,14 +1,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 10;
 
-use lib 't/lib';
 use RPC::ExtDirect::Test::PollProvider;
 
 use RPC::ExtDirect::Config;
 
-BEGIN { use_ok 'RPC::ExtDirect::EventProvider'; }
+use RPC::ExtDirect::EventProvider;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: '$@'";

@@ -1,10 +1,11 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-use Test::More tests => 33;
+use Test::More tests => 32;
 
-BEGIN { use_ok 'RPC::ExtDirect::Exception'; }
+use RPC::ExtDirect::Test::Util;
+
+use RPC::ExtDirect::Exception;
 
 package RPC::ExtDirect::Test;
 
@@ -102,8 +103,7 @@ for my $test ( @$tests ) {
 
     my $result = eval { $ex->result() };
 
-    is        $@,      '',      "$method() result eval $@";
-    ok        $result,          "$method() result not empty";
-    is_deeply $result, $expect, "$method() exception deep"
-        or diag( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
+    is      $@,      '',      "$method() result eval $@";
+    ok      $result,          "$method() result not empty";
+    is_deep $result, $expect, "$method() exception deep";
 };

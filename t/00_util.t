@@ -2,12 +2,11 @@ use strict;
 use warnings;
 
 use Carp;
-use Test::More tests => 72;
+use Test::More tests => 70;
 
-BEGIN {
-    use_ok 'RPC::ExtDirect::Util';
-    use_ok 'RPC::ExtDirect::Util::Accessor';
-};
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Util;
+use RPC::ExtDirect::Util::Accessor;
 
 # Simple accessors
 
@@ -346,7 +345,7 @@ for my $test ( @$tests ) {
         if ( defined $result ) {
             is ref($value), uc $type,  "Var $name type matches";
         }
-        is_deeply $value, $result, "Var $name value matches";
+        is_deep $value, $result, "Var $name value matches";
     }
     
     if ( !$has_def ) {

@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 2;
 }
@@ -13,10 +15,6 @@ else {
 # We will test deprecated API and don't want the warnings
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
-
-use lib 't/lib2';
-
-use RPC::ExtDirect::Test::Util;
 
 # Test modules are so simple they can't be broken
 use RPC::ExtDirect::Test::Foo;
@@ -71,7 +69,6 @@ Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
 
 my $remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
 
-is        $@,            '',        "remoting_api() 3 eval $@";
-is_deeply $remoting_api, $expected, "remoting_api() 3 result"
-    or diag explain "Expected: ", $expected, "Actual: ", $remoting_api;
+is      $@,            '',        "remoting_api() 3 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 3 result";
 

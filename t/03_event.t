@@ -1,12 +1,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 31;
 
-BEGIN {
-    use_ok 'RPC::ExtDirect::Event';
-    use_ok 'RPC::ExtDirect::NoEvents';
-}
+use RPC::ExtDirect::Test::Util;
+
+use RPC::ExtDirect::Event;
+use RPC::ExtDirect::NoEvents;
 
 # Test Events with data
 
@@ -62,9 +62,9 @@ for my $test ( @new_tests ) {
     
     my $result = eval { $event->result() };
 
-    is        $@,      '',   "$name event result() eval $@";
-    ok        $result,       "$name event result() not empty";
-    is_deeply $result, $exp, "$name event result() deep";
+    is      $@,      '',   "$name event result() eval $@";
+    ok      $result,       "$name event result() not empty";
+    is_deep $result, $exp, "$name event result() deep";
 }
 
 # Test argument checking
@@ -89,6 +89,6 @@ my $expected_result = {
 
 my $real_result = eval { $no_events->result() };
 
-is        $@, '',                         "NoEvents result() eval $@";
-ok        $real_result,                   "NoEvents result() not empty";
-is_deeply $real_result, $expected_result, "NoEvents result() deep";
+is      $@, '',                         "NoEvents result() eval $@";
+ok      $real_result,                   "NoEvents result() not empty";
+is_deep $real_result, $expected_result, "NoEvents result() deep";

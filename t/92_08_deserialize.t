@@ -4,6 +4,8 @@ no  warnings 'once';
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 64;
 }
@@ -15,10 +17,9 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Deserialize;
+use RPC::ExtDirect::Deserialize;
 
 # Test modules are simple and effective
-use lib 't/lib2';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
@@ -48,21 +49,16 @@ for my $test ( @$tests ) {
 
     my $runs    = eval { [ map { $_->run()    } @$requests ] };
 
-    is     $@, '',               "$name $method() runs eval $@";
-    ok ref $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
-    is_deeply $runs, $run_exp,   "$name $method() runs deep"
-        or diag explain "Expected: ", $run_exp, "Actual: ", $runs;
+    is      $@, '',               "$name $method() runs eval $@";
+    ok ref  $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
+    is_deep $runs, $run_exp,      "$name $method() runs deep";
 
     my $results = eval { [ map { $_->result() } @$requests ] };
 
-    is     $@, '',               "$name $method() results eval $@";
-    ok ref $results eq 'ARRAY',  "$name $method() results is ARRAY";
-
-    is_deeply $results, $expect, "$name $method() results deep"
-        or diag explain "Expected: ", $expect, "Actual: ", $results;
+    is      $@, '',               "$name $method() results eval $@";
+    ok ref  $results eq 'ARRAY',  "$name $method() results is ARRAY";
+    is_deep $results, $expect,    "$name $method() results deep";
 };
-
-exit 0;
 
 __DATA__
 [

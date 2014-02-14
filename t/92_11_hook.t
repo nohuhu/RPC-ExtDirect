@@ -4,6 +4,8 @@ no  warnings 'uninitialized', 'once';
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 16;
 }
@@ -15,7 +17,6 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-use lib 't/lib2';
 use RPC::ExtDirect::Test::Hooks;
 use RPC::ExtDirect::Test::PollProvider;
 
@@ -110,12 +111,8 @@ for my $test ( @$tests ) {
     eval { delete $before->[1]->{orig}; delete $after->[1]->{orig}; };
     $@ = undef;
 
-    is_deeply $before, $exp_before, "$name: before data"
-        or diag( Data::Dumper->Dump( [$before], ['before'] ) );
-    
-    is_deeply $after,  $exp_after,  "$name: after data"
-        or diag( Data::Dumper->Dump( [$after], ['after'] ) );
-
+    is_deep $before, $exp_before, "$name: before data";
+    is_deep $after,  $exp_after,  "$name: after data";
 };
 
 __DATA__

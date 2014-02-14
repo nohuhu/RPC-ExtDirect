@@ -6,6 +6,8 @@ no  warnings 'once';
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 101;
 }
@@ -17,10 +19,9 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Request;
+use RPC::ExtDirect::Request;
 
 # Test modules are so simple they can't fail
-use lib 't/lib2';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;
@@ -53,9 +54,8 @@ for my $test ( @$tests ) {
 
     $exception ||= '';
 
-    is        $ran_ok, $expected_ran, "$name run() no error";
-    is_deeply $@,      $exception,    "$name run() eval"
-        or diag explain "Expected: ", $exception, "Actual: ", $@;
+    is      $ran_ok, $expected_ran, "$name run() no error";
+    is_deep $@,      $exception,    "$name run() eval";
 
     # Try to run method second time, no result checks this time
     $ran_ok = eval { $request->run() } if $run_twice;
@@ -66,9 +66,7 @@ for my $test ( @$tests ) {
     is $@, '', "$name result() eval $@";
 
     if ( $expected_result ) {
-        is_deeply $result, $expected_result, "$name result() deep"
-            or diag explain "Expected: ", $expected_result,
-                            "Actual: ", $result;
+        is_deep $result, $expected_result, "$name result() deep";
     };
 
     ok $code->(), "$name custom check" if $code;

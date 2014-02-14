@@ -1,20 +1,17 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-local $Data::Dumper::Indent = 1;
-
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect;
 
 ### Testing invalid inputs
 
-use Test::More tests => 95;
+use Test::More tests => 94;
 
-BEGIN { use_ok 'RPC::ExtDirect::Request'; }
+use RPC::ExtDirect::Request;
 
 # Test modules are so simple they can't fail
-use lib 't/lib';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;
@@ -48,8 +45,8 @@ for my $test ( @$tests ) {
 
     $exception ||= '';
 
-    is_deeply $@,      $exception,    "$name run() eval";
-    is        $ran_ok, $expected_ran, "$name run() no error";
+    is_deep $@,      $exception,    "$name run() eval";
+    is      $ran_ok, $expected_ran, "$name run() no error";
 
     # Try to run method second time, no result checks this time
     $ran_ok = eval { $request->run() } if $run_twice;
@@ -60,8 +57,7 @@ for my $test ( @$tests ) {
     is $@, '', "$name result() eval $@";
 
     if ( $expected_result ) {
-        is_deeply $result, $expected_result, "$name result() deep"
-            or print Data::Dumper->Dump( [$result], ['result'] );
+        is_deep $result, $expected_result, "$name result() deep";
     };
 
     ok $code->(), "$name custom check" if $code;

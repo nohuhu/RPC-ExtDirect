@@ -1,10 +1,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 
-use lib 't/lib';
-
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 
 # Test modules are so simple they can't be broken
@@ -12,9 +11,9 @@ use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;
 
-BEGIN { use_ok 'RPC::ExtDirect::API'; }
+use RPC::ExtDirect::API;
 
-my $expected = q~
+my $expected = deparse_api q~
 Ext.app.REMOTING_API = {
     "actions":{
         "Bar":[
@@ -46,13 +45,10 @@ Ext.app.REMOTING_API = {
 my $api = RPC::ExtDirect->get_api;
 $api->config->debug_serialize(1);
 
-my $remoting_api = eval { $api->get_remoting_api() };
+my $remoting_api = deparse_api eval { $api->get_remoting_api() };
 
-# Remove whitespace
-s/\s//g for ( $expected, $remoting_api );
-
-is $@,            '',        "remoting_api() 1 eval $@";
-is $remoting_api, $expected, "remoting_api() 1 result";
+is      $@,            '',        "remoting_api() 1 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 1 result";
 
 # "Reimport" with parameters
 
@@ -67,7 +63,7 @@ my $config = RPC::ExtDirect::Config->new(
     auto_connect    => 'HELL YEAH!',
 );
 
-$expected = q~
+$expected = deparse_api q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
@@ -98,13 +94,10 @@ Ext.app.REMOTE_CALL_API = {
 Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
 ~;
 
-$remoting_api = eval {
+$remoting_api = deparse_api eval {
     RPC::ExtDirect::API->get_remoting_api(config => $config)
 };
 
-# Remove whitespace
-s/\s//g for ( $expected, $remoting_api );
-
-is $@,            '',        "remoting_api() 2 eval $@";
-is $remoting_api, $expected, "remoting_api() 2 result";
+is      $@,            '',        "remoting_api() 2 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 2 result";
 

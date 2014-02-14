@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 4;
 }
@@ -14,16 +16,12 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-use lib 't/lib2';
-
-use RPC::ExtDirect::Test::Util;
-
 # Test modules are so simple they can't be broken
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;
 
-require RPC::ExtDirect::API;
+use RPC::ExtDirect::API;
 
 # Set the debug flag
 local $RPC::ExtDirect::API::DEBUG = 1;
@@ -59,9 +57,8 @@ Ext.app.REMOTING_API = {
 
 my $remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
 
-is        $@,            '',        "remoting_api() 1 eval $@";
-is_deeply $remoting_api, $expected, "remoting_api() 1 result"
-    or diag explain "Expected: ", $expected, "Actual: ", $remoting_api;
+is      $@,            '',        "remoting_api() 1 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 1 result";
 
 # "Reimport" with parameters
 
@@ -107,7 +104,6 @@ Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
 
 $remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
 
-is        $@,            '',        "remoting_api() 2 eval $@";
-is_deeply $remoting_api, $expected, "remoting_api() 2 result"
-    or diag explain "Expected: ", $expected, "Actual: ", $remoting_api;
+is      $@,            '',        "remoting_api() 2 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 2 result";
 

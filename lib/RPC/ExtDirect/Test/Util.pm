@@ -6,9 +6,22 @@ no  warnings 'uninitialized';
 
 use base 'Exporter';
 
+use Test::More;
+
 our @EXPORT = qw/
+    is_deep
     deparse_api
 /;
+
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# A wrapper around Test::More::is_deeply() that will print
+# the diagnostics if a test fails
+#
+
+sub is_deep {
+    is_deeply @_ or diag explain "Expected: ", $_[1], "Actual: ", $_[0];
+}
 
 ### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #

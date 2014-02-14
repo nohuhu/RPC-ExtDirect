@@ -2,14 +2,14 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';
 
-use Test::More tests => 25;
+use Test::More tests => 24;
 
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 
-BEGIN { use_ok 'RPC::ExtDirect::Router'; }
+use RPC::ExtDirect::Router;
 
 # Test modules are simple
-use lib 't/lib';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
@@ -48,10 +48,9 @@ for my $test ( @$tests ) {
         $result->[1]->[3] -= $ref_len;
     };
 
-    is        $@,      '',      "$name eval $@";
-    is ref    $result, 'ARRAY', "$name result ARRAY";
-    is_deeply $result, $expect, "$name result deep"
-        or diag explain $result;
+    is      $@,      '',      "$name eval $@";
+    is ref  $result, 'ARRAY', "$name result ARRAY";
+    is_deep $result, $expect, "$name result deep";
 };
 
 __DATA__

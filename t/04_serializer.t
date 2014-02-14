@@ -1,11 +1,11 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More tests => 9;
 
 use RPC::ExtDirect::Config;
 
-BEGIN { use_ok 'RPC::ExtDirect::Serializer'; }
+use RPC::ExtDirect::Serializer;
 
 my $cfg_class = 'RPC::ExtDirect::Config';
 my $ser_class = 'RPC::ExtDirect::Serializer';

@@ -5,6 +5,8 @@ no  warnings 'once';
 use JSON;
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 10;
 }
@@ -16,10 +18,9 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-use lib 't/lib2';
 use RPC::ExtDirect::Test::PollProvider;
 
-require RPC::ExtDirect::EventProvider;
+use RPC::ExtDirect::EventProvider;
 
 local $RPC::ExtDirect::EventProvider::DEBUG = 1;
 
@@ -36,9 +37,8 @@ for my $test ( @$tests ) {
 
     my $result = from_json eval { RPC::ExtDirect::EventProvider->poll() };
 
-    is        $@,      '',      "$name eval $@";
-    is_deeply $result, $expect, "$name result"
-        or diag explain "Expected: ", $expect, "Actual: ", $result;
+    is      $@,      '',      "$name eval $@";
+    is_deep $result, $expect, "$name result";
 };
 
 

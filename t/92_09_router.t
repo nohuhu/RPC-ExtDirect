@@ -4,6 +4,8 @@ no  warnings 'uninitialized', 'once';
 
 use Test::More;
 
+use RPC::ExtDirect::Test::Util;
+
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 24;
 }
@@ -15,10 +17,9 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Router;
+use RPC::ExtDirect::Router;
 
 # Test modules are simple
-use lib 't/lib2';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
@@ -49,10 +50,9 @@ for my $test ( @$tests ) {
         $result->[1]->[3] -= $ref_len;
     };
 
-    is        $@,      '',      "$name eval $@";
-    is ref    $result, 'ARRAY', "$name result ARRAY";
-    is_deeply $result, $expect, "$name result deep"
-        or diag explain "Expected: ", $expect, "Actual: ", $result;
+    is      $@,      '',      "$name eval $@";
+    is ref  $result, 'ARRAY', "$name result ARRAY";
+    is_deep $result, $expect, "$name result deep";
 };
 
 

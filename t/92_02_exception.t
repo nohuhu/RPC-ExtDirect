@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Test::More;
+use RPC::ExtDirect::Test::Util;
 
 if ( $ENV{REGRESSION_TESTS} ) {
     plan tests => 24;
@@ -15,7 +15,7 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Exception;
+use RPC::ExtDirect::Exception;
 
 package RPC::ExtDirect::Test;
 
@@ -95,10 +95,8 @@ for my $test ( @$tests ) {
 
     my $result = eval { $ex->result() };
 
-    is        $@,      '',      "$method() result eval $@";
-    ok        $result,          "$method() result not empty";
-    is_deeply $result, $expect, "$method() exception deep"
-        or diag( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
+    is      $@,      '',      "$method() result eval $@";
+    ok      $result,          "$method() result not empty";
+    is_deep $result, $expect, "$method() exception deep";
 };
 
-exit 0;

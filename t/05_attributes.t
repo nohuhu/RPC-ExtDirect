@@ -2,20 +2,18 @@ use strict;
 use warnings;
 use Carp;
 
-use Test::More tests => 71;
+use Test::More tests => 69;
+
+use RPC::ExtDirect::Test::Util;
 
 sub global_before {}
 
 sub global_after {}
 
-BEGIN {
-    use_ok 'RPC::ExtDirect';      # Checking case insensitiveness, too
-    use_ok 'RPC::ExtDirect::API', Before => \&global_before,
-                                  aFtEr  => \&global_after,
-                                  ;
-};
-
-use lib 't/lib';
+use RPC::ExtDirect;      # Checking case insensitiveness, too
+use RPC::ExtDirect::API  Before => \&global_before,
+                         aFtEr  => \&global_after,
+                         ;
 
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
@@ -121,9 +119,9 @@ my @expected_classes = sort qw( Foo Bar Qux PollProvider );
 
 my @full_classes = sort eval { RPC::ExtDirect->get_action_list() };
 
-is        $@, '', "full get_action_list() eval $@";
-ok         @full_classes, "full get_action_list() not empty";
-is_deeply \@full_classes, \@expected_classes, "full get_action_list() deep";
+is       $@, '', "full get_action_list() eval $@";
+ok       @full_classes, "full get_action_list() not empty";
+is_deep \@full_classes, \@expected_classes, "full get_action_list() deep";
 
 my @expected_methods = sort qw(
     Qux::bar_bar            Qux::bar_baz        Qux::bar_foo
@@ -136,17 +134,17 @@ my @expected_methods = sort qw(
 
 my @full_methods = sort eval { RPC::ExtDirect->get_method_list() };
 
-is        $@, '',         "full get_method_list() eval $@";
-ok         @full_methods, "full get_method_list() not empty";
-is_deeply \@full_methods, \@expected_methods, "full get_method_list() deep";
+is       $@, '',         "full get_method_list() eval $@";
+ok       @full_methods, "full get_method_list() not empty";
+is_deep \@full_methods, \@expected_methods, "full get_method_list() deep";
 
 my @expected_poll_handlers = ( [ 'PollProvider', 'foo' ] );
 
 my @full_poll_handlers = eval { RPC::ExtDirect->get_poll_handlers() };
 
-is $@, '',              "full get_poll_handlers() eval $@";
-ok @full_poll_handlers, "full get_poll_handlers() not empty";
-is_deeply \@full_poll_handlers, \@expected_poll_handlers,
+is      $@, '',              "full get_poll_handlers() eval $@";
+ok      @full_poll_handlers, "full get_poll_handlers() not empty";
+is_deep \@full_poll_handlers, \@expected_poll_handlers,
                         "full get_poll_handlers() deep";
 
 # We have RPC::ExtDirect already loaded so let's go
@@ -158,8 +156,7 @@ for my $module ( sort keys %test_for ) {
 
     my @expected_list = sort @{ $test->{methods} };
 
-    is_deeply \@method_list, \@expected_list, "$module get_method_list() deeply"
-        or diag explain \@method_list;
+    is_deep \@method_list, \@expected_list, "$module get_method_list() deeply";
 
     my %expected_parameter_for = %{ $test->{list  } };
 
@@ -175,9 +172,8 @@ for my $module ( sort keys %test_for ) {
         # No way to compare referents (and no sense in that, too);
         delete $parameters{referent};
 
-        is_deeply \%parameters, $expected_ref,
-            "$module get_method_parameters() deeply"
-            or diag explain \%parameters;
+        is_deep \%parameters, $expected_ref,
+            "$module get_method_parameters() deeply";
     };
 };
 

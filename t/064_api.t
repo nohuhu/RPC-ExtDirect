@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More tests => 4;
 
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::API;
 
@@ -42,7 +43,7 @@ my $api_def = {
     },
 };
 
-my $expected = q~
+my $expected = deparse_api q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
@@ -100,11 +101,8 @@ isa_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 
-my $remoting_api = eval { $api->get_remoting_api() };
+my $remoting_api = deparse_api eval { $api->get_remoting_api() };
 
-# Remove whitespace
-s/\s//g for ( $expected, $remoting_api );
-
-is $@,            '',        "remoting_api() 4 eval $@";
-is $remoting_api, $expected, "remoting_api() 4 result";
+is      $@,            '',        "remoting_api() 4 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 4 result";
 

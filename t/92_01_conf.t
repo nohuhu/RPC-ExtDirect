@@ -14,7 +14,7 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Config;
+use RPC::ExtDirect::Config;
 
 my @methods = qw(router_path poll_path remoting_var polling_var);
 

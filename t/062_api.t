@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More tests => 2;
 
-use lib 't/lib';
+use RPC::ExtDirect::Test::Util;
 
 # Test modules are so simple they can't be broken
 use RPC::ExtDirect::Test::Foo;
@@ -20,7 +20,7 @@ use RPC::ExtDirect::API     namespace    => 'myApp.Server',
 
 local $RPC::ExtDirect::API::DEBUG = 1;
 
-my $expected = q~
+my $expected = deparse_api q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
@@ -59,12 +59,8 @@ Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
 # Just silence the warning
 $SIG{__WARN__} = sub {};
 
-my $remoting_api = eval { RPC::ExtDirect::API->get_remoting_api() };
+my $remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
 
-# Remove whitespace
-s/\s//g for ( $expected, $remoting_api );
+is      $@,            '',        "remoting_api() 3 eval $@";
+is_deep $remoting_api, $expected, "remoting_api() 3 result";
 
-is $@,            '',        "remoting_api() 3 eval $@";
-is $remoting_api, $expected, "remoting_api() 3 result";
-
-exit 0;

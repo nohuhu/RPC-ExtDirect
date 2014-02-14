@@ -15,7 +15,7 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
-require RPC::ExtDirect::Serialize;
+use RPC::ExtDirect::Serialize;
 
 local $RPC::ExtDirect::Serialize::DEBUG = 1;
 

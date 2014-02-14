@@ -1,7 +1,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 89;
+use Test::More tests => 88;
+
+use RPC::ExtDirect::Test::Util;
 
 # A stub for testing global vars handling
 package RPC::ExtDirect::API;
@@ -10,7 +12,7 @@ our $DEBUG;
 
 package main;
 
-BEGIN { use_ok 'RPC::ExtDirect::Config' }
+use RPC::ExtDirect::Config;
 
 my $cfg_class = 'RPC::ExtDirect::Config';
 my $defs      = RPC::ExtDirect::Config::_get_definitions;
@@ -98,8 +100,8 @@ is $config->frob(),  'frab', "Bulk setter value 2 matches";
 $config = $cfg_class->new();
 my $clone  = $config->clone();
 
-ok $config ne $clone,      "Clone is not self";
-is_deeply $clone, $config, "Clone values match";
+ok      $config ne $clone,      "Clone is not self";
+is_deep $clone, $config, "Clone values match";
 
 $SIG{__WARN__} = sub {};
 

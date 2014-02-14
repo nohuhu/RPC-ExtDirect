@@ -2,12 +2,10 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';
 
-use Test::More tests => 17;
+use Test::More tests => 16;
 
-use Data::Dumper;
-local $Data::Dumper::Indent = 1;
+use RPC::ExtDirect::Test::Util;
 
-use lib 't/lib';
 use RPC::ExtDirect::Test::Hooks;
 use RPC::ExtDirect::Test::PollProvider;
 
@@ -53,7 +51,7 @@ use RPC::ExtDirect::API before => \&before_hook, after => \&after_hook;
                             after  => \&main::after_hook );
 }
 
-BEGIN { use_ok 'RPC::ExtDirect::API::Hook' };
+use RPC::ExtDirect::API::Hook;
 
 # These variables get set when hooks are called
 my ($before, $after, $modify, $throw_up, $cancel);
@@ -104,12 +102,8 @@ for my $test ( @$tests ) {
     eval { delete $before->[1]->{orig}; delete $after->[1]->{orig}; };
     $@ = undef;
 
-    is_deeply $before, $exp_before, "$name: before data"
-        or diag( Data::Dumper->Dump( [$before], ['before'] ) );
-    
-    is_deeply $after,  $exp_after,  "$name: after data"
-        or diag( Data::Dumper->Dump( [$after], ['after'] ) );
-
+    is_deep $before, $exp_before, "$name: before data";
+    is_deep $after,  $exp_after,  "$name: after data";
 };
 
 __DATA__
