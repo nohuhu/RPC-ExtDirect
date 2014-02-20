@@ -10,7 +10,7 @@ use RPC::ExtDirect;
 use RPC::ExtDirect::Serializer;
 
 # Test modules are simple and effective
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval DATA: $@";

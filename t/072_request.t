@@ -11,12 +11,11 @@ use Test::More tests => 94;
 
 use RPC::ExtDirect::Request;
 
-# Test modules are so simple they can't fail
-use RPC::ExtDirect::Test::Foo;
-use RPC::ExtDirect::Test::Bar;
-use RPC::ExtDirect::Test::Qux;
-use RPC::ExtDirect::Test::Hooks;
-use RPC::ExtDirect::Test::PollProvider;
+use RPC::ExtDirect::Test::Pkg::Foo;
+use RPC::ExtDirect::Test::Pkg::Bar;
+use RPC::ExtDirect::Test::Pkg::Qux;
+use RPC::ExtDirect::Test::Pkg::Hooks;
+use RPC::ExtDirect::Test::Pkg::PollProvider;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";
@@ -174,7 +173,7 @@ __DATA__
                     action  => 'Qux',
                     method  => 'bar_foo',
                     tid     => 444,
-                    where   => 'RPC::ExtDirect::Test::Qux->bar_foo',
+                    where   => 'RPC::ExtDirect::Test::Pkg::Qux->bar_foo',
                     message => "bar foo!", },
     },
     # Form handler called directly
@@ -218,12 +217,12 @@ __DATA__
                     action  => 'Hooks',
                     method  => 'foo_foo',
                     tid     => 777,
-                    where   => 'RPC::ExtDirect::Test::Hooks->foo_foo',
+                    where   => 'RPC::ExtDirect::Test::Pkg::Hooks->foo_foo',
                     message => 'Undefined subroutine '.
-                               '&RPC::ExtDirect::Test::Hooks::'.
+                               '&RPC::ExtDirect::Test::Pkg::Hooks::'.
                                'nonexistent_before_hook called',
                   },
-        code   => sub { !$RPC::ExtDirect::Test::Hooks::foo_foo_called },
+        code   => sub { !$RPC::ExtDirect::Test::Pkg::Hooks::foo_foo_called },
     },
 
     # Before hook unset (NONE)
@@ -234,7 +233,7 @@ __DATA__
         isa    => 'RPC::ExtDirect::Request',
         result => { type => 'rpc', action => 'Hooks', method => 'foo_bar',
                     tid => 888, result => 1 },
-        code   => sub { $RPC::ExtDirect::Test::Hooks::foo_bar_called },
+        code   => sub { $RPC::ExtDirect::Test::Pkg::Hooks::foo_bar_called },
     },
 
     # After hook
@@ -248,7 +247,7 @@ __DATA__
                     action => 'Hooks', method => 'foo_baz',
                     result => { msg  => 'foo! bar! baz!',
                                 foo => 111, bar => 222, baz => 333 }, },
-        code   => sub { !!$RPC::ExtDirect::Test::Hooks::foo_baz_called },
+        code   => sub { !!$RPC::ExtDirect::Test::Pkg::Hooks::foo_baz_called },
     },
 ]
 

@@ -27,6 +27,7 @@ use RPC::ExtDirect::API      Before => \&global_before,
                              aFtEr  => \&global_after,
                              ;
 
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;

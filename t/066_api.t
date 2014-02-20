@@ -26,98 +26,11 @@ sub get_api_definition {
 
 package main;
 
-my $api_def = {
-    'Foo' => {
-        remote  => 1,
-        methods => {
-            foo_foo     => { len => 1 },
-            foo_bar     => { len => 2 },
-            foo_blessed => { },
-            foo_baz     => { params => [qw/ foo bar baz /] },
-            foo_zero    => { len => 0 },
-        },
-    },
-    'Bar' => {
-        remote  => 1,
-        methods => {
-            bar_bar => { len => 5 },
-            bar_foo => { len => 4 },
-            bar_baz => { formHandler => 1 },
-        },
-    },
-    'Qux' => {
-        remote  => 1,
-        methods => {
-            foo_foo => { len => 1 },
-            bar_bar => { len => 5 },
-            bar_foo => { len => 4 },
-            bar_baz => { formHandler => 1 },
-            foo_bar => { len => 2 },
-            foo_baz => { params => [qw/ foo bar baz /] },
-        },
-    },
-    'PollProvider' => {
-        remote  => 1,
-        methods => {
-            foo => { pollHandler => 1 },
-        },
-    },
-};
+my $test_data = eval do { local $/; <DATA>; }           ## no critic
+    or die "Can't eval DATA: '$@'";
 
-my $expected_authorized = deparse_api q~
-Ext.app.REMOTE_CALL_API = {
-    "actions":{
-        "Bar":[
-                { "len":5, "name":"bar_bar" },
-                { "len":4, "name":"bar_foo" },
-                { "formHandler":true, "len":0, "name":"bar_baz" }
-              ],
-        "Foo":[
-                { "len":1, "name":"foo_foo" },
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_blessed" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":0, "name":"foo_zero" }
-              ],
-        "Qux":[
-                { "len":1, "name":"foo_foo" },
-                { "len":5, "name":"bar_bar" },
-                { "len":4, "name":"bar_foo" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] }
-              ]
-    },
-    "namespace":"myApp.Server",
-    "type":"remoting",
-    "url":"/router.cgi"
-};
-Ext.app.REMOTE_EVENT_API = {
-    "type":"polling",
-    "url":"/poll.cgi"
-};
-~;
-
-my $expected_anonymous = deparse_api q~
-Ext.app.REMOTE_CALL_API = {
-    "actions":{
-        "Foo":[
-                { "len":1, "name":"foo_foo" },
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_blessed" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":0, "name":"foo_zero" }
-              ]
-    },
-    "namespace":"myApp.Server",
-    "type":"remoting",
-    "url":"/router.cgi"
-};
-Ext.app.REMOTE_EVENT_API = {
-    "type":"polling",
-    "url":"/poll.cgi"
-};
-~;
+my $api_def = $test_data->{api_def};
+my $tests   = $test_data->{tests};
 
 my $config = RPC::ExtDirect::Config->new(
     debug_serialize  => 1,
@@ -141,15 +54,115 @@ isa_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 
-my $remoting_api = deparse_api eval { $api->get_remoting_api() };
+my $want = deparse_api shift @$tests;
+my $have = deparse_api eval { $api->get_remoting_api() };
 
-is      $@,            '',                  "anon remoting_api() 6 eval $@";
-is_deep $remoting_api, $expected_anonymous, "anon remoting_api() 6 result";
+is      $@,    '',    "anon remoting_api() eval $@";
+is_deep $have, $want, "anon remoting_api() result";
 
-$remoting_api = deparse_api eval {
+$want = deparse_api shift @$tests;
+$have = deparse_api eval {
     $api->get_remoting_api( env => { user => 'foo' } )
 };
 
-is      $@,            '',                   "authz remoting_api 6 eval $@";
-is_deep $remoting_api, $expected_authorized, "authz remoting_api 6 result";
+is      $@,    '',    "authz remoting_api eval $@";
+is_deep $have, $want, "authz remoting_api result";
 
+__DATA__
+
+{
+    api_def => {
+        'Foo' => {
+            remote  => 1,
+            methods => {
+                foo_foo     => { len => 1 },
+                foo_bar     => { len => 2 },
+                foo_blessed => { },
+                foo_baz     => { params => [qw/ foo bar baz /] },
+                foo_zero    => { len => 0 },
+            },
+        },
+        'Bar' => {
+            remote  => 1,
+            methods => {
+                bar_bar => { len => 5 },
+                bar_foo => { len => 4 },
+                bar_baz => { formHandler => 1 },
+            },
+        },
+        'Qux' => {
+            remote  => 1,
+            methods => {
+                foo_foo => { len => 1 },
+                bar_bar => { len => 5 },
+                bar_foo => { len => 4 },
+                bar_baz => { formHandler => 1 },
+                foo_bar => { len => 2 },
+                foo_baz => { params => [qw/ foo bar baz /] },
+            },
+        },
+        'PollProvider' => {
+            remote  => 1,
+            methods => {
+                foo => { pollHandler => 1 },
+            },
+        },
+    },
+    
+    tests => [
+        q~
+            Ext.app.REMOTE_CALL_API = {
+                "actions":{
+                    "Foo":[
+                            { "len":1, "name":"foo_foo" },
+                            { "len":2, "name":"foo_bar" },
+                            { "name":"foo_blessed" },
+                            { "name":"foo_baz", "params":["foo","bar","baz"] },
+                            { "len":0, "name":"foo_zero" }
+                          ]
+                },
+                "namespace":"myApp.Server",
+                "type":"remoting",
+                "url":"/router.cgi"
+            };
+            Ext.app.REMOTE_EVENT_API = {
+                "type":"polling",
+                "url":"/poll.cgi"
+            };
+        ~,
+        
+        q~
+            Ext.app.REMOTE_CALL_API = {
+                "actions":{
+                    "Bar":[
+                            { "len":5, "name":"bar_bar" },
+                            { "len":4, "name":"bar_foo" },
+                            { "formHandler":true, "len":0, "name":"bar_baz" }
+                          ],
+                    "Foo":[
+                            { "len":1, "name":"foo_foo" },
+                            { "len":2, "name":"foo_bar" },
+                            { "name":"foo_blessed" },
+                            { "name":"foo_baz", "params":["foo","bar","baz"] },
+                            { "len":0, "name":"foo_zero" }
+                          ],
+                    "Qux":[
+                            { "len":1, "name":"foo_foo" },
+                            { "len":5, "name":"bar_bar" },
+                            { "len":4, "name":"bar_foo" },
+                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "len":2, "name":"foo_bar" },
+                            { "name":"foo_baz", "params":["foo","bar","baz"] }
+                          ]
+                },
+                "namespace":"myApp.Server",
+                "type":"remoting",
+                "url":"/router.cgi"
+            };
+            Ext.app.REMOTE_EVENT_API = {
+                "type":"polling",
+                "url":"/poll.cgi"
+            };
+        ~,
+    ],
+}

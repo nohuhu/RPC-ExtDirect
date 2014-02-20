@@ -20,6 +20,7 @@ $SIG{__WARN__} = sub {};
 use RPC::ExtDirect::Deserialize;
 
 # Test modules are simple and effective
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic

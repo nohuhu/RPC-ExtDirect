@@ -17,6 +17,7 @@ else {
 # cluttering STDERR
 $SIG{__WARN__} = sub {};
 
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Hooks;
 use RPC::ExtDirect::Test::PollProvider;
 

@@ -1,14 +1,3 @@
-#
-# WARNING WARNING WARNING
-#
-# DO NOT CHANGE ANYTHING IN THIS MODULE. OTHERWISE, A LOT OF API 
-# AND OTHER TESTS MAY BREAK.
-#
-# This module is here to test certain behaviors. If you need
-# to test something else, add another test module.
-# It's that simple.
-#
-
 package RPC::ExtDirect::Test::Qux;
 
 use strict;

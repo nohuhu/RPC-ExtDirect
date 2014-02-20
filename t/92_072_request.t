@@ -22,6 +22,7 @@ $SIG{__WARN__} = sub {};
 use RPC::ExtDirect::Request;
 
 # Test modules are so simple they can't fail
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;

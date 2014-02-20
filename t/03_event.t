@@ -10,46 +10,10 @@ use RPC::ExtDirect::NoEvents;
 
 # Test Events with data
 
-my @new_tests = (
-    {
-        name => 'ordered',
-        arg  => ['foo', 'bar'],
-        res  => {
-            type => 'event',
-            name => 'foo',
-            data => 'bar',
-        },
-    },
-    {
-        name => 'hashref',
-        arg  => [{ name => 'bar', data => 'baz' }],
-        res  => {
-            type => 'event',
-            name => 'bar',
-            data => 'baz',
-        },
-    },
-    {
-        name => 'hash',
-        arg  => [name => 'baz', data => 'qux'],
-        res  => {
-            type => 'event',
-            name => 'baz',
-            data => 'qux',
-        },
-    },
-    {
-        name => 'w/o data',
-        arg  => ['burr'],
-        res  => {
-            type => 'event',
-            name => 'burr',
-            data => undef,
-        },
-    }
-);
+my $tests = eval do { local $/; <DATA>; }           ## no critic
+    or die "Can't eval DATA: '$@'";
 
-for my $test ( @new_tests ) {
+for my $test ( @$tests ) {
     my $name = $test->{name};
     my @arg  = @{ $test->{arg} };
     my $exp  = $test->{res};
@@ -92,3 +56,44 @@ my $real_result = eval { $no_events->result() };
 is      $@, '',                         "NoEvents result() eval $@";
 ok      $real_result,                   "NoEvents result() not empty";
 is_deep $real_result, $expected_result, "NoEvents result() deep";
+
+__DATA__
+
+[
+    {
+        name => 'ordered',
+        arg  => ['foo', 'bar'],
+        res  => {
+            type => 'event',
+            name => 'foo',
+            data => 'bar',
+        },
+    },
+    {
+        name => 'hashref',
+        arg  => [{ name => 'bar', data => 'baz' }],
+        res  => {
+            type => 'event',
+            name => 'bar',
+            data => 'baz',
+        },
+    },
+    {
+        name => 'hash',
+        arg  => [name => 'baz', data => 'qux'],
+        res  => {
+            type => 'event',
+            name => 'baz',
+            data => 'qux',
+        },
+    },
+    {
+        name => 'w/o data',
+        arg  => ['burr'],
+        res  => {
+            type => 'event',
+            name => 'burr',
+            data => undef,
+        },
+    }
+]

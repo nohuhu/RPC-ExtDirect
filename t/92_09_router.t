@@ -20,6 +20,7 @@ $SIG{__WARN__} = sub {};
 use RPC::ExtDirect::Router;
 
 # Test modules are simple
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Qux;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic

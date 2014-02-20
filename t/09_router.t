@@ -10,7 +10,7 @@ use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Router;
 
 # Test modules are simple
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: $@";

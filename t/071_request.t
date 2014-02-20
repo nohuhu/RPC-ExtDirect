@@ -11,10 +11,9 @@ use Test::More tests => 64;
 
 use RPC::ExtDirect::Request;
 
-# Test modules are so simple they can't fail
-use RPC::ExtDirect::Test::Foo;
-use RPC::ExtDirect::Test::Bar;
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Foo;
+use RPC::ExtDirect::Test::Pkg::Bar;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";

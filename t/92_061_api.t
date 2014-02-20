@@ -17,6 +17,7 @@ else {
 $SIG{__WARN__} = sub {};
 
 # Test modules are so simple they can't be broken
+use lib 't/lib2';
 use RPC::ExtDirect::Test::Foo;
 use RPC::ExtDirect::Test::Bar;
 use RPC::ExtDirect::Test::Qux;

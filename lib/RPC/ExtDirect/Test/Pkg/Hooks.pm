@@ -9,7 +9,7 @@
 # It's that simple.
 #
 
-package RPC::ExtDirect::Test::Hooks;
+package RPC::ExtDirect::Test::Pkg::Hooks;
 
 use strict;
 use warnings;

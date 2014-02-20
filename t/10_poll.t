@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More tests => 10;
 
-use RPC::ExtDirect::Test::PollProvider;
+use RPC::ExtDirect::Test::Pkg::PollProvider;
 
 use RPC::ExtDirect::Config;
 
@@ -17,7 +17,7 @@ for my $test ( @$tests ) {
     my $password = $test->{password};
     my $expect   = $test->{result};
 
-    local $RPC::ExtDirect::Test::PollProvider::WHAT_YOURE_HAVING
+    local $RPC::ExtDirect::Test::Pkg::PollProvider::WHAT_YOURE_HAVING
             = $password;
 
     my $config = RPC::ExtDirect::Config->new(
@@ -36,8 +36,6 @@ for my $test ( @$tests ) {
     is $@,      '',      "$name eval $@";
     is $result, $expect, "$name result";
 };
-
-exit 0;
 
 __DATA__
 [
