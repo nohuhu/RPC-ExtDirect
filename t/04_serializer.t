@@ -4,7 +4,6 @@ use warnings;
 use Test::More tests => 9;
 
 use RPC::ExtDirect::Config;
-
 use RPC::ExtDirect::Serializer;
 
 my $cfg_class = 'RPC::ExtDirect::Config';
