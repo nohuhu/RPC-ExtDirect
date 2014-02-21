@@ -54,19 +54,17 @@ isa_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 
-my $want = deparse_api shift @$tests;
-my $have = deparse_api eval { $api->get_remoting_api() };
+my $want = shift @$tests;
+my $have = eval { $api->get_remoting_api() };
 
 is      $@,    '',    "anon remoting_api() eval $@";
-is_deep $have, $want, "anon remoting_api() result";
+cmp_api $have, $want, "anon remoting_api() result";
 
-$want = deparse_api shift @$tests;
-$have = deparse_api eval {
-    $api->get_remoting_api( env => { user => 'foo' } )
-};
+$want = shift @$tests;
+$have = eval { $api->get_remoting_api( env => { user => 'foo' } ) };
 
 is      $@,    '',    "authz remoting_api eval $@";
-is_deep $have, $want, "authz remoting_api result";
+cmp_api $have, $want, "authz remoting_api result";
 
 __DATA__
 

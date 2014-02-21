@@ -10,7 +10,8 @@ use Test::More;
 
 our @EXPORT = qw/
     is_deep
-    deparse_api
+    cmp_api
+    prepare_input
 /;
 
 ### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
@@ -24,6 +25,23 @@ sub is_deep {
 }
 
 ### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Compare two JavaScript API declarations
+#
+
+sub cmp_api {
+    # This can be called either as a class method, or a plain sub
+    shift if $_[0] eq __PACKAGE__;
+    
+    my ($have, $want, $desc) = @_;
+    
+    $have = deparse_api($have) unless ref $have;
+    $want = deparse_api($want) unless ref $want;
+    
+    is_deep $have, $want, $desc;
+}
+
+### NON EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # Deparse and normalize a JavaScript string with Ext.Direct API
 # declaration into Perl data structures suitable for deep comparison
@@ -49,6 +67,28 @@ sub deparse_api {
     }
 
     return [ @parts ];
+}
+
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Convert a test input hashref into the actual object
+#
+
+sub prepare_input {
+    my ($mod, $input) = @_;
+    
+    # Package name should be in the RPC::ExtDirect::Test::Util namespace
+    my $pkg = __PACKAGE__.'::'.$mod;
+    
+    # Convertor sub name goes first
+    my $conv = $input->{conv};
+    my $arg  = $input->{arg};
+    
+    # Calling the sub as a class method is easier
+    # than taking its ref, blah blah
+    my $result = $pkg->$conv(@$arg);
+    
+    return $result;
 }
 
 ### NON EXPORTED PUBLIC PACKAGE SUBROUTINE ###

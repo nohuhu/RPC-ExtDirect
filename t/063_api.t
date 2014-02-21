@@ -25,12 +25,11 @@ local $RPC::ExtDirect::API::DEBUG = 1;
 # Silence the warnings
 $SIG{__WARN__} = sub {};
 
-my $want = deparse_api shift @$tests;
-
-my $have = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
+my $want = shift @$tests;
+my $have = eval { RPC::ExtDirect::API->get_remoting_api() };
 
 is      $@,    '',    "remoting_api() 4 eval $@";
-is_deep $have, $want, "remoting_api() 4 result";
+cmp_api $have, $want, "remoting_api() 4 result";
 
 __DATA__
 

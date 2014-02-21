@@ -15,8 +15,6 @@ my $test_data = eval do { local $/; <DATA>; }           ## no critic
 my $api_def = $test_data->{api_def};
 my $tests   = $test_data->{tests};
 
-my $want = deparse_api shift @$tests;
-
 my $config = RPC::ExtDirect::Config->new(
     debug_serialize => 1,
     namespace       => 'myApp.Server',
@@ -39,10 +37,11 @@ isa_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 
-my $have = deparse_api eval { $api->get_remoting_api() };
+my $want = shift @$tests;
+my $have = eval { $api->get_remoting_api() };
 
 is      $@,    '',    "remoting_api() 6 eval $@";
-is_deep $have, $want, "remoting_api() 6 result";
+cmp_api $have, $want, "remoting_api() 6 result";
 
 __DATA__
 

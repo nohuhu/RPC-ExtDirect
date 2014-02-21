@@ -25,11 +25,11 @@ my $tests = eval do { local $/; <DATA>; }           ## no critic
 # Just silence the warning
 $SIG{__WARN__} = sub {};
 
-my $want = deparse_api shift @$tests;
-my $have = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
+my $want = shift @$tests;
+my $have = eval { RPC::ExtDirect::API->get_remoting_api() };
 
 is      $@,    '',    "remoting_api() 3 eval $@";
-is_deep $have, $want, "remoting_api() 3 result";
+cmp_api $have, $want, "remoting_api() 3 result";
 
 __DATA__
 

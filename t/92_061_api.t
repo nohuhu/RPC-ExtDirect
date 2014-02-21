@@ -27,7 +27,7 @@ use RPC::ExtDirect::API;
 # Set the debug flag
 local $RPC::ExtDirect::API::DEBUG = 1;
 
-my $expected = deparse_api q~
+my $expected = q~
 Ext.app.REMOTING_API = {
     "actions":{
         "Bar":[
@@ -56,10 +56,10 @@ Ext.app.REMOTING_API = {
 };
 ~;
 
-my $remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
+my $remoting_api = eval { RPC::ExtDirect::API->get_remoting_api() };
 
 is      $@,            '',        "remoting_api() 1 eval $@";
-is_deep $remoting_api, $expected, "remoting_api() 1 result";
+cmp_api $remoting_api, $expected, "remoting_api() 1 result";
 
 # "Reimport" with parameters
 
@@ -72,7 +72,7 @@ RPC::ExtDirect::API->import(
     auto_connect => 'HELL YEAH!',
 );
 
-$expected = deparse_api q~
+$expected = q~
 Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
@@ -103,8 +103,7 @@ Ext.app.REMOTE_CALL_API = {
 Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
 ~;
 
-$remoting_api = deparse_api eval { RPC::ExtDirect::API->get_remoting_api() };
+$remoting_api = eval { RPC::ExtDirect::API->get_remoting_api() };
 
 is      $@,            '',        "remoting_api() 2 eval $@";
-is_deep $remoting_api, $expected, "remoting_api() 2 result";
-
+cmp_api $remoting_api, $expected, "remoting_api() 2 result";

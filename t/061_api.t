@@ -15,15 +15,15 @@ use RPC::ExtDirect::API;
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: '$@'";
 
-my $want = deparse_api shift @$tests;
+my $want = shift @$tests;
 
 my $api = RPC::ExtDirect->get_api;
 $api->config->debug_serialize(1);
 
-my $have = deparse_api eval { $api->get_remoting_api() };
+my $have = eval { $api->get_remoting_api() };
 
 is      $@,    '',    "remoting_api() 1 eval $@";
-is_deep $have, $want, "remoting_api() 1 result";
+cmp_api $have, $want, "remoting_api() 1 result";
 
 # "Reimport" with parameters
 
@@ -38,14 +38,13 @@ my $config = RPC::ExtDirect::Config->new(
     auto_connect    => 'HELL YEAH!',
 );
 
-$want = deparse_api shift @$tests;
-
-$have = deparse_api eval {
+$want = shift @$tests;
+$have = eval {
     RPC::ExtDirect::API->get_remoting_api(config => $config)
 };
 
 is      $@,    '',    "remoting_api() 2 eval $@";
-is_deep $have, $want, "remoting_api() 2 result";
+cmp_api $have, $want, "remoting_api() 2 result";
 
 __DATA__
 
