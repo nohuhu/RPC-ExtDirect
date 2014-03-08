@@ -7,6 +7,7 @@ no  warnings 'uninitialized';
 use base 'Exporter';
 
 use Test::More;
+use JSON;
 
 our @EXPORT = qw/
     is_deep
@@ -37,6 +38,41 @@ sub cmp_api {
     
     $have = deparse_api($have) unless ref $have;
     $want = deparse_api($want) unless ref $want;
+    
+    is_deep $have, $want, $desc;
+}
+
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Compare two strings ignoring the whitespace
+#
+
+sub cmp_str {
+    # This can be called either as a class method, or a plain sub
+    shift if $_[0] eq __PACKAGE__;
+    
+    my ($have, $want, $desc) = @_;
+    
+    $_ =~ s/\s//g for ($have, $want);
+    
+    is $have, $want, $desc;
+}
+
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Compare two JSON structures, ignoring the whitespace
+#
+
+sub cmp_json {
+    # This can be called either as a class method, or a plain sub
+    shift if $_[0] eq __PACKAGE__;
+    
+    my ($have_json, $want_json, $desc) = @_;
+    
+    $_ =~ s/\s//g for ($have_json, $want_json);
+    
+    my $have = JSON::from_json($have_json);
+    my $want = JSON::from_json($want_json);
     
     is_deep $have, $want, $desc;
 }
@@ -77,11 +113,13 @@ sub deparse_api {
 sub prepare_input {
     my ($mod, $input) = @_;
     
+    return $input unless ref $input;
+    
     # Package name should be in the RPC::ExtDirect::Test::Util namespace
     my $pkg = __PACKAGE__.'::'.$mod;
     
     # Convertor sub name goes first
-    my $conv = $input->{conv};
+    my $conv = $input->{type};
     my $arg  = $input->{arg};
     
     # Calling the sub as a class method is easier
