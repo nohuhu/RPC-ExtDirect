@@ -23,6 +23,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"http_list","data":[]}',
             ],
@@ -37,6 +38,10 @@ my $tests = [{
             q|{"action":"Env","method":"http_list","result":|.
             q|["HTTP_ACCEPT","HTTP_ACCEPT_CHARSET","HTTP_CONNECTION",|.
             q|"HTTP_COOKIE","HTTP_HOST","HTTP_USER_AGENT"],|.
+            q|"tid":1,"type":"rpc"}|,
+        plack_content =>
+            q|{"action":"Env","method":"http_list","result":|.
+            q|["COOKIE","Content-Length","Content-Type","Host"],|.
             q|"tid":1,"type":"rpc"}|,
     },
 }, {
@@ -58,13 +63,23 @@ my $tests = [{
         url => '/router',
         cgi_url  => '/env',
         
-        content => {
+        cgi_content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"http_header","data":["HTTP_USER_AGENT"]}',
             ],
         },
+        
+        plack_content => {
+            type => 'raw_post',
+            arg => [
+                'http://localhost/router',
+                '{"type":"rpc","tid":1,"action":"Env",'.
+                ' "method":"http_header","data":["Content-Type"]}',
+            ],
+        }
     },
     
     output => {
@@ -74,6 +89,10 @@ my $tests = [{
         cgi_content => 
             q|{"action":"Env","method":"http_header","result":|.
             q|"CGI::Test",|.
+            q|"tid":1,"type":"rpc"}|,
+        plack_content =>
+            q|{"action":"Env","method":"http_header","result":|.
+            q|"application/json",|.
             q|"tid":1,"type":"rpc"}|,
     },
 }, {
@@ -98,6 +117,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"param_list","data":[]}',
             ],
@@ -108,7 +128,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
-        cgi_content =>
+        content =>
             q|{"action":"Env","method":"param_list","result":|.
             q|["POSTDATA"],|.
             q|"tid":1,"type":"rpc"}|,
@@ -135,6 +155,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"param_get","data":["POSTDATA"]}',
             ],
@@ -145,7 +166,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
-        cgi_content =>
+        content =>
             q|{"action":"Env","method":"param_get","result":|.
             q|"{\"type\":\"rpc\",\"tid\":1,\"action\":\"Env\",\"method\":\"param_get\",\"data\":[\"POSTDATA\"]}",|.
             q|"tid":1,"type":"rpc"}|,
@@ -172,6 +193,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"cookie_list","data":[]}',
             ],
@@ -182,7 +204,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
-        cgi_content =>
+        content =>
             q|{"action":"Env","method":"cookie_list","result":|.
             q|["foo"],|.
             q|"tid":1,"type":"rpc"}|,
@@ -209,6 +231,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"type":"rpc","tid":1,"action":"Env",'.
                 ' "method":"cookie_get","data":["foo"]}',
             ],
@@ -219,7 +242,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
-        cgi_content =>
+        content =>
             q|{"action":"Env","method":"cookie_get","result":|.
             q|"bar",|.
             q|"tid":1,"type":"rpc"}|,

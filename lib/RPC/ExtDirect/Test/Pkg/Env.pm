@@ -27,6 +27,8 @@ sub http_list : ExtDirect(0) {
 
 sub http_header : ExtDirect(1) {
     my ($class, $header, $env) = @_;
+    
+    $DB::single = 1;
 
     return $env->http($header);
 }

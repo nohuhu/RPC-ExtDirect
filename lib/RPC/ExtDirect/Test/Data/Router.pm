@@ -19,6 +19,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg => [
+                'http://localhost/router',
                 '{"something":"invalid":"here"}',
             ],
         },
@@ -53,6 +54,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg  => [
+                'http://localhost/router',
                 q|{"type":"rpc","tid":1,"action":"Foo",|.
                 q| "method":"foo_foo","data":["bar"]}|,
             ],
@@ -85,6 +87,7 @@ my $tests = [{
         content => {
             type => 'raw_post',
             arg  => [
+                'http://localhost/router',
                 q|[{"tid":1,"action":"Qux","method":"foo_foo",|.
                 q|  "data":["foo"],"type":"rpc"},|.
                 q| {"tid":2,"action":"Qux","method":"foo_bar",|.
@@ -193,7 +196,7 @@ my $tests = [{
             q|"foo_field":"foo",|.
             q|"upload_response":"The following files were |.
             q|processed:\n|.
-            q|qux.txt application/octet-stream 29 ok\n"|.
+            q|qux.txt application/octet-stream 31 ok\n"|.
             q|},"tid":7,|.
             q|"type":"rpc"}|.
             q|</textarea></body></html>|,
@@ -241,9 +244,9 @@ my $tests = [{
             q|"field":"value",|.
             q|"upload_response":"The following files were |.
             q|processed:\n|.
-            q|foo.jpg application/octet-stream 16157 ok\n|.
-            q|bar.png application/octet-stream 20691 ok\n|.
-            q|script.js application/octet-stream 78 ok\n"|.
+            q|foo.jpg application/octet-stream 16159 ok\n|.
+            q|bar.png application/octet-stream 20693 ok\n|.
+            q|script.js application/octet-stream 80 ok\n"|.
             q|},"tid":8,"type":"rpc"}|.
             q|</textarea></body></html>|,
     },

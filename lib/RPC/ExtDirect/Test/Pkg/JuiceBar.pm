@@ -34,7 +34,9 @@ sub bar_bar : ExtDirect(5) { shift; pop; return scalar @_; }
 sub bar_baz : ExtDirect( formHandler ) {
     my ($class, %param) = @_;
 
-    my $cgi = delete $param{_env};
+    # We don't use the env object here, but have to remove it
+    # so that it doesn't leak in the response
+    my $env = delete $param{_env};
 
     # Simulate uploaded file handling
     my $uploads = $param{file_uploads};
@@ -46,15 +48,16 @@ sub bar_baz : ExtDirect( formHandler ) {
         my $name = $upload->{basename};
         my $type = $upload->{type};
         my $size = $upload->{size};
-
+        
+        #
         # CTI::Test somehow uploads files so that
         # they are 2 bytes shorter than actual size
         # This allows for the same test results to be
         # applied across all gateways and test frameworks
         #
-        # Well, in all truthiness this should be the opposite
-        # but CGI::Test was there first...
-        $size -= 2 if $CHEAT;
+        # TODO Investigate why this is happening and fix
+        #
+        $size += 2 if $CHEAT;
 
         my $ok = (defined $upload->{handle} &&
                           $upload->{handle}->opened) ? "ok" : "not ok";
