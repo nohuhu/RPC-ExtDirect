@@ -43,6 +43,10 @@ my $tests = [{
             q|{"action":"Env","method":"http_list","result":|.
             q|["COOKIE","Content-Length","Content-Type","Host"],|.
             q|"tid":1,"type":"rpc"}|,
+        anyevent_content =>
+            q|{"action":"Env","method":"http_list","result":|.
+            q|["content-length","content-type","cookie"],|.
+            q|"tid":1,"type":"rpc"}|,
     },
 }, {
     name => 'http header',
@@ -72,7 +76,7 @@ my $tests = [{
             ],
         },
         
-        plack_content => {
+        content => {
             type => 'raw_post',
             arg => [
                 'http://localhost/router',
@@ -90,7 +94,7 @@ my $tests = [{
             q|{"action":"Env","method":"http_header","result":|.
             q|"CGI::Test",|.
             q|"tid":1,"type":"rpc"}|,
-        plack_content =>
+        content =>
             q|{"action":"Env","method":"http_header","result":|.
             q|"application/json",|.
             q|"tid":1,"type":"rpc"}|,
@@ -128,6 +132,10 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        anyevent_content =>
+            q|{"action":"Env","method":"param_list","result":|.
+            q|[],|.
+            q|"tid":1,"type":"rpc"}|,
         content =>
             q|{"action":"Env","method":"param_list","result":|.
             q|["POSTDATA"],|.
@@ -166,6 +174,10 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        anyevent_content =>
+            q|{"action":"Env","method":"param_get","result":|.
+            q|null,|.
+            q|"tid":1,"type":"rpc"}|,
         content =>
             q|{"action":"Env","method":"param_get","result":|.
             q|"{\"type\":\"rpc\",\"tid\":1,\"action\":\"Env\",\"method\":\"param_get\",\"data\":[\"POSTDATA\"]}",|.
