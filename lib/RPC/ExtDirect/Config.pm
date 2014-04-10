@@ -90,10 +90,25 @@ sub add_accessors {
 sub set_options {
     my $self = shift;
     
+    my $debug = $self->debug;
+    
     my %options = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
     
     while ( my ($option, $value) = each %options ) {
-        $self->$option($value);
+    
+        # We may as well be passed some options that we don't support;
+        # that may happen by accident, or the options hash may be passed
+        # on from unknown upper level. This does not represent a problem
+        # per se, so rather than bomb out with a cryptic error if a setter
+        # happens not to be defined, we warn in debug and silently ignore
+        # such occurences when not debugging.
+        if ( $self->can($option) ) {
+            $self->$option($value);
+        }
+        elsif ( $debug ) {
+            warn ref($self)." instance was passed a config option $option ".
+                            "for which there is no setter. A mistake?";
+        }
     }
     
     return $self;
