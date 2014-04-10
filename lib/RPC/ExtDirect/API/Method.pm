@@ -252,6 +252,13 @@ sub prepare_default_arguments {
     return ( $arg{input}, $arg{env} );
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Read-only getter for backward compatibility
+#
+
+sub is_formhandler { shift->formHandler }
+
 ### PUBLIC INSTANCE METHODS ###
 #
 # Simple read-write accessors
