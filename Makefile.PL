@@ -1,12 +1,32 @@
 use 5.006000;
 use ExtUtils::MakeMaker;
 
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
+# Add the `devtest` target to run regression and POD tests in one go
+sub MY::postamble {
+    return <<'END';
+devtest :
+	REGRESSION_TESTS=1 POD_TESTS=1 $(MAKE) test
+
+END
+}
+
+# Override `disttest` so it would behave as `devtest`
+sub MY::dist_test {
+	return <<'END';
+disttest : distdir
+	cd $(DISTVNAME) && $(ABSPERLRUN) Makefile.PL
+	cd $(DISTVNAME) && $(MAKE) $(PASTHRU)
+	cd $(DISTVNAME) && $(MAKE) devtest $(PASTHRU)
+
+END
+}
+
+my $MMVersion = $ExtUtils::MakeMaker::VERSION;
+
 WriteMakefile(
     NAME              => 'RPC::ExtDirect',
     VERSION_FROM      => 'lib/RPC/ExtDirect.pm', # finds $VERSION
-    ($ExtUtils::MakeMaker::VERSION >= 6.55
+    ($MMVersion >= 6.55
         ? ( BUILD_REQUIRES => {
                 'Test::More' => '0.48',
                 'Test::Pod'  => '1.00',
@@ -25,12 +45,12 @@ WriteMakefile(
         )
     ),
     ($] >= 5.005 ?
-      (ABSTRACT => 'Ext.Direct implementation for Perl',
-       AUTHOR   => 'Alexander Tokarev <tokarev@cpan.org>',
+      (ABSTRACT => 'Core Ext.Direct implementation for Perl',
+       AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
        LICENSE  => 'perl',
       ) : ()),
 
-    ($ExtUtils::MakeMaker::VERSION >= 6.46
+    ($MMVersion >= 6.46
         ? ( META_MERGE => {
             resources   => {
                 bugtracker  => 'http://github.com/nohuhu/RPC-ExtDirect/issues',
