@@ -15,7 +15,7 @@ use RPC::ExtDirect::Util;
 # Version of this module.
 #
 
-our $VERSION = '3.00_001';
+our $VERSION = '3.00';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
@@ -26,7 +26,7 @@ our $VERSION = '3.00_001';
 
 our $DEBUG;
 
-# This is a bit hacky, but we got to keep a reference to the API object
+# This is a bit hacky, but we've got to keep a reference to the API object
 # so that *compilation time* attributes would work as expected,
 # as well as the configuration options for the RPC::ExtDirect::API class.
 {
@@ -234,8 +234,8 @@ sub get_method_list {
         # when called with $action_name it returns the list of
         # method names; when it is called with empty @_
         # it returns the list of Action::method pairs.
-        # Not sure what was the original intent here but we
-        # got to keep up compatibility. The whole method is
+        # I don't remember  what was the original intent here but
+        # we've got to keep up compatibility. The whole method is
         # deprecated anyway...
         my $tpl = $action_name ? "" : $name.'::';
         
