@@ -29,9 +29,10 @@ sub new {
         croak "Odd number of arguments in RPC::ExtDirect::Config->new()";
     }
     
-    my $self = bless { %arg }, $class;
+    my $self = bless {}, $class;
     
     $self->_init();
+    $self->set_options(%arg);
     
     return $self;
 }
