@@ -129,17 +129,18 @@ sub _decode_requests {
     
     my $config = $self->config;
     my $api    = $self->api;
+    my $debug  = $config->debug_router;
     
     my $deserializer_class = $config->deserializer_class_router;
     
     eval "require $deserializer_class";
     
-    my $deserializer 
-        = $deserializer_class->new( config => $config, api => $api );
+    my $dser = $deserializer_class->new( config => $config, api => $api );
 
-    my $requests = $has_form ? $deserializer->decode_form($input)
-                 :             $deserializer->decode_post($input)
-                 ;
+    my $requests
+        = $has_form ? $dser->decode_form(data => $input, debug => $debug)
+        :             $dser->decode_post(data => $input, debug => $debug)
+        ;
     
     return ($has_upload, $requests);
 }
@@ -173,6 +174,7 @@ sub _serialize_responses {
     
     my $api    = $self->api;
     my $config = $self->config;
+    my $debug  = $config->debug_router;
     
     my $serializer_class = $config->serializer_class_router;
     
@@ -181,7 +183,11 @@ sub _serialize_responses {
     my $serializer
         = $serializer_class->new( config => $config, api => $api );
 
-    my $result = $serializer->serialize(0, @$responses);
+    my $result = $serializer->serialize(
+        mute_exceptions => !1,
+        debug           => $debug,
+        data            => $responses,
+    );
     
     return $result;
 }

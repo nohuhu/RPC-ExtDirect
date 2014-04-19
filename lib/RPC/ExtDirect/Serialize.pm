@@ -43,6 +43,8 @@ sub serialize {
     # Class name
     shift;
     
+    my $mute_exceptions = shift;
+    
     warn __PACKAGE__.'->serialize class method is deprecated; ' .
                      'use RPC::ExtDirect::Serializer->serialize ' .
                      'instance method instead';
@@ -53,7 +55,10 @@ sub serialize {
     my $config     = RPC::ExtDirect::Config->new();
     my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
     
-    return $serializer->serialize(@_);
+    return $serializer->serialize(
+        mute_exceptions => $mute_exceptions,
+        data => [ @_ ],
+    );
 }
 
 1;

@@ -63,6 +63,8 @@ our %JSON_OPTIONS;
 sub decode_post {
     shift; # class name
     
+    my $post_text = shift;
+    
     warn __PACKAGE__.'->decode_post class method is deprecated; ' .
                      'use RPC::ExtDirect::Serializer->decode_post ' .
                      'instance method instead';
@@ -73,7 +75,10 @@ sub decode_post {
     my $config     = RPC::ExtDirect::Config->new();
     my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
     
-    return $serializer->decode_post(@_);
+    return $serializer->decode_post(
+        data => $post_text,
+        @_
+    );
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -87,6 +92,8 @@ sub decode_post {
 sub decode_form {
     shift; # class name
     
+    my $form_href = shift;
+    
     warn __PACKAGE__.'->decode_form class method is deprecated; ' .
                      'use RPC::ExtDirect::Serializer->decode_form ' .
                      'instance method instead';
@@ -97,7 +104,10 @@ sub decode_form {
     my $config     = RPC::ExtDirect::Config->new();
     my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
     
-    return $serializer->decode_form(@_);
+    return $serializer->decode_form(
+        data => $form_href,
+        @_
+    );
 }
 
 1;

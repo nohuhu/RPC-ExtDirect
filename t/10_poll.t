@@ -5,6 +5,7 @@ use Test::More tests => 10;
 
 use RPC::ExtDirect::Test::Pkg::PollProvider;
 
+use RPC::ExtDirect::Test::Util qw/ cmp_json /;
 use RPC::ExtDirect::Config;
 
 use RPC::ExtDirect::EventProvider;
@@ -30,11 +31,8 @@ for my $test ( @$tests ) {
 
     my $result = eval { $provider->poll() };
 
-    # Remove whitespace
-    s/\s//g for ( $expect, $result );
-
-    is $@,      '',      "$name eval $@";
-    is $result, $expect, "$name result";
+    is       $@,      '',      "$name eval $@";
+    cmp_json $result, $expect, "$name result";
 };
 
 __DATA__

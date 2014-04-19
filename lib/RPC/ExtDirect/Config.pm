@@ -203,7 +203,7 @@ my $DEFINITIONS = [{
     package  => 'RPC::ExtDirect::API',
     var      => 'DEBUG',
     type     => 'scalar',
-    setter   => [qw/ debug_api debug_serialize /],
+    setter   => 'debug_api',
     fallback => 'debug',
 }, {
     package  => 'RPC::ExtDirect::EventProvider',
@@ -233,7 +233,8 @@ my $DEFINITIONS = [{
     package  => 'RPC::ExtDirect::Router',
     var      => 'DEBUG',
     type     => 'scalar',
-    setter   => [qw/ debug_serialize debug_deserialize debug_request /],
+    setter   => 'debug_router',
+    fallback => 'debug',
 }, {
     accessor => 'exception_class',
     default  => 'RPC::ExtDirect::Exception',
@@ -255,15 +256,6 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'exception_class_request',
     fallback => 'exception_class',
-}, {
-    accessor => 'event_class',
-    default  => 'RPC::ExtDirect::Event',
-}, {
-    package  => 'RPC::ExtDirect::EventProvider',
-    var      => 'EVENT_CLASS',
-    type     => 'scalar',
-    setter   => 'event_class_eventprovider',
-    fallback => 'event_class',
 }, {
     accessor => 'request_class',
     default  => 'RPC::ExtDirect::Request',

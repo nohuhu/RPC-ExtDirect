@@ -200,13 +200,18 @@ sub get_remoting_api {
     my $auto_connect = $config->auto_connect;
     my $no_polling   = $config->no_polling;
     my $s_class      = $config->serializer_class_api;
+    my $debug_api    = $config->debug_api;
     
     my $serializer = $s_class->new( config => $config );
+    
+    my $api_json = $serializer->serialize(
+        mute_exceptions => 1,
+        debug           => $debug_api,
+        data            => [$remoting_api],
+    );
 
     # Compile JavaScript for REMOTING_API
-    my $js_chunk = "$remoting_var = "
-                 . ($serializer->serialize(1, $remoting_api) || '{}')
-                 . ";\n";
+    my $js_chunk = "$remoting_var = " . ($api_json || '{}') . ";\n";
 
     # If auto_connect is on, add client side initialization code
     $js_chunk .= "Ext.direct.Manager.addProvider($remoting_var);\n"
@@ -214,9 +219,13 @@ sub get_remoting_api {
 
     # POLLING_API is added only when there's something in it
     if ( $polling_api && !$no_polling ) {
-        $js_chunk .= "$polling_var = "
-                  .  ($serializer->serialize(1, $polling_api) || '{}')
-                  .  ";\n";
+        $api_json = $serializer->serialize(
+            mute_exceptions => 1,
+            debug           => $debug_api,
+            data            => [$polling_api],
+        );
+        
+        $js_chunk .= "$polling_var = " . ($api_json || '{}' ) . ";\n";
 
         # Same initialization code for POLLING_API if auto connect is on
         $js_chunk .= "Ext.direct.Manager.addProvider($polling_var);\n"

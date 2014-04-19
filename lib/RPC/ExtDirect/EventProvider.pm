@@ -31,10 +31,8 @@ our $SERIALIZER_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
-# Set Event class name so it could be configured
-#
-# DEPRECATED. Use `event_class_eventprovider` or `event_class`
-# Config options instead.
+# DEPRECATED. This option did nothing in previous versions of
+# RPC::ExtDirect library, and is ignored in 3.x+
 #
 
 our $EVENT_CLASS;
@@ -194,6 +192,7 @@ sub _serialize_results {
     
     my $config = $self->config;
     my $api    = $self->api;
+    my $debug  = $config->debug_eventprovider;
     
     my $serializer_class = $config->serializer_class_eventprovider;
     
@@ -204,7 +203,13 @@ sub _serialize_results {
         api    => $api,
     );
 
-    my $json = eval { $serializer->serialize( 1, $final_result ) };
+    my $json = eval {
+        $serializer->serialize(
+            mute_exceptions => 1,
+            debug           => $debug,
+            data            => [$final_result],
+        )
+    };
 
     return $json;
 }
@@ -219,6 +224,7 @@ sub _no_events {
     
     my $config = $self->config;
     my $api    = $self->api;
+    my $debug  = $config->debug_eventprovider;
     
     my $serializer_class = $config->serializer_class_eventprovider;
     
@@ -231,7 +237,13 @@ sub _no_events {
 
     my $no_events  = RPC::ExtDirect::NoEvents->new();
     my $result     = $no_events->result();
-    my $serialized = $serializer->serialize(0, $result);
+    
+    # NoEvents result can't blow up, hence no eval
+    my $serialized = $serializer->serialize(
+        mute_exceptions => !1,
+        debug           => $debug,
+        data            => [$result],
+    );
 
     return $serialized;
 }

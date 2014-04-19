@@ -34,7 +34,11 @@ for my $test ( @$tests ) {
         config => $config,
     );
 
-    my $requests = eval { $serializer->$method($data) };
+    my $requests = eval {
+        $serializer->$method(
+            data => $data
+        )
+    };
 
     is     $@, '',               "$name $method() requests eval $@";
     ok ref $requests eq 'ARRAY', "$name $method requests is ARRAY";

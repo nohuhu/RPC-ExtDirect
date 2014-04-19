@@ -33,13 +33,15 @@ sub new {
 #
 
 sub serialize {
-    my ($self, $mute_exceptions, @data) = @_;
+    my ($self, %arg) = @_;
+    
+    my $data = delete $arg{data} || [];
 
     # Try to serialize each response separately;
     # if one fails it's better to return an exception
     # for one response than fail all of them
-    my @serialized = map { $self->_encode_response($_, $mute_exceptions) }
-                         @data;
+    my @serialized = map { $self->_encode_response($_, %arg) }
+                         @$data;
 
     my $text = @serialized == 1 ? shift @serialized
              :                    '[' . join(',', @serialized) . ']'
@@ -55,7 +57,9 @@ sub serialize {
 #
 
 sub decode_post {
-    my ($self, $post_text) = @_;
+    my ($self, %arg) = @_;
+    
+    my $post_text = delete $arg{data};
 
     # Try to decode data, return Exception upon failure
     local $@;
@@ -68,6 +72,7 @@ sub decode_post {
         my $xcpt = $self->_exception({
             direction => 'deserialize',
             message   => $msg,
+            %arg,
         });
         
         return [ $xcpt ];
@@ -75,7 +80,7 @@ sub decode_post {
 
     $data = [ $data ] unless ref $data eq 'ARRAY';
 
-    my @requests = map { $self->_request($_) } @$data;
+    my @requests = map { $self->_request({ %$_, %arg }) } @$data;
 
     return \@requests;
 }
@@ -87,10 +92,12 @@ sub decode_post {
 #
 
 sub decode_form {
-    my ($self, $form_hashref) = @_;
+    my ($self, %arg) = @_;
+    
+    my $form_href = delete $arg{data};
 
     # Create the Request (or Exception)
-    my $request = $self->_request($form_hashref);
+    my $request = $self->_request({ %$form_href, %arg });
 
     return [ $request ];
 }
@@ -118,12 +125,14 @@ sub _clean_msg {
 #
 
 sub _encode_response {
-    my ($self, $response, $suppress_exceptions) = @_;
+    my ($self, $response, %arg) = @_;
+    
+    my $mute_exceptions = $arg{mute_exceptions};
     
     local $@;
-    my $text = eval { $self->_encode_json($response) };
+    my $text = eval { $self->_encode_json($response, %arg) };
 
-    if ( $@ and not $suppress_exceptions ) {
+    if ( $@ and not $mute_exceptions ) {
         my $msg = $self->_clean_msg($@);
 
         # It's not a given that response/exception hashrefs
@@ -136,10 +145,13 @@ sub _encode_response {
             tid       => $response->{tid},
             where     => __PACKAGE__,
             message   => $msg,
+            %arg,
         });
         
         local $@;
-        $text = eval { $self->_encode_json( $exception->result() ) };
+        $text = eval {
+            $self->_encode_json( $exception->result(), %arg )
+        };
     };
     
     return $text;
@@ -151,11 +163,15 @@ sub _encode_response {
 #
 
 sub _encode_json {
-    my ($self, $data) = @_;
+    my ($self, $data, %arg) = @_;
     
-    my $config  = $self->config;
-    my $debug   = $config->debug_serialize;
-    my $options = $config->json_options || {};
+    my $config  = $arg{config} || $self->config;
+    my $options = defined $arg{json_options} ? $arg{json_options}
+                :                              $config->json_options || {}
+                ;
+    my $debug   = defined $arg{debug}        ? $arg{debug}
+                :                              $config->debug_serialize
+                ;
     
     # We force UTF-8 as per Ext.Direct spec
     $options->{utf8}      = 1;

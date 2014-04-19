@@ -76,7 +76,10 @@ my $expected = '{"bar":"bar","foo":"foo","qux":"qux"}';
 
 $config = $cfg_class->new(json_options => $json_options);
 
-my $json = $ser_class->new(config => $config)->serialize(0, $data);
+my $json = $ser_class->new(config => $config)->serialize(
+    mute_exceptions => !1,
+    data            => [$data],
+);
 
 is $json, $expected, "Canonical output";
 
@@ -89,7 +92,10 @@ for my $option ( qw/ debug verbose_exceptions / ) {
     # for comparison, or the test will never pass :)
     my $config = $cfg_class->new($option => 1, debug => 1);
 
-    my $json = $ser_class->new(config => $config)->serialize(0, $data);
+    my $json = $ser_class->new(config => $config)->serialize(
+        mute_exceptions => !1,
+        data            => [$data],
+    );
 
     $json =~ s/HASH\([^\)]+\)/HASH(blessed)/;
 
@@ -98,7 +104,10 @@ for my $option ( qw/ debug verbose_exceptions / ) {
 
 $expected = undef;
 
-$json = $ser_class->new(debug => 1)->serialize(1, $data);
+$json = $ser_class->new(debug => 1)->serialize(
+    mute_exceptions => 1,
+    data            => [$data],
+);
 
 is $json, $expected, 'Ivalid data, exceptions off';
 

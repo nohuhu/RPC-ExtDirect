@@ -22,9 +22,7 @@ for my $test ( @$tests ) {
     my $expect = $test->{output};
 
     my $config = RPC::ExtDirect::Config->new(
-        debug_serialize => $debug,
-        debug_deserialize => $debug,
-        debug_request => $debug,
+        debug_router => $debug,
     );
 
     my $router = RPC::ExtDirect::Router->new(

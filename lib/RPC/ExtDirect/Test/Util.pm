@@ -15,6 +15,10 @@ our @EXPORT = qw/
     prepare_input
 /;
 
+our @EXPORT_OK = qw/
+    cmp_json
+/;
+
 ### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
 # A wrapper around Test::More::is_deeply() that will print

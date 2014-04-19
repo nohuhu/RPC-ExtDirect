@@ -46,11 +46,16 @@ sub new {
     
     my $api    = delete $arg->{api}    || RPC::ExtDirect->get_api();
     my $config = delete $arg->{config} || RPC::ExtDirect::Config->new();
+    
+    my $debug = defined $arg->{debug} ? delete $arg->{debug}
+              :                         $config->debug_request
+              ;
 
     # Need blessed object to call private methods
     my $self = bless {
         api    => $api,
         config => $config,
+        debug  => $debug,
     }, $class;
 
     # Unpack and validate arguments
@@ -201,6 +206,7 @@ sub data {
 my $accessors = [qw/
     config
     api
+    debug
     method_ref
     type
     tid
@@ -242,7 +248,7 @@ sub _exception {
     
     return $ex_class->new({
         config  => $config,
-        debug   => $config->debug_request,
+        debug   => $self->debug,
         verbose => $config->verbose_exceptions,
         %$arg
     });
@@ -270,7 +276,8 @@ sub _set_error {
         method  => $method_ref->name,
         tid     => $self->tid,
         message => $msg,
-        where   => $where
+        where   => $where,
+        debug   => $self->debug,
     });
 
     # Now the black voodoo magiKC part, live on stage
