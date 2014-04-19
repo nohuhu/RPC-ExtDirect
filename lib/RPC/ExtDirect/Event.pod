@@ -6,8 +6,8 @@ RPC::ExtDirect::Event - The way to push data to the client side
 
 =head1 SYNOPSIS
  
- use RPC::ExtDirect;
- use RPC::ExtDirect::Event;
+  use RPC::ExtDirect;
+  use RPC::ExtDirect::Event;
  
   sub foo : ExtDirect( pollHandler ) {
      my ($class) = @_;

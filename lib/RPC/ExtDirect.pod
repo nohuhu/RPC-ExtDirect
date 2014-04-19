@@ -491,7 +491,7 @@ the call was canceled.
 
 A closure that binds Method coderef to
 its current arguments, allowing to call it
-as easily as $params{orig}->()
+as easily as C<$params{orig}->()>
 
 =back
 
