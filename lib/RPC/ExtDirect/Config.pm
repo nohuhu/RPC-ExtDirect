@@ -300,6 +300,9 @@ my $DEFINITIONS = [{
 }, {
     accessor => 'json_options',
 }, {
+    setter   => 'json_options_serialize',
+    fallback => 'json_options',
+}, {
     package  => 'RPC::ExtDirect::Deserialize',
     var      => 'JSON_OPTIONS',
     type     => 'hash',
@@ -331,9 +334,6 @@ my $DEFINITIONS = [{
     default  => 'Ext.app.POLLING_API',
 }, {
     accessor => 'namespace',
-}, {
-    accessor => 'create_namespace',
-    default  => !1,
 }, {
     accessor => 'auto_connect',
     default  => !1,

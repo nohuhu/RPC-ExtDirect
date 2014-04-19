@@ -167,7 +167,7 @@ sub _encode_json {
     
     my $config  = $arg{config} || $self->config;
     my $options = defined $arg{json_options} ? $arg{json_options}
-                :                              $config->json_options || {}
+                :                              $config->json_options_serialize
                 ;
     my $debug   = defined $arg{debug}        ? $arg{debug}
                 :                              $config->debug_serialize
@@ -189,7 +189,7 @@ sub _encode_json {
 sub _decode_json {
     my ($self, $text) = @_;
     
-    my $options = $self->config->json_options || {};
+    my $options = $self->config->json_options_deserialize;
     
     return JSON::from_json($text, $options);
 }
