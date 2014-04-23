@@ -1,3 +1,5 @@
+# Static (compile time) remoting/polling API configuration via import
+
 use strict;
 use warnings;
 
@@ -19,17 +21,16 @@ use RPC::ExtDirect::API     namespace    => 'myApp.Server',
 
 local $RPC::ExtDirect::API::DEBUG = 1;
 
-my $tests = eval do { local $/; <DATA>; }           ## no critic
-    or die "Can't eval DATA: '$@'";
+my $tests = eval do { local $/; <DATA>; } or die "Can't eval DATA: '$@'";
 
-# Just silence the warning
+# Silence the package globals warning
 $SIG{__WARN__} = sub {};
 
 my $want = shift @$tests;
 my $have = eval { RPC::ExtDirect::API->get_remoting_api() };
 
-is      $@,    '',    "remoting_api() 3 eval $@";
-cmp_api $have, $want, "remoting_api() 3 result";
+is      $@,    '',    "remoting_api() eval $@";
+cmp_api $have, $want, "remoting_api() result";
 
 __DATA__
 

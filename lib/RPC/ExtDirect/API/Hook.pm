@@ -24,13 +24,33 @@ sub new {
     my ($class, %arg) = @_;
     
     my ($type, $coderef) = @arg{qw/ type code /};
-    my $package = _package_from_coderef($coderef);
+    
+    # If we're passed an undef or 'NONE' instead of a coderef,
+    # then the hook is not runnable. Otherwise, try resolving
+    # package if we have a coderef.
+    my $runnable = !('NONE' eq $coderef || !defined $coderef);
+    
+    my ($package, $sub_name);
+    
+    if ( 'CODE' eq ref $coderef ) {
+        $package = _package_from_coderef($coderef);
+    }
+    else {
+        my @parts = split /::/, $coderef;
+        
+        $sub_name = pop @parts;
+        $package  = join '::', @parts;
+        
+        # We've got to have at least the sub_name part
+        die "Can't resolve '$type' hook $coderef" unless $sub_name;
+    }
     
     my $self = bless {
         package  => $package,
         type     => $type,
         code     => $coderef,
-        runnable => 'CODE' eq ref $coderef,
+        sub_name => $sub_name,
+        runnable => $runnable,
     }, $class;
     
     return $self;
@@ -76,11 +96,16 @@ sub run {
     # A drop of sugar
     $hook_arg{orig} = sub { $method_coderef->($method_pkg, @$arg) };
 
-    my $hook_coderef = $self->code;
-    my $hook_pkg     = $self->package;
+    my $hook_coderef  = $self->code;
+    my $hook_sub_name = $self->sub_name;
+    my $hook_pkg      = $self->package;
 
-    # By convention, hooks are called as class methods
-    return $hook_coderef->($hook_pkg, %hook_arg);
+    # By convention, hooks are called as class methods. If we were passed
+    # a method name instead of a coderef, call it indirectly on the package
+    # so that inheritance works properly
+    return $hook_pkg && $hook_sub_name ? $hook_pkg->$hook_sub_name(%hook_arg)
+         :                               $hook_coderef->($hook_pkg, %hook_arg)
+         ;
 }
 
 ### PUBLIC INSTANCE METHODS ###
@@ -89,7 +114,7 @@ sub run {
 #
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
-    simple => [qw/ type code package runnable /],
+    simple => [qw/ type code package sub_name runnable /],
 );
 
 ############## PRIVATE METHODS BELOW ##############

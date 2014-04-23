@@ -1,45 +1,27 @@
-# Test selective API publishing based on env objects
+# Remote API initialization from a hashref (no packages)
 
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 4;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::API;
 
-package RPC::ExtDirect::API::Method::Foo;
-
-use base 'RPC::ExtDirect::API::Method';
-
-sub get_api_definition {
-    my ($self, $env) = @_;
-
-    my $user   = 'HASH' eq ref($env) && $env->{user};
-    my $action = $self->action;
-
-    return if $user ne 'foo' && $action ne 'Foo';
-
-    return $self->SUPER::get_api_definition($env);
-}
-
-package main;
-
-my $test_data = eval do { local $/; <DATA>; }           ## no critic
-    or die "Can't eval DATA: '$@'";
+my $test_data = eval do { local $/; <DATA>; } or die "Can't eval DATA: '$@'";
 
 my $api_def = $test_data->{api_def};
 my $tests   = $test_data->{tests};
 
 my $config = RPC::ExtDirect::Config->new(
-    debug_serialize  => 1,
-    namespace        => 'myApp.Server',
-    router_path      => '/router.cgi',
-    poll_path        => '/poll.cgi',
-    remoting_var     => 'Ext.app.REMOTE_CALL_API',
-    polling_var      => 'Ext.app.REMOTE_EVENT_API',
-    api_method_class => 'RPC::ExtDirect::API::Method::Foo',
+    debug_serialize => 1,
+    namespace       => 'myApp.Server',
+    router_path     => '/router.cgi',
+    poll_path       => '/poll.cgi',
+    remoting_var    => 'Ext.app.REMOTE_CALL_API',
+    polling_var     => 'Ext.app.REMOTE_EVENT_API',
+    auto_connect    => 'HELL YEAH!',
 );
 
 my $api = eval {
@@ -57,14 +39,8 @@ $api->config->debug_serialize(1);
 my $want = shift @$tests;
 my $have = eval { $api->get_remoting_api() };
 
-is      $@,    '',    "anon remoting_api() eval $@";
-cmp_api $have, $want, "anon remoting_api() result";
-
-$want = shift @$tests;
-$have = eval { $api->get_remoting_api( env => { user => 'foo' } ) };
-
-is      $@,    '',    "authz remoting_api eval $@";
-cmp_api $have, $want, "authz remoting_api result";
+is      $@,    '',    "remoting_api() eval $@";
+cmp_api $have, $want, "remoting_api() result";
 
 __DATA__
 
@@ -106,29 +82,8 @@ __DATA__
             },
         },
     },
-    
+
     tests => [
-        q~
-            Ext.app.REMOTE_CALL_API = {
-                "actions":{
-                    "Foo":[
-                            { "len":1, "name":"foo_foo" },
-                            { "len":2, "name":"foo_bar" },
-                            { "name":"foo_blessed" },
-                            { "name":"foo_baz", "params":["foo","bar","baz"] },
-                            { "len":0, "name":"foo_zero" }
-                          ]
-                },
-                "namespace":"myApp.Server",
-                "type":"remoting",
-                "url":"/router.cgi"
-            };
-            Ext.app.REMOTE_EVENT_API = {
-                "type":"polling",
-                "url":"/poll.cgi"
-            };
-        ~,
-        
         q~
             Ext.app.REMOTE_CALL_API = {
                 "actions":{
@@ -157,10 +112,12 @@ __DATA__
                 "type":"remoting",
                 "url":"/router.cgi"
             };
+            Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
             Ext.app.REMOTE_EVENT_API = {
                 "type":"polling",
                 "url":"/poll.cgi"
             };
+            Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
         ~,
     ],
 }

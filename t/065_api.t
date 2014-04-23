@@ -1,4 +1,4 @@
-# Test remote API initialization from a hashref (no packages)
+# API initialization from a hashref
 
 use strict;
 use warnings;
@@ -9,8 +9,7 @@ use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::API;
 
-my $test_data = eval do { local $/; <DATA>; }           ## no critic
-    or die "Can't eval DATA: '$@'";
+my $test_data = eval do { local $/; <DATA>; } or die "Can't eval DATA: '$@'";
 
 my $api_def = $test_data->{api_def};
 my $tests   = $test_data->{tests};
@@ -40,15 +39,14 @@ $api->config->debug_serialize(1);
 my $want = shift @$tests;
 my $have = eval { $api->get_remoting_api() };
 
-is      $@,    '',    "remoting_api() 6 eval $@";
-cmp_api $have, $want, "remoting_api() 6 result";
+is      $@,    '',    "remoting_api() eval $@";
+cmp_api $have, $want, "remoting_api() result";
 
 __DATA__
 
 {
     api_def => {
-        'Foo' => {
-            remote  => 1,
+        'RPC::ExtDirect::Test::Foo' => {
             methods => {
                 foo_foo     => { len => 1 },
                 foo_bar     => { len => 2 },
@@ -57,16 +55,14 @@ __DATA__
                 foo_zero    => { len => 0 },
             },
         },
-        'Bar' => {
-            remote  => 1,
+        'RPC::ExtDirect::Test::Bar' => {
             methods => {
                 bar_bar => { len => 5 },
                 bar_foo => { len => 4 },
                 bar_baz => { formHandler => 1 },
             },
         },
-        'Qux' => {
-            remote  => 1,
+        'RPC::ExtDirect::Test::Qux' => {
             methods => {
                 foo_foo => { len => 1 },
                 bar_bar => { len => 5 },
@@ -76,8 +72,7 @@ __DATA__
                 foo_baz => { params => [qw/ foo bar baz /] },
             },
         },
-        'PollProvider' => {
-            remote  => 1,
+        'RPC::ExtDirect::Test::PollProvider' => {
             methods => {
                 foo => { pollHandler => 1 },
             },

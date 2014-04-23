@@ -1,3 +1,5 @@
+# Static (compile time) remoting API generation
+
 use strict;
 use warnings;
 
@@ -12,8 +14,7 @@ use RPC::ExtDirect::Test::Pkg::Qux;
 
 use RPC::ExtDirect::API;
 
-my $tests = eval do { local $/; <DATA>; }           ## no critic
-    or die "Can't eval DATA: '$@'";
+my $tests = eval do { local $/; <DATA>; } or die "Can't eval DATA: '$@'";
 
 my $want = shift @$tests;
 

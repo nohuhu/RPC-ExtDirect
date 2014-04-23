@@ -1,3 +1,5 @@
+# Hooks with run time code resolution
+
 use strict;
 use warnings;
 
@@ -6,67 +8,35 @@ use RPC::ExtDirect::Test::Util;
 
 use RPC::ExtDirect::Test::Pkg::Foo;
 use RPC::ExtDirect::Test::Pkg::Bar;
-use RPC::ExtDirect::Test::Pkg::Qux;
-use RPC::ExtDirect::Test::Pkg::PollProvider;
 
-use RPC::ExtDirect::API     namespace    => 'myApp.Server',
-                            router_path  => '/router.cgi',
-                            poll_path    => '/poll.cgi',
-                            remoting_var => 'Ext.app.REMOTE_CALL_API',
-                            polling_var  => 'Ext.app.REMOTE_EVENT_API',
-                            auto_connect => 'HELL YEAH!';
+our $WAS_THERE;
 
+sub global_after {
+    $WAS_THERE = 1;
+}
 
-my $tests = eval do { local $/; <DATA>; }           ## no critic
-    or die "Can't eval DATA: '$@'";
+use RPC::ExtDirect;
+use RPC::ExtDirect::API
+        before  => 'test::hooks::global_before',
+        after   => \&global_after;
 
-local $RPC::ExtDirect::API::DEBUG = 1;
+use lib 't/lib';
+use test::hooks;
 
-# Silence the warnings
-$SIG{__WARN__} = sub {};
+my $api        = RPC::ExtDirect->get_api();
+my $method_ref = $api->get_method_by_name('Foo', 'foo_zero');
 
-my $want = shift @$tests;
-my $have = eval { RPC::ExtDirect::API->get_remoting_api() };
+$api->before->run(
+    api        => $api,
+    method_ref => $method_ref,
+);
 
-is      $@,    '',    "remoting_api() 4 eval $@";
-cmp_api $have, $want, "remoting_api() 4 result";
+ok $test::hooks::WAS_THERE, "Before hook resolved";
 
-__DATA__
+$api->after->run(
+    api        => $api,
+    method_ref => $method_ref,
+);
 
-[
-    q~
-        Ext.app.REMOTE_CALL_API = {
-            "actions":{
-                "Bar":[
-                        { "len":5, "name":"bar_bar" },
-                        { "len":4, "name":"bar_foo" },
-                        { "formHandler":true, "len":0, "name":"bar_baz" }
-                      ],
-                "Foo":[
-                        { "len":1, "name":"foo_foo" },
-                        { "len":2, "name":"foo_bar" },
-                        { "name":"foo_blessed" },
-                        { "name":"foo_baz", "params":["foo","bar","baz"] },
-                        { "len":0, "name":"foo_zero" }
-                      ],
-                "Qux":[
-                        { "len":1, "name":"foo_foo" },
-                        { "len":5, "name":"bar_bar" },
-                        { "len":4, "name":"bar_foo" },
-                        { "formHandler":true, "len":0, "name":"bar_baz" },
-                        { "len":2, "name":"foo_bar" },
-                        { "name":"foo_baz", "params":["foo","bar","baz"] }
-                      ]
-            },
-            "namespace":"myApp.Server",
-            "type":"remoting",
-            "url":"/router.cgi"
-        };
-        Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
-        Ext.app.REMOTE_EVENT_API = {
-            "type":"polling",
-            "url":"/poll.cgi"
-        };
-        Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
-    ~,
-]
+ok $::WAS_THERE, "After hook resolved";
+
