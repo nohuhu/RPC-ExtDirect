@@ -1,4 +1,4 @@
-# Statically (compile time) defined Hooks with lazy code resolution
+# Dynamically defined Hooks with eager and lazy code resolution
 
 use strict;
 use warnings;
@@ -6,24 +6,30 @@ use warnings;
 use Test::More tests => 2;
 use RPC::ExtDirect::Test::Util;
 
-use RPC::ExtDirect::Test::Pkg::Foo;
-use RPC::ExtDirect::Test::Pkg::Bar;
-
 our $WAS_THERE;
 
 sub global_after {
     $WAS_THERE = 1;
 }
 
-use RPC::ExtDirect;
-use RPC::ExtDirect::API
-        before  => 'test::hooks::global_before',
-        after   => \&global_after;
+use RPC::ExtDirect::API;
 
 use lib 't/lib';
 use test::hooks;
 
-my $api        = RPC::ExtDirect->get_api();
+my $api = RPC::ExtDirect::API->new_from_hashref(
+    api_href => {
+        before => 'test::hooks::global_before',
+        after  => \&global_after,
+
+        Foo => {
+            methods => {
+                foo_zero => { len => 0 },
+            },
+        }
+    }
+);
+
 my $method_ref = $api->get_method_by_name('Foo', 'foo_zero');
 
 $api->before->run(

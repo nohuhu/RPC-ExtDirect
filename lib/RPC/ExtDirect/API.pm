@@ -114,6 +114,12 @@ sub new_from_hashref {
 sub init_from_hashref {
     my ($self, $api_href) = @_;
     
+    # Global hooks go first
+    for my $type ( $self->HOOK_TYPES ) {
+        $self->add_hook( type => $type, code => delete $api_href->{$type} )
+            if exists $api_href->{$type};
+    }
+    
     for my $key ( keys %$api_href ) {
         my $action_def  = $api_href->{ $key };
         my $remote      = $action_def->{remote};
