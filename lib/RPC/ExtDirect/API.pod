@@ -2,9 +2,71 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API - Remoting API generator for Ext.Direct
+RPC::ExtDirect::API - Ext.Direct service discovery handler
 
 =head1 SYNOPSIS
+
+    use RPC::ExtDirect::Config;
+    use RPC::ExtDirect::API;
+    
+    my $config = RPC::ExtDirect::Config->new(
+        namespace    => 'MyApp',
+        router_path  => '/router',
+        poll_path    => '/events',
+        remoting_var => 'MyApp.REMOTING_API',
+        polling_var  => 'MyApp.POLLING_API',
+    );
+    
+    my $api = RPC::ExtDirect::API->new_from_hashref(
+        config   => $config,
+        api_href => {
+            before => 'MyApp::Util::global_before_hook',
+            after  => 'MyApp::Util::global_after_hook',
+            
+            'MyApp::Server::Foo' => {
+                before  => 'MyApp::Server::Foo::package_before_hook',
+                
+                methods => {
+                    foo => {
+                        len => 1,
+                    },
+                    bar => {
+                        params => [qw/ foo bar /],
+                    },
+                }
+            }
+        }
+    );
+
+=head1 DESCRIPTION
+
+With Ext.Direct, the L<API|RPC::ExtDirect::Intro/API> exposed by the
+server side is published to the clients via fixed URI, a GET request
+to which produces a response with a piece of JavaScript code containing
+the API declaration. This module handles the API service discovery requests.
+
+The actual Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+is in fact a tree-like data structure (an Object in JavaScript parlance)
+containing description of L<Actions|RPC::ExtDirect::Intro/Action> and
+L<Methods|RPC::ExtDirect::Intro/Method> available to the client. This
+data structure is encoded in JavaScript code statement.
+
+=head1 CONFIGURATION
+
+RPC::ExtDirect::API provides two ways to configure Ext.Direct API declaration
+variables to accommodate specific application needs: dynamic via an
+L<RPC::ExtDirect::Config> instance, and static via C<import> package
+subroutine.
+
+An example of the new dynamic configuration is available in the L</SYNOPSIS>
+above. This is the preferred way of configuring the API in large complex
+applications; it allows keeping the whole API definition in one place
+instead of distributed among the packages. It is also possible to define
+more than one API this way, for publishing to different clients.
+
+The static configuration was available since version 1.0 and will be
+supported going forward. This way it is possible to configure the API
+variables at compile time:
 
  use RPC::ExtDirect::API         namespace    => 'myApp',
                                  router_path  => '/router',
@@ -17,101 +79,96 @@ RPC::ExtDirect::API - Remoting API generator for Ext.Direct
                                  after        => \&global_after_hook,
                                  ;
 
-=head1 DESCRIPTION
+=head1 OPTIONS
 
-This module provides Ext.Direct API code generation.
+The following configuration options are supported by RPC::ExtDirect::API:
 
-In order for Ext.Direct client code to know about what Actions (classes)
-and Methods are available on the server side, these should be defined in
-a chunk of JavaScript code that gets requested from the client at startup
-time. It is usually included in the index.html after main ExtJS code:
+=over 4
 
-  <script type="text/javascript" src="extjs/ext-debug.js"></script>
-  <script type="text/javascript" src="/extdirect_api"></script>
-  <script type="text/javascript" src="myapp.js"></script>
+=item namespace
 
-RPC::ExtDirect::API provides a way to configure Ext.Direct definition
-variable(s) to accomodate specific application needs. To do so, pass
-configuration options to the module when you 'use' it, like shown above.
+Declares the namespace your L<Actions|RPC::ExtDirect::Intro/Action> will
+reside in. To call the L<Methods|RPC::ExtDirect::Intro/Method> on client side,
+you will have to qualify them with namespace: C<namespace.Action.Method>,
+e.g.: C<myApp.Foo.Bar>
 
-The following configuration options are supported:
 
- namespace      - Declares the namespace your Actions will
-                  live in. To call the Methods on client side,
-                  you will have to qualify them with namespace:
-                  namespace.Action.Method, e.g.: myApp.Foo.Bar
- 
- router_path    - URI for Ext.Direct Router calls. For CGI
-                  implementation, this should be the name of
-                  CGI script that provides API; for more
-                  sophisticated environments it is an anchor
-                  for specified PATH_INFO.
- 
- poll_path      - URI for Ext.Direct Event provider calls.
-                  Client side will poll this URI periodically,
-                  hence the name.
- 
- remoting_var   - By default, Ext.Direct Configuration for
-                  remoting (forward) Methods is stored in
-                  Ext.app.REMOTING_API variable. If for any
-                  reason you would like to change that, do this
-                  by setting remoting_var.
-                  Note that in production environment you would
-                  probably want to use a compiled version of
-                  JavaScript application that consist of one
-                  big JavaScript file. In this case, it is
-                  recommended to include API declaration as the
-                  first script in your index.html and change
-                  remoting API variable name to something like
-                  EXT_DIRECT_API. Default variable name depends
-                  on Ext.app namespace being available by the
-                  time Ext.Direct API is downloaded, which is
-                  often not the case.
- 
- polling_var    - By default, Ext.Direct does not provide a
-                  standard name for Event providers to be
-                  advertised in. For similarity, POLLING_API
-                  name is used to declare Event provider so
-                  it can be used on client side without
-                  having to hardcode any URIs explicitly.
-                  POLLING_API configuration will only be
-                  advertised to client side if there are any
-                  Event provider Methods declared.
-                  Note that the same caveat applies here as
-                  with remoting_var.
- 
- no_polling     - Explicitly declare that no Event providers
-                  are supported by server side. This results
-                  in POLLING_API configuration being suppressed
-                  even if there are any Methods with declared
-                  pollHandler ExtDirect attribute.
- 
- auto_connect   - Generate the code that adds Remoting and
-                  Polling providers on the client side without
-                  having to do this manually.
+=item router_path
 
- before         - Global "before" hook.
- 
- instead        - Global "instead" hook.
- 
- after          - Global "after" hook.
- 
- For more information on hooks and their usage, see L<RPC::ExtDirect>.
+URI for Ext.Direct L<Router|RPC::ExtDirect::Intro/Router> calls. For the
+L<CGI environment|CGI::ExtDirect>, this should be the name of the CGI script
+that provides the API declaration; for more sophisticated environments it is
+an anchor for specified PATH_INFO.
 
-=head1 SUBROUTINES/METHODS
+=item poll_path
 
-There are no methods intended for external use in this module.
+URI for Ext.Direct L<Event Provider|RPC::ExtDirect::Intro/"Event Provider">
+calls. Client side will poll this URI periodically, hence the name.
 
-=head1 AUTHOR
+=item remoting_var
 
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
+By default, Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+for remoting (forward) L<Methods|RPC::ExtDirect::Intro/Method> is stored in
+Ext.app.REMOTING_API variable. If for any reason you would like to change that,
+do this by setting remoting_var.
 
-=head1 COPYRIGHT AND LICENSE
+Note that in production environment you would probably want to use a compiled
+version of the JavaScript application that consist of one big JavaScript file.
+In this case, it is recommended to include API declaration as the first script
+in your index.html and change the remoting API variable name to something like
+C<EXT_DIRECT_API>. Default variable name depends on Ext.app namespace being
+available by the time Ext.Direct
+L<API declaration|RPC::ExtDirect::Intro/"API declaration"> is downloaded, which is
+often not the case.
 
-Copyright (c) 2011-2012 Alexander Tokarev.
+=item polling_var
 
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
+Ext.Direct does not provide a standard namespace for
+L<Event Providers|RPC::ExtDirect::Intro/"Event Provider"> to be published in.
+For similarity with L</remoting_var>, C<Ext.app.POLLING_API> name is used to
+declare an L<Event Provider|RPC::ExtDirect::Intro/"Event Provider"> so that
+it could be used on the client side without having to hardcode any URIs
+explicitly.
+
+C<Ext.app.POLLING_API> configuration will only be published to the client side
+if there is at least one L<pollHandler|RPC::ExtDirect::Config/pollHandler>
+L<Method|RPC::ExtDirect::Intro/Method> defined in the Ext.Direct
+L<API|RPC::ExtDirect::Intro/API>.
+
+Note that the same variable naming caveat applies here as with L</remoting_var>.
+
+=item no_polling
+
+Explicitly prohibit the L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+from containing a L</polling_var> definition. This will suppress publishing
+L<Event Providers|RPC::ExtDirect::Intro/"Event Provider"> even if there are any
+L<pollHandler|RPC::ExtDirect::Config/pollHandler> methods in the actual
+L<API|RPC::ExtDirect::Intro/API>.
+
+This option can be useful for testing.
+
+=item auto_connect
+
+This option is deprecated and should not be used anymore.
+
+=item before
+
+Global C<before> hook. See L<RPC::ExtDirect/HOOKS>.
+
+=item instead
+
+Global C<instead> hook. See L<RPC::ExtDirect/HOOKS>.
+
+=item after
+
+Global C<after> hook. See L<RPC::ExtDirect/HOOKS>.
+
+=back
+
+=head1 SEE ALSO
+
+More information on the configuration options can be found in
+L<RPC::ExtDirect::Config> documentation.
 
 =cut
 
