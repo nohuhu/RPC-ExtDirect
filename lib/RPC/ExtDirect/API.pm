@@ -270,8 +270,6 @@ sub add_action {
     # This is to avoid hard binding on the Action class
     eval "require $a_class";
     
-    $self->_init_hooks(\%arg);
-    
     my $action_obj = $a_class->new(
         config => $config,
         %arg,
@@ -338,19 +336,6 @@ sub add_method {
         );
     }
     
-    # For historical reasons, we support both param_no and len
-    # parameters for ordered methods, and both params and
-    # param_names for named methods.
-    # However the Method definition needs normalized input.
-    $arg{len} = delete $arg{param_no}
-        if exists $arg{param_no} and not exists $arg{len};
-    
-    $arg{params} = delete $arg{param_names}
-        if exists $arg{param_names} and not exists $arg{params};
-    
-    # Go over the hooks and instantiate them
-    $self->_init_hooks(\%arg);
-    
     $action->add_method(\%arg);
 }
 
@@ -380,12 +365,12 @@ sub add_hook {
     my           ($package, $method_name, $type, $code)
         = @arg{qw/ package   method        type   code /};
     
-    # A bit kludgy but there's no point in duplicating
-    my $hook = do {
-        my $hook_def = { $type => { type => $type, code => $code } };
-        $self->_init_hooks($hook_def);
-        $hook_def->{$type}
-    };
+    my $hook_class = $self->config->api_hook_class;
+    
+    # This is to avoid hard binding on RPC::ExtDirect::Hook
+    { local $@; eval "require $hook_class"; }
+    
+    my $hook = $hook_class->new( type => $type, code => $code );
         
     # For backwards compatibility, we support this indirect way
     # of defining the hooks
@@ -430,7 +415,8 @@ sub get_hook {
                :                $self->get_action_by_package($package)
                ;
     
-    croak "Can't find action for Method $method_name"
+    croak "Can't find action '", ($action_name || $package), 
+          "' for Method $method_name"
         unless $action;
     
     my $method = $action->method($method_name);
@@ -542,26 +528,6 @@ sub _get_polling_api {
         type => 'polling',
         url  => $config->poll_path,
     };
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Instantiate the hooks in an Action or Method definition hashref
-#
-
-sub _init_hooks {
-    my ($self, $def) = @_;
-    
-    my $hook_class = $self->config->api_hook_class();
-    
-    # This is to avoid hard binding on RPC::ExtDirect::Hook
-    eval "require $hook_class";
-    
-    for my $hook_type ( $self->HOOK_TYPES ) {
-        next unless my $hook = $def->{$hook_type};
-
-        $def->{$hook_type} = $hook_class->new(%$hook);
-    }
 }
 
 ### PRIVATE INSTANCE METHOD ###

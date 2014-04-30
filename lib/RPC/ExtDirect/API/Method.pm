@@ -21,19 +21,35 @@ sub HOOK_TYPES { qw/ before instead after / }
 #
 
 sub new {
-    my ($class, $method_def) = @_;
+    my ($class, %arg) = @_;
     
-    my $pollHandler = $method_def->{pollHandler};
-    my $formHandler = $method_def->{formHandler};
+    my $config     = $arg{config};
+    my $hook_class = $config->api_hook_class;
+    
+    my $pollHandler = $arg{pollHandler};
+    my $formHandler = $arg{formHandler};
     
     my $is_named
-        = defined $method_def->{params} && !$pollHandler && !$formHandler;
+        = defined $arg{params} && !$pollHandler && !$formHandler;
     
     my $is_ordered
-        = defined $method_def->{len} && !$pollHandler && !$formHandler;
+        = defined $arg{len} && !$pollHandler && !$formHandler;
+    
+    # We avoid hard binding on the hook class
+    { local $@; eval "require $hook_class"; }
+    
+    my %hooks;
+    
+    for my $type ( $class->HOOK_TYPES ) {
+        my $hook = delete $arg{ $type };
+        
+        $hooks{ $type } = $hook_class->new( type => $type, code => $hook )
+            if $hook;
+    }
     
     return bless {
-        %$method_def,
+        %arg,
+        %hooks,
         is_named   => $is_named,
         is_ordered => $is_ordered,
     }, $class;
@@ -111,11 +127,7 @@ sub code {
     my $package = $self->package;
     my $name    = $self->name;
     
-    eval "require $package";
-    
-    no strict 'refs';
-    
-    return *{ $package . '::' . $name }{CODE};
+    return $package->can($name);
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -132,15 +144,12 @@ sub run {
     
     my $arg     = $args{arg};
     my $package = $self->package;
-    my $code    = $self->code;
+    my $name    = $self->name;
     
-    # pollHandler methods should always be called in the list context
-    if ( $self->pollHandler ) {
-        return [ $code->($package, @$arg) ];
-    }
-    else {
-        return $code->($package, @$arg);
-    }
+    # pollHandler methods should always be called in list context
+    return $self->pollHandler ? [ $package->$name(@$arg) ]
+         :                        $package->$name(@$arg)
+         ;
 }
 
 ### PUBLIC INSTANCE METHOD ###

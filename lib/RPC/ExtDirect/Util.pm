@@ -165,33 +165,34 @@ sub parse_attribute {
     croak "Can't resolve symbol '$symbol' for package '$package' ".
           "at $file line $line: $@"
         if $@;
+    
+    # Attribute may be empty, means no argument checking
+    $data ||= [];
 
-    # These parameters depend on attribute input
-    my $param_no    = undef;
-    my $param_names = undef;
-    my $formHandler = !1;
-    my $pollHandler = !1;
-    my %hooks       = ();
-    $data           = $data || [];
+    my %attr;
+    
+    # Compatibility form (n, ...), where n stands for (len => n)
+    unshift @$data, 'len' if $data->[0] =~ / \A \d+ \z /xms;
 
     while ( @$data ) {
         my $param_def = shift @$data;
-
-        # Digits means number of unnamed arguments
-        if ( $param_def =~ / \A (\d+) \z /xms ) {
-            $param_no = $1;
+        
+        # len means ordered (by position) arguments
+        if ( $param_def =~ / \A len \z /xms ) {
+            $attr{len} = shift @$data;
         }
 
         # formHandler means exactly that, a handler for form requests
         elsif ( $param_def =~ / \A formHandler \z /xms ) {
-            $formHandler = 1;
+            $attr{formHandler} = 1;
         }
 
-        # pollHandlers are a bit tricky but are defined here anyway
+        # pollHandlers are used with EventProvider
         elsif ( $param_def =~ / \A pollHandler \z /xms ) {
-            $pollHandler = 1;
+            $attr{pollHandler} = 1;
         }
-
+        
+        # named arguments for the method
         elsif ( $param_def =~ / \A params \z /ixms ) {
             my $arg_names = shift @$data;
 
@@ -201,7 +202,7 @@ sub parse_attribute {
                 if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
 
             # Copy the names
-            $param_names = [ @{ $arg_names } ];
+            $attr{params} = [ @{ $arg_names } ];
         }
 
         # Hooks
@@ -212,27 +213,21 @@ sub parse_attribute {
             croak "ExtDirect attribute '$type' must be followed by coderef ".
                   "or 'NONE' at $file line $line"
                 if $code ne 'NONE' && 'CODE' ne ref $code;
-
-            $hooks{ $type } = {
-                type => $type,
-                code => $code,
-            };
-        };
+            
+            $attr{ $type } = $code;
+        }
+        
+        # Assume a generic foo => 'bar' attribute and fall through
+        else {
+            $attr{ $param_def } = shift @$data;
+        }
     };
-
-    my $attribute_ref = {
-        package     => $package,
-        method      => $symbol_name,
-        referent    => $referent,
-        param_no    => $param_no,
-        param_names => $param_names,
-        formHandler => $formHandler,
-        pollHandler => $pollHandler,
-    };
-
-    @$attribute_ref{ keys %hooks } = values %hooks;
     
-    return $attribute_ref;
+    return {
+        package => $package,
+        method  => $symbol_name,
+        %attr,
+    };
 }
 
 1;

@@ -24,7 +24,8 @@ sub HOOK_TYPES { qw/ before instead after / }
 sub new {
     my ($class, %arg) = @_;
     
-    my $config = delete $arg{config};
+    my $config     = delete $arg{config};
+    my $hook_class = $config->api_hook_class;
     
     # For the caller, the 'action' parameter makes sense as the Action's
     # name, but within the Action itself it's just "name" for clarity
@@ -41,12 +42,25 @@ sub new {
     # anyway to be compatible with JavaScript
     $name =~ s/::/./g;
     
+    # We avoid hard binding on the hook class
+    { local $@; eval "require $hook_class"; }
+    
+    my %hooks;
+    
+    for my $type ( $class->HOOK_TYPES ) {
+        my $hook = delete $arg{ $type };
+        
+        $hooks{ $type } = $hook_class->new( type => $type, code => $hook )
+            if $hook;
+    }
+        
     my $self = bless {
         config  => $config,
         name    => $name,
         package => $package,
         methods => {},
         %arg,
+        %hooks,
     }, $class;
     
     $self->add_method($_) for @$methods;
@@ -141,7 +155,7 @@ sub has_pollHandlers {
     my ($self, $env) = @_;
     
     # By default we're not using the env object here,
-    # but user override may do so
+    # but an user override may do so
     
     my @methods = $self->polling_methods;
     
@@ -168,13 +182,13 @@ sub add_method {
         
         my $name = delete $method->{method} || delete $method->{name};
         
-        $method = $m_class->new({
+        $method = $m_class->new(
             config  => $config,
             package => $self->package,
             action  => $self->name,
             name    => $name,
             %$method,
-        });
+        );
     }
     else {
         $method->config($config);
