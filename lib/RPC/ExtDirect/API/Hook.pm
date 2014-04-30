@@ -74,9 +74,10 @@ sub run {
     
     my %hook_arg = $method_ref->get_api_definition_compat();
 
-    $hook_arg{arg}  = $arg;
-    $hook_arg{env}  = $env;
-    $hook_arg{code} = $method_coderef;
+    $hook_arg{arg}        = $arg;
+    $hook_arg{env}        = $env;
+    $hook_arg{code}       = $method_coderef;
+    $hook_arg{method_ref} = $method_ref;
 
     # Result and exception are passed to "after" hook only
     @hook_arg{ qw/result   exception   method_called/ }
@@ -90,7 +91,8 @@ sub run {
             type   => $type,
         );
         
-        $hook_arg{ $type } = $hook ? $hook->code : undef;
+        $hook_arg{ $type.'_ref' } = $hook;
+        $hook_arg{ $type }        = $hook ? $hook->code : undef;
     }
 
     # A drop of sugar
