@@ -106,6 +106,26 @@ for my $test ( @$tests ) {
     is_deep $after,  $exp_after,  "$name: after data";
 };
 
+sub get_method_ref {
+    my ($action_name, $method_name) = @_;
+
+    my $api = RPC::ExtDirect->get_api;
+
+    return $api->get_method_by_name($action_name, $method_name);
+}
+
+sub get_hook_ref {
+    my ($action_name, $method_name, $type) = @_;
+
+    my $api = RPC::ExtDirect->get_api;
+
+    return $api->get_hook(
+        action => $action_name,
+        method => $method_name,
+        type   => $type,
+    );
+}
+
 __DATA__
 [
     # Cancel Method call by throwing error
@@ -120,8 +140,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ Hooks foo_hook after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method      => 'foo_hook',
                 code        => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -131,14 +154,18 @@ __DATA__
                 param_no    => 1,
                 pollHandler => 0,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method        => 'foo_hook',
                 code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -151,6 +178,7 @@ __DATA__
                 pollHandler   => 0,
                 formHandler   => 0,
                 method_called => undef,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
     },
@@ -167,8 +195,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ Hooks foo_hook after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method      => 'foo_hook',
                 code        => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -178,14 +209,18 @@ __DATA__
                 param_no    => 1,
                 pollHandler => 0,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method        => 'foo_hook',
                 code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -198,6 +233,7 @@ __DATA__
                 pollHandler   => 0,
                 formHandler   => 0,
                 method_called => undef,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
     },
@@ -213,8 +249,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ Hooks foo_hook after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method      => 'foo_hook',
                 code        => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -224,14 +263,18 @@ __DATA__
                 param_no    => 1,
                 pollHandler => 0,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method        => 'foo_hook',
                 code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -244,6 +287,7 @@ __DATA__
                 pollHandler   => 0,
                 formHandler   => 0,
                 method_called => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
     },
@@ -260,8 +304,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ Hooks foo_hook after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method      => 'foo_hook',
                 code        => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -271,14 +318,18 @@ __DATA__
                 param_no    => 1,
                 pollHandler => 0,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
                 method        => 'foo_hook',
                 code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
@@ -291,6 +342,7 @@ __DATA__
                 pollHandler   => 0,
                 formHandler   => 0,
                 method_called => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
             },
         ],
     },
@@ -305,8 +357,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ PollProvider foo before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ PollProvider foo after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method      => 'foo',
                 code        => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -316,14 +371,18 @@ __DATA__
                 param_no    => undef,
                 pollHandler => 1,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ PollProvider foo /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ PollProvider foo before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ PollProvider foo after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method        => 'foo',
                 code          => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -336,6 +395,7 @@ __DATA__
                 pollHandler   => 1,
                 formHandler   => 0,
                 method_called => undef,
+                method_ref    => get_method_ref(qw/ PollProvider foo /),
             },
         ],
     },
@@ -350,8 +410,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ PollProvider foo before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ PollProvider foo after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method      => 'foo',
                 code        => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -361,14 +424,18 @@ __DATA__
                 param_no    => undef,
                 pollHandler => 1,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ PollProvider foo /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ PollProvider foo before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ PollProvider foo after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method        => 'foo',
                 code          => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -381,6 +448,7 @@ __DATA__
                 pollHandler   => 1,
                 formHandler   => 0,
                 method_called => undef,
+                method_ref    => get_method_ref(qw/ PollProvider foo /),
             },
         ],
     },
@@ -395,8 +463,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ PollProvider foo before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ PollProvider foo after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method      => 'foo',
                 code        => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -406,14 +477,18 @@ __DATA__
                 param_no    => undef,
                 pollHandler => 1,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ PollProvider foo /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ PollProvider foo before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ PollProvider foo after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method        => 'foo',
                 code          => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -426,6 +501,7 @@ __DATA__
                 pollHandler   => 1,
                 formHandler   => 0,
                 method_called => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
+                method_ref    => get_method_ref(qw/ PollProvider foo /),
             },
         ],
     },
@@ -439,8 +515,11 @@ __DATA__
             'main',
             {
                 before      => \&before_hook,
+                before_ref  => get_hook_ref(qw/ PollProvider foo before /),
                 instead     => undef,
+                instead_ref => undef,
                 after       => \&after_hook,
+                after_ref   => get_hook_ref(qw/ PollProvider foo after /),
                 package     => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method      => 'foo',
                 code        => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -450,14 +529,18 @@ __DATA__
                 param_no    => undef,
                 pollHandler => 1,
                 formHandler => 0,
+                method_ref  => get_method_ref(qw/ PollProvider foo /),
             },
         ],
         expected_after => [
             'main',
             {
                 before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ PollProvider foo before /),
                 instead       => undef,
+                instead_ref   => undef,
                 after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ PollProvider foo after /),
                 package       => 'RPC::ExtDirect::Test::Pkg::PollProvider',
                 method        => 'foo',
                 code          => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
@@ -470,6 +553,7 @@ __DATA__
                 pollHandler   => 1,
                 formHandler   => 0,
                 method_called => \&RPC::ExtDirect::Test::Pkg::PollProvider::foo,
+                method_ref    => get_method_ref(qw/ PollProvider foo /),
             },
         ],
     },

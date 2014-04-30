@@ -109,8 +109,21 @@ for my $test ( @$tests ) {
     };
 
     # Orig is a closure in RPC::ExtDirect::Hook, impossible to take ref of
-    eval { delete $before->[1]->{orig}; delete $after->[1]->{orig}; };
-    $@ = undef;
+    {
+        local $@;
+        eval { delete $before->[1]->{orig}; delete $after->[1]->{orig}; };
+    }
+
+    # (before|instead|after|method)_ref hook args were introduced in 3.0
+    # 2.x tests will blow up if we don't clean these up; however being
+    # additions they can't harm the existing code that is not aware of them
+    {
+        local $@;
+        eval {
+            delete $before->[1]->{$_}, delete $after->[1]->{$_}
+                for map { $_.'_ref' } qw/ before instead after method /;
+        };
+    }
 
     is_deep $before, $exp_before, "$name: before data";
     is_deep $after,  $exp_after,  "$name: after data";
