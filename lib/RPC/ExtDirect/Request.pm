@@ -333,7 +333,7 @@ sub _check_arguments {
     my $tid         = $arg{tid};
     my $data        = $arg{data};
 
-    my $param_names = $method_ref->params;
+    my $params      = $method_ref->params;
     my $len         = $method_ref->len;
 
     # Event poll handlers return Event objects instead of plain data;
@@ -367,15 +367,15 @@ sub _check_arguments {
 
     # Check if we have right $data type for method's calling convention
     # If the params list is empty, we skip the check
-    elsif ( defined $param_names && @$param_names ) {
-        if ( not $self->_check_params($param_names, $data) ) {
+    elsif ( defined $params && @$params ) {
+        if ( not $self->_check_params($params, $data) ) {
             return $self->_exception({
                 action  => $action_name,
                 method  => $method_name,
                 tid     => $tid,
                 message => "ExtDirect method $action_name.$method_name ".
                            "needs named parameters: " .
-                           join( ', ', @$param_names )
+                           join( ', ', @$params )
             });
         }
     }
@@ -406,14 +406,14 @@ sub _check_arguments {
 #
 
 sub _check_params {
-    my ($self, $param_names, $data) = @_;
+    my ($self, $params, $data) = @_;
 
     # $data should be a hashref
     return unless ref $data eq 'HASH';
 
     # Note that we don't check definedness -- a parameter
     # may be optional for all we care
-    for my $param ( @$param_names ) {
+    for my $param ( @$params ) {
         return unless exists $data->{ $param };
     };
 
