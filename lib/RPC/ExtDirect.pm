@@ -147,7 +147,7 @@ sub add_action {
     
     my $api = $class->get_api();
     
-    $api->add_action(
+    return $api->add_action(
         package => $package,
         action  => $action_for_pkg,
     );
@@ -207,7 +207,7 @@ sub add_method {
     
     my $api = $class->get_api;
     
-    $api->add_method( %$attribute_ref );
+    return $api->add_method( %$attribute_ref );
 }
 
 ### PUBLIC CLASS METHOD ###
