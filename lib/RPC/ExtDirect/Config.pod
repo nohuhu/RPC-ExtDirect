@@ -13,6 +13,9 @@ RPC::ExtDirect::Config - Centralized configuration handling for RPC::ExtDirect
         option2 => 42,
         ...
     );
+    
+    my $option1 = $cfg->option1();
+    $cfg->option1('value2');
 
 =head1 DESCRIPTION
 
@@ -46,7 +49,7 @@ setting L</debug_request> to falsy value.
 It is possible to add your own configuration options, both simple and
 chained. Read RPC::ExtDirect::Config source to see how it is done.
 
-=head1 METHODS
+=head1 INSTANCE METHODS
 
 =over 4
 
@@ -102,6 +105,30 @@ with RPC::ExtDirect 1.x. and 2.x.
 
 =back
 
+=head1 ACCESSOR METHODS
+
+For every option held in a Config instance, there are two accessor
+methods created automatically: a getter/setter, and a predicate. Assuming
+an option named C<foo>, these accessors will be:
+
+=over 4
+
+=item has_foo()
+
+A predicate method is used to check if a value has been set for an option,
+even if that value is undefined. Note that a predicate is never
+L<chained|/"CHAINED OPTIONS">, and if a C<foo> value does not exist the
+predicate will return false without falling back to C<bar>.
+
+=item foo()
+
+A getter/setter method can be used to read and write the value. Called
+with no arguments, it acts as a getter and returns the value for an option;
+when called with one or more arguments, it will replace the existing
+value with the first argument, ignoring any others.
+
+=back
+
 =head1 OPTIONS
 
 The stock RPC::ExtDirect::Config supports the following options:
@@ -135,6 +162,15 @@ the API tree. Hook objects will be instantiated from this class.
 Use this option to override or inject new functionality in Hook objects.
 
 Default: C<'RPC::ExtDirect::API::Hook'>.
+
+=item api_full_action_names
+
+When set to truthy value, API L<Action|RPC::ExtDirect::Intro/Action> names
+will default to package name with C<'::'> replaced with dots:
+C<'Foo::Bar::Baz' -> 'Foo.Bar.Baz'>, instead of using only the last chunk
+of the package name: C<'Foo::Bar::Baz' -> 'Baz'>.
+
+Default: C<!1> (false).
 
 =item debug
 

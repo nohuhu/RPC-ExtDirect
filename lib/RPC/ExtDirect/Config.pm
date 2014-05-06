@@ -197,6 +197,9 @@ my $DEFINITIONS = [{
     accessor => 'api_hook_class',
     default  => 'RPC::ExtDirect::API::Hook',
 }, {
+    accessor => 'api_full_action_names',
+    default  => !1,
+}, {
     accessor => 'debug',
     default  => !1,
 }, {

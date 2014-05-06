@@ -317,6 +317,7 @@ sub add_method {
     
     my $package     = delete $arg{package};
     my $action_name = delete $arg{action};
+    my $method_name = $arg{method};
     
     # Try to find the Action by the package name
     my $action = $action_name ? $self->get_action_by_name($action_name)
@@ -325,16 +326,19 @@ sub add_method {
     
     # If Action is not found, create a new one
     if ( !$action ) {
-        if ( !$action_name ) {
-            $action_name = $package;
-            $action_name =~ s/ \A .* :: //xms;
-        }
+        $action_name = $self->_get_action_name($package)
+            unless $action_name;
             
         $action = $self->add_action(
             action  => $action_name,
             package => $package,
         );
     }
+    
+    # Usually redefining a Method means a typo or something
+    croak "Attempting to redefine Method '$method_name' ".
+          ($package ? "in package $package" : "in Action '$action_name'")
+          if $action->$method_name;
     
     $action->add_method(\%arg);
 }
@@ -538,7 +542,12 @@ sub _get_polling_api {
 sub _get_action_name {
     my ($self, $action_name) = @_;
     
-    $action_name =~ s/^.*:://;
+    if ( $self->config->api_full_action_names ) {
+        $action_name =~ s/::/./g;
+    }
+    else {
+        $action_name =~ s/^.*:://;
+    }
     
     return $action_name;
 }
