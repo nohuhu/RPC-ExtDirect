@@ -216,6 +216,14 @@ sub parse_attribute {
             
             $attr{ $type } = $code;
         }
+
+        # Strict is a boolean attribute, but let's be flexible about it
+        elsif { $param_def =~ / \A strict \z /ixms ) {
+            $attr{strict} = 1;
+
+            # ...but not too flexible
+            shift @$data if $data->[0] =~ / \A \d+ \z /xms;
+        }
         
         # Assume a generic foo => 'bar' attribute and fall through
         else {

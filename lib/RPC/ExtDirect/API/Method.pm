@@ -71,21 +71,27 @@ sub get_api_definition {
     # Poll handlers are not declared in the API
     return if $self->pollHandler;
     
+    my $name   = $self->name;
+    my $strict = $self->strict;
+    
     # Form handlers are defined like this
     # (\1 means JSON::true and doesn't force us to `use JSON`)
-    return { name => $self->name, len => 0, formHandler => \1 }
+    return { name => $name, len => 0, formHandler => \1 }
         if $self->formHandler;
     
     # Ordinary method with positioned arguments
-    return { name => $self->name, len => $self->len + 0 },
+    return { name => $name, len => $self->len + 0 },
         if $self->is_ordered;
     
     # Ordinary method with named arguments
-    return { name => $self->name, params => $self->params }
-        if $self->params;
+    return {
+        name   => $name,
+        params => $self->params,
+        defined $strict ? (strict => $strict) : (),
+    } if $self->params;
     
     # No arguments specified means we're not checking them
-    return { name => $self->name };
+    return { name => $name };
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -283,6 +289,7 @@ my $accessors = [qw/
     pollHandler
     is_ordered
     is_named
+    strict
     package
 /,
     __PACKAGE__->HOOK_TYPES,
