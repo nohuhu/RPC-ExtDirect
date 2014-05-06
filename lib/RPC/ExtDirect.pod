@@ -2,98 +2,128 @@
 
 =head1 NAME
 
-RPC::ExtDirect - Expose Perl code to Ext JS RIA applications through Ext.Direct remoting
+RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
 
 =head1 SYNOPSIS
 
- package Foo::Bar;
- 
- use RPC::ExtDirect Action => 'Fubar',
-                    before => \&package_before_hook,
-                    after  => \&package_after_hook,
-                    ;
-  
- sub foo_custom_hook {
-    # Check something, return true
-    return 1;
- }
- 
- sub foo : ExtDirect(2, before => \&foo_custom_hook) {
-    my ($class, $arg1, $arg2) = @_;
-  
-    # do something, store results in scalar
-    my $result = ...;
-  
-    return $result;
- }
-  
- # This method doesn't need hooks for some reason
- sub bar
-    : ExtDirect(
-        params => ['foo', 'bar'], before => 'NONE', after => 'NONE',
-      )
- {
-    my ($class, %arg) = @_;
-  
-    my $foo = $arg{foo};
-    my $bar = $arg{bar};
-  
-    # do something, returning scalar
-    my $result = eval { ... };
-  
-    # or throw an exception if something's wrong
-    die "Houston, we've got a problem: $@\n" if $@;
-  
-    return $result;
- }
-  
- sub baz : ExtDirect(formHandler) {
-    my ($class, %arg) = @_;
-  
-    my @form_fields    = grep { !/^file_uploads$/  } keys %arg;
-    my @uploaded_files = @{ $arg{file_uploads}     };
-  
-    # do something with form fields and files
-    my $result = { ... };
-  
-    return $result;
- }
-  
- sub package_before_hook {
-    my ($class, %params) = @_;
-  
-    # Unpack parameters
-    my ($method, $env) = @params{ qw/method _env/ };
-  
-    # Decide if user is authorized to call this method
-    my $authorized = check_authorization($method, $env);
-  
-    # Positive
-    return 1 if $authorized;
-  
-    # Negative, return error string
-    return 'Not authorized';
- }
-  
- sub package_after_hook {
-    my ($class, %params) = @_;
-  
-    # Unpack parameters
-    my ($method, $result, $ex) = @params{ qw/method result exception/ };
+    package Foo::Bar;
     
-    # Log the action
-    security_audit_log($method, $result, $ex);
- }
+    use RPC::ExtDirect;
+    
+    sub sum : ExtDirect(2) {
+        my ($class, $a, $b) = @_;
+        
+        return $a + $b;
+    }
+    
+    sub login : ExtDirect( params => [qw/ user pass /] ) {
+        my ($class, %arg) = @_;
+        
+        if ( $arg{user} eq 'foo' && $arg{pass} eq 'bar' ) {
+            return {
+                success => \1,  # JSON::true
+            };
+        }
+        else {
+            return {
+                success => \0,  # JSON::false
+                error   => "You shall not pass!"
+            };
+        }
+    }
 
 =head1 DESCRIPTION
 
-This module provides an easy way to map Perl code to Ext.Direct RPC
-interface used with Ext JS JavaScript framework.
+RPC::ExtDirect suite of modules provides an easy, simple and robust way to
+write Perl server side code that could be used with Rich Internet Applications
+based on JavaScript frameworks L<Ext JS|http://www.sencha.com/products/extjs/>
+and L<Sencha Touch|http://www.sencha.com/products/touch/>.
+
+The suite consists of the core RPC::ExtDirect module that implements Ext.Direct
+protocol and transport layer, several server environment-specific gateways,
+a standalone pure Perl server, two Perl clients, and even its own specialized
+unit test helper! We've got it covered front to back. :)
+
+=head1 WHEN TO USE IT, AND WHY
+
+Ext.Direct is a Remote Procedure Call (RPC) protocol provided out of the box
+with JavaScript frameworks by L<Sencha|http://www.sencha.com>. It is deeply
+integrated in the data services, and is supported by a slew of components.
+Besides that, Ext.Direct also has several major advantages over similar
+protocols like XML-RPC and JSON-RPC:
+
+=over 4
+
+=item *
+
+Built in service discovery mechanism: server side API is published to the
+client via GET requests to a preconfigured URI
+
+=item *
+
+Dead simple client side invocation via functional stubs created from the
+API declaration
+
+=item *
+
+Support for request batching with configurable timeout
+
+=item *
+
+Easy file uploads via form submits, with all the complexity handled behind
+the curtains by the framework and server side stack
+
+=item *
+
+Asynchronous push notifications via event polling
+
+=back
+
+All this makes Ext.Direct a no-brainer when developing Web apps with Ext JS or
+Sencha Touch. And with RPC::ExtDirect, choosing Perl to write server side code
+for Web apps comes easy, too. :)
+
+Besides HTML5 applications, it's also possible to use L<RPC::ExtDirect::Client>
+to for pure Perl distributed RPC.
+
+If that would not be enough, L<RPC::ExtDirect::Client> also makes pure Perl
+distributed RPC less painful.
+
+=head1 INTRODUCTION AND TUTORIAL
 
 If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
-for more explanations.
+for more explanations and a few examples. There is also a 
+L<tutorial|RPC::ExtDirect::Tutorial> that may be helpful at getting your feet
+wet.
 
 =head1 USING RPC::EXTDIRECT
+
+=head2 Overview
+
+Since Ext.Direct is just a transport layer, you don't need to change your app
+architecture to work around it. If you have an existing server side API you
+can publish it with minimal effort; if you're starting from scratch, add the
+classes and methods as you go.
+
+Note that with Ext.Direct, we're talking about classes and methods - that owes
+to the fact that Ext.Direct originated in Ext JS framework, which itself is
+written in JavaScript with object-oriented approach in mind. This does not mean
+you can't go functional or even procedural with RPC::ExtDirect; it is perfectly
+possible to cook your own flavor of spaghetti code under the light OOP sauce that
+RPC::ExtDirect provides.
+
+=head2 Service discovery
+
+In order for a method to be published to the outside world, it needs to be
+declared in the L<Ext.Direct API|RPC::ExtDirect::Intro/API>. As of version 3.0,
+it can be done in two ways: either with C<ExtDirect> attribute as shown in the
+L</SYNOPSIS>, or by including the method in a hashref fed to L<RPC::ExtDirect::API>
+constructor. Note that these two methods are I<not> mutually exclusive, but it is
+not recommended to mix them unless you really know how to deal with ensuing
+timing issues. You've been warned.
+
+
+
 
 In order to export subroutine to ExtDirect interface, use C<ExtDirect(n, ...)>
 attribute in sub declaration. Note that there can be no space between
@@ -288,7 +318,7 @@ Hooks are subject to the following calling conventions:
 
 =item *
 
-Hook subroutine is called as class method, i.e. first argument
+Hook subroutine is called as a class method, i.e. first argument
 is name of the package in which this sub was defined. Ignore it
 if you don't need it.
 
@@ -302,87 +332,103 @@ Hooks receive a hash of the following arguments:
 
 Ext.Direct Action name for the Method
 
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->action>>
+
 =item method
 
 Ext.Direct Method name
+
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->name>>
 
 =item package
 
 Name of the package (not Action) where the Method is declared
 
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->package>>
+
 =item code
 
 Coderef to the Method subroutine
+
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->code>>
 
 =item param_no
  
 Number of parameters when Method accepts ordered arguments
 
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->len>>
+
 =item param_names
 
 Arrayref with names of parameters when Method accepts named arguments
+
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->params>>
 
 =item formHandler
 
 True if Method handles form submits
 
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->formHandler>>
+
 =item pollHandler
 
 True if Method handles Event poll requests
 
+B<DEPRECATED>. Use L<method_ref|/method_ref> instead: C<<$method_ref->pollHandler>>
+
 =item arg
 
-Arrayref with actual arguments when Method
-accepts ordered args, single Environment
-object for poll handlers, hashref otherwise.
+Arrayref with actual arguments when Method accepts ordered args, single
+L<Environment object|/"ENVIRONMENT OBJECTS"> for poll handlers, hashref
+otherwise.
 
-Note that this is a direct link to Method's @_
-so it is possible to modify the arguments
-in "before" hook
+Note that this is a direct link to Method's C<@_> so it is possible to
+modify the arguments in C<before> hook if you need to.
 
 =item env
 
-Environment object, see below. Like arg,
-this is direct reference to the same object
-that will be passed to Method, so it's
-possible to modify it in "before" hook
+L<Environment object|/"ENVIRONMENT OBJECTS">, see below. Like L<arg|/arg>,
+this is a direct reference to the same object that will be passed to the
+Method, so it's possible to modify the env object in C<before> hook.
 
 =item before
 
 Coderef to "before" hook for that Method, or undef
 
+B<DEPRECATED>. Use L<before_ref|/before_ref> instead: C<<$before_ref->code>>
+
 =item instead
 
 Coderef to "instead" hook for that Method, or undef
+
+B<DEPRECATED>. Use L<instead_ref|/instead_ref> instead: C<<$instead_ref->code>>
 
 =item after
 
 Coderef to "after" hook for that Method, or undef
 
+B<DEPRECATED>. Use L<after_ref|/after_ref> instead: C<<$after_ref->code>>
+
 =item result
 
-For "after" hooks, the Result returned by
-Method or "instead" hook, if any. Does not
-exist for "before" and "instead" hooks
+For C<after> hooks, the Result returned by the Method or C<instead> hook,
+whichever got called. Not defined for C<before> and C<instead> hooks.
 
 =item exception
 
-For "after" hooks, an exception ($@) thrown
-by Method or "instead" hook, if any. Does
-not exist for "before" and "instead" hooks
+For C<after> hooks, an exception (C<$@>) thrown by Method or C<instead> hook,
+if any. Not defined for C<before> and C<instead> hooks.
 
 =item method_called
 
-For "after" hooks, the reference to actual
-code called as Method, if any. Can be either
-Method itself, "instead" hook or undef if
-the call was canceled.
+For C<after> hooks, a reference to the actual code called as Method, if any.
+Can be either the Method code itself, C<instead> hook or C<undef> if the
+invocation was canceled.
 
 =item orig
 
-A closure that binds Method coderef to
-its current arguments, allowing to call it
-as easily as C<$params{orig}->()>
+A closure that binds Method coderef to its current arguments, allowing to call
+it as easily as C<$params{orig}->()>
 
 =back
 
@@ -547,6 +593,8 @@ L<Plack::Middleware::ExtDirect> modules based on RPC::ExtDirect engine.
 
 For configurable Ext.Direct API options, see L<RPC::ExtDirect::API>
 module.
+
+=head1 AVAILABLE GATEWAYS
 
 =head1 AUTHOR
 

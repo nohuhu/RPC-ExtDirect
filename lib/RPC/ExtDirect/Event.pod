@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-RPC::ExtDirect::Event - The way to push data to the client side
+RPC::ExtDirect::Event - Asynchronous server-to-client events
 
 =head1 SYNOPSIS
  
@@ -12,10 +12,10 @@ RPC::ExtDirect::Event - The way to push data to the client side
   sub foo : ExtDirect( pollHandler ) {
      my ($class) = @_;
  
-     # Do something good, collect results to $good_data
+     # Do something good, collect results in $good_data
      my $good_data = { ... };
  
-     # Do something bad, collect results to $bad_data
+     # Do something bad, collect results in $bad_data
      my $bad_data = [ ... ];
  
      # Return the data
@@ -27,25 +27,25 @@ RPC::ExtDirect::Event - The way to push data to the client side
 
 =head1 DESCRIPTION
 
-This module implements Event object that is used to return events or some kind
-of data from EventProvider handlers to the client side.
+This module implements L<Event|RPC::ExtDirect::Intro/Event> object that is used
+to send asynchronous events from server to client, without having to request
+them from the client explicitly.
 
 Data can be anything that is serializable to JSON. No checks are made and it
-is assumed that client side can understand format of the data sent with
+is assumed that client side can understand the data format used with
 Events.
 
-Note that by default JSON will blow up if you try to feed it a blessed object
+Note that by default L<JSON> will blow up if you try to feed it a blessed object
 as data payload, and for very good reason: it is not obvious how to serialize
-a self-contained object. Each case requires specific handling which is not
-feasible in a framework like this; therefore no effort was made to support
-serialization of blessed objects. If you know that your object is nothing
-more than a hash containing simple scalar values and/or structures of
-scalar values, create a copy like this:
+a self-contained object. To avoid this, set a global Config option
+L<json_options|RPC::ExtDirect::Config/json_options> to include C<allow_blessed>
+flag:
 
- my $hashref = {};
- @$hashref{ keys %$object } = values %$object;
-
-But in reality, it almost always is not as simple as this.
+    my $config = RPC::ExtDirect::Config->new(
+        json_options => {
+            allow_blessed => 1,
+        },
+    );
 
 =head1 METHODS
 
@@ -66,7 +66,7 @@ the arguments with a hashref, or a hash:
         data => 'bar'
     );
 
-All three ways are equal so use any one that is more convenient to you.
+This makes it easier to extend Event objects in a Moose(ish) environment, etc.
 
 =item run()
 
@@ -79,16 +79,5 @@ Returns Event hashref in format supported by Ext.Direct client stack. Not
 intended to be called directly.
 
 =back
-
-=head1 AUTHOR
-
-Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2013 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
 
 =cut
