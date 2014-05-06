@@ -32,6 +32,11 @@ our $DEBUG;
 {
     my $api = RPC::ExtDirect::API->new();
     
+    ### PUBLIC CLASS METHOD ###
+    #
+    # Return the global API instance
+    #
+    
     sub get_api { $api }
 }
 
