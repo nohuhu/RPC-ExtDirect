@@ -1,3 +1,6 @@
+2.15  Tue May 6  17:44:10 2014
+    - Fixed failing tests due to changes in JSON::XS error output
+
 2.14  Mon Nov 11 10:43:54 2013
     - Fixed a memory leak in hook handling
 

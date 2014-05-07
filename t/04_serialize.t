@@ -15,11 +15,11 @@ my $json = RPC::ExtDirect::Serialize->serialize(0, $data);
 is $json, $expected, "Canonical output";
 
 $data     = bless { foo => 'foo', };
-$expected = q|{"action":null,"message":"encountered object 'main=HASH(blessed)', but neither allow_blessed nor convert_blessed settings are enabled","method":null,"tid":null,"type":"exception","where":"RPC::ExtDirect::Serialize"}|;
+$expected = q|{"action":null,"message":"encountered object 'main=HASH(blessed)'","method":null,"tid":null,"type":"exception","where":"RPC::ExtDirect::Serialize"}|;
 
 $json = RPC::ExtDirect::Serialize->serialize(0, $data);
 
-$json =~ s/HASH\([^\)]+\)/HASH(blessed)/;
+$json =~ s/HASH\([^\)]+\)[^"]+/HASH(blessed)'/;
 
 is $json, $expected, 'Invalid data, exceptions on';
 
