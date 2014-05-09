@@ -121,6 +121,18 @@ L<Method calling conventions|RPC::ExtDirect::API/"Method calling conventions">.
 A L</Method> that accepts parameters by name, in a hash. See more in
 L<Method calling conventions|RPC::ExtDirect::API/"Method calling conventions">.
 
+=item Form Handler Method
+
+A L</Method> that accepts form submits. All form field values are passed to
+the Form handler in a hash, C<field => value>. The only practical reason to
+use Form handlers is to process file uploads; see
+L<FILE UPLOADS|RPC::ExtDirect/"FILE UPLOADS"> for more information.
+
+=item Poll Handler Method
+
+A L</Method> that is called by an L</"Event Provider"> to return the list of
+L<Events|/Event> to be passed on to the client side.
+
 =item Result
 
 Any data returned by a L</Method> upon successful or unsuccessful call
@@ -129,9 +141,10 @@ and alike events should be returned as Results, not L<Exceptions|/Exception>.
 
 =item Exception
 
-Fatal error, or any other unrecoverable event in application code. Calls
-that produce Exception instead of L</Result> are considered unsuccessful;
-Ext.Direct provides built in mechanism for managing Exceptions.
+Fatal error, or any other unrecoverable event in the application code.
+Calls that produce Exception instead of L</Result> are considered
+unsuccessful; Ext.Direct provides built in mechanism for managing
+Exceptions.
 
 Exceptions are not used to indicate errors in application logic flow,
 only for catastrophic conditions. Nearest analog is status code 500
@@ -150,8 +163,8 @@ conditions and events.
 
 =item Event Provider
 
-Server side script that gets polled by client side every N seconds;
-default N is 3 but it can be changed in client side configuration.
+Server side script that gets polled by client side every C<n> seconds;
+default C<n> is 3 but it can be changed in client side configuration.
 
 =back
 

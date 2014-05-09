@@ -122,58 +122,6 @@ constructor. Note that these two methods are I<not> mutually exclusive, but it i
 not recommended to mix them unless you really know how to deal with ensuing
 timing issues. You've been warned.
 
-
-
-
-In order to export subroutine to ExtDirect interface, use C<ExtDirect(n, ...)>
-attribute in sub declaration. Note that there can be no space between
-attribute name and opening parentheses. In Perls older than 5.12, attribute
-declaration can't span multiple lines, i.e. the whole C<ExtDirect(n, ...)>
-should fit in one line.
-
-n is mandatory calling convention declaration; it may be one of the following
-options:
-
-=over 4
-
-=item *
-
-Number of arguments to be passed as ordered list
-
-=item *
-
-Names of arguments to be passed as hash
-
-=item *
-
-formHandler: method will receive hash of fields and file uploads
-
-=item *
-
-pollHandler: method that provides Events when polled by client
-
-=back
-
-Optional method attributes can be specified after calling convention
-declaration, in hash-like C<key =E<gt> value> form. Optional attributes
-are:
-
-=over 4
-
-=item *
-
-before: code reference to use as "before" hook. See L</HOOKS>
-
-=item *
-
-instead: code reference to "instead" hook
-
-=item *
-
-after: code reference to "after" hook.
-
-=back
-
 =head1 METHODS
 
 Unlike Ext.Direct specification (and reference PHP implementation, too)
