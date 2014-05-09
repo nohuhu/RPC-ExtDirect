@@ -366,8 +366,11 @@ sub get_method_by_name {
 sub add_hook {
     my ($self, %arg) = @_;
     
-    my           ($package, $method_name, $type, $code)
-        = @arg{qw/ package   method        type   code /};
+    my $package     = $arg{package};
+    my $action_name = $arg{action};
+    my $method_name = $arg{method};
+    my $type        = $arg{type};
+    my $code        = $arg{code};
     
     my $hook_class = $self->config->api_hook_class;
     
@@ -375,33 +378,40 @@ sub add_hook {
     { local $@; eval "require $hook_class"; }
     
     my $hook = $hook_class->new( type => $type, code => $code );
+    
+    if ( $package || $action_name ) {
+        my $action;
         
-    # For backwards compatibility, we support this indirect way
-    # of defining the hooks
-    if ( $package && $method_name ) {
-        my $action = $self->get_action_by_package($package);
+        if ( $package ) {
+            $action = $self->get_action_by_package($package);
+            
+            croak "Can't find the Action for package '$package'"
+                unless $action;
+        }
+        else {
+            $action = $self->get_action_by_name($action_name);
+            
+            croak "Can't find the '$action_name' Action"
+                unless $action;
+        }
         
-        croak "Can't find the Action for package $package"
-            unless $action;
-        
-        my $method = $action->method($method_name);
-        
-        croak "Can't find Method $method_name"
-            unless $method;
-        
-        $method->$type($hook);
-    }
-    elsif ( $package ) {
-        my $action = $self->get_action_by_package($package);
-        
-        croak "Can't find the Action for package $package"
-            unless $action;
-        
-        $action->$type($hook);
+        if ( $method_name ) {
+            my $method = $action->method($method_name);
+            
+            croak "Can't find Method '$method_name'"
+                unless $method;
+                
+            $method->$type($hook);
+        }
+        else {
+            $action->$type($hook);
+        }
     }
     else {
         $self->$type($hook);
     }
+    
+    return $hook;
 }
 
 ### PUBLIC INSTANCE METHOD ###
