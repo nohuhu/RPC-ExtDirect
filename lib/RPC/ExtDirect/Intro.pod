@@ -114,24 +114,27 @@ signature conforming to Method's declaration in the L</API>.
 
 A L</Method> that accepts zero or more parameters in ordered fashion, or by
 position (in a list). See more in
-L<Method calling conventions|RPC::ExtDirect::API/"Method calling conventions">.
+L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Named Method
 
 A L</Method> that accepts parameters by name, in a hash. See more in
-L<Method calling conventions|RPC::ExtDirect::API/"Method calling conventions">.
+L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Form Handler Method
 
 A L</Method> that accepts form submits. All form field values are passed to
 the Form handler in a hash, C<field => value>. The only practical reason to
 use Form handlers is to process file uploads; see
-L<FILE UPLOADS|RPC::ExtDirect/"FILE UPLOADS"> for more information.
+L<FILE UPLOADS|RPC::ExtDirect/"FILE UPLOADS"> for more information. See also
+L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS"> for more information on
+Form handlers calling convention.
 
 =item Poll Handler Method
 
 A L</Method> that is called by an L</"Event Provider"> to return the list of
-L<Events|/Event> to be passed on to the client side.
+L<Events|/Event> to be passed on to the client side. See more in
+L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Result
 
@@ -191,48 +194,7 @@ testing; the added benefit is that the application becomes independent
 of the web server environment and can be ported easily if such a need
 arises.
 
-=head1 GATEWAYS
-
-At the time of writing this documentation, the following gateways
-are available:
-
-=over 4
-
-=item CGI gateway
-
-L<CGI::ExtDirect> is used with plain old L<CGI> environment; it is also
-compatible with the newer L<CGI::Simple> module that is a drop-in
-replacement for C<CGI.pm>.
-
-This gateway is most often used for testing Ext.Direct interfaces, usually
-with L<Test::ExtDirect> helper module. However, CGI environment is easy
-to use and set up practically anywhere, and it can be used in the variety
-of situations where a full blown Perl application server is not feasible.
-
-One example of such usage would be retrofitting a legacy system with a
-modern HTML5 Web application.
-
-=item Plack gateway
-
-L<Plack::Middleware::ExtDirect> implements an RPC::ExtDirect interface
-for L<Plack> application server environment. This gateway should also be
-used instead of the L<Apache gateway|/"Apache gateway"> in L<mod_perl2>
-environment.
-
-=item AnyEvent::HTTPD gateway
-
-L<AnyEvent::HTTPD::ExtDirect> implements a completely asynchronous
-interface for RPC::ExtDirect, based on L<AnyEvent::HTTPD> module.
-
-=item Apache gateway
-
-L<Apache::ExtDirect> is a legacy gateway for Apache/L<mod_perl2>
-environment. Since it was written, Apache has fallen out of usage
-and so the gateway is mostly unsupported, too. You can use
-L<Plack gateway|/"Plack gateway"> instead, with one of the built in
-Apache/Plack handlers.
-
-=back
+See L<RPC::ExtDirect/GATEWAYS> for a list of available gateways.
 
 =head1 GETTING STARTED
 

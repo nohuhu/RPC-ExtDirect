@@ -168,14 +168,9 @@ packages. Besides easier maintenance, using dynamic approach allows having
 more than one active API object at a given time, possibly implementing
 different APIs tailored for usage patterns of a particular application.
 
-Under the hood, static API definition operates on a global instance of
-C<RPC::ExtDirect::API>, created at compile time and populated by the
-C<ExtDirect> attribute handler called on the methods that have this
-attribute defined. Because attribute parsing happens at package compilation
-time, it is hard to predict the order in which the methods will be
-processed. To provide some help with debugging, RPC::ExtDirect will throw
-an error if you are trying to redefine a Method; usually that means a
-mistake has been made somewhere.
+Note that these two methods are I<not> mutually exclusive, but it is
+not recommended to mix them unless you really know how to deal with ensuing
+timing issues. You've been warned.
 
 =head1 DEFINING METHODS STATICALLY
 
@@ -305,9 +300,10 @@ L<section above|/"DEFINING METHODS STATICALLY"> for details.
 
 =head1 GLOBAL API TREE INSTANCE
 
-With the static API definition approach, the actual API structure gets
-populated with L<Actions and Methods|/"ACTIONS AND METHODS"> at the package
-compilation time, and should be available globally thoughout the application.
+Under the hood, static API definition operates on a global instance of
+C<RPC::ExtDirect::API>, created at the package compilation time and
+available globally throughout the application.
+
 Versions 1.x and 2.x of RPC::ExtDirect used package global variables to hold
 this information; version 3.0 is using a global L<RPC::ExtDirect::API> object
 instead. This object is held in a private variable and can be retrieved by
@@ -337,6 +333,12 @@ If you prefer more control over the API tree, create the API object
 explicitly as shown in the L<SYNOPSIS|/SYNOPSIS>, and pass it to the
 gateway object. Refer to the actual
 L<gateway|RPC::ExtDirect::Intro/GATEWAYS> documentation for details.
+
+Because attribute parsing happens at package compilation
+time, it is hard to predict the order in which the methods will be
+processed. To provide some help with debugging, RPC::ExtDirect will throw
+an error if you are trying to redefine a Method; usually that means a
+mistake has been made somewhere.
 
 =head1 API CONFIGURATION
 
