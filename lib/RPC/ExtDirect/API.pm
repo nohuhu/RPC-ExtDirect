@@ -338,7 +338,7 @@ sub add_method {
     # Usually redefining a Method means a typo or something
     croak "Attempting to redefine Method '$method_name' ".
           ($package ? "in package $package" : "in Action '$action_name'")
-          if $action->$method_name;
+          if $action->can($method_name);
     
     $action->add_method(\%arg);
 }
