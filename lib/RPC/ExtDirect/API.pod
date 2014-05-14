@@ -47,11 +47,13 @@ server side is published to the clients via fixed URI, a GET request
 to which produces a response with a piece of JavaScript code containing
 the API declaration. This module handles the API service discovery requests.
 
-The actual Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+The Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
 is in fact a tree-like data structure (an Object in JavaScript parlance)
 containing description of L<Actions|RPC::ExtDirect::Intro/Action> and
 L<Methods|RPC::ExtDirect::Intro/Method> available to the client. This
-data structure is encoded in JavaScript code statement.
+data structure is encoded in JavaScript code statement that is
+regenerated dynamically every time it is requested. No caching is used
+at this time.
 
 =head1 ACTIONS AND METHODS
 
@@ -690,32 +692,16 @@ hooks.
 =item C<type>
 
 Hook type. The list of hook types supported by the API class is returned
-by the L</HOOK_TYPES> method. See L<RPC::ExtDirect/HOOKS> for more
-information on hook types.
+by the L</HOOK_TYPES> method. See L<RPC::ExtDirect::API::Hook/TYPES> for
+more information on hook types.
 
 This parameter is mandatory.
 
 =item C<code>
 
-This parameter is mandatory, and it can take one of the following forms:
+Hook code, or absence thereof. See L<RPC::ExtDirect::API::Hook/code>.
 
-=over 12
-
-=item *
-
-C<'NONE'> or C<undef> to cancel hook execution for the corresponding type
-
-=item *
-
-A coderef for the hook sub to run for the corresponding type
-
-=item *
-
-Package and subroutine address to call at the hook execution time, like
-C<'Foo::Bar::baz'>. This allows late code binding without loading the
-corresponding package early.
-
-=back
+This parameter is mandatory.
 
 =back
 
