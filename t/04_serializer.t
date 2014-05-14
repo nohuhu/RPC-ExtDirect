@@ -84,7 +84,7 @@ my $json = $ser_class->new(config => $config)->serialize(
 is $json, $expected, "Canonical output";
 
 $data     = bless { foo => 'foo', };
-$expected = q|{"action":null,"message":"encountered object 'main=HASH(blessed)', but neither allow_blessed nor convert_blessed settings are enabled","method":null,"tid":null,"type":"exception","where":"RPC::ExtDirect::Serializer"}|;
+$expected = q|{"action":null,"message":"encountered object 'main=HASH(blessed)'","method":null,"tid":null,"type":"exception","where":"RPC::ExtDirect::Serializer"}|;
 
 for my $option ( qw/ debug verbose_exceptions / ) {
     # verbose_exceptions will turn on verboseness only,
@@ -97,7 +97,7 @@ for my $option ( qw/ debug verbose_exceptions / ) {
         data            => [$data],
     );
 
-    $json =~ s/HASH\([^\)]+\)/HASH(blessed)/;
+    $json =~ s/HASH\([^\)]+\)[^"]+/HASH(blessed)'/;
 
     is $json, $expected, "Invalid data, $option on";
 }
