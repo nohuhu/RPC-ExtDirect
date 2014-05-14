@@ -6,7 +6,6 @@ no  warnings 'uninitialized';           ## no critic
 
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
-use RPC::ExtDirect::API::Hook;
 
 ### PUBLIC CLASS METHOD (ACCESSOR) ###
 #
@@ -48,10 +47,11 @@ sub new {
     }
     
     return bless {
-        %arg,
-        %hooks,
+        upload_arg => 'file_uploads',
         is_named   => $is_named,
         is_ordered => $is_ordered,
+        %arg,
+        %hooks,
     }, $class;
 }
 
@@ -185,7 +185,14 @@ sub prepare_method_arguments {
 sub prepare_pollHandler_arguments {
     my ($self, %arg) = @_;
     
-    return ( $arg{env} );
+    my @actual_arg = ();
+    
+    my $env_arg = $self->env_arg;
+    
+    no warnings;
+    splice @actual_arg, $env_arg, 0, $arg{env} if defined $env_arg;
+    
+    return @actual_arg;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -207,11 +214,15 @@ sub prepare_formHandler_arguments {
     my @runaway_params = qw(action method extAction extMethod
                             extTID extUpload _uploads);
     delete @data{ @runaway_params };
+    
+    my $upload_arg = $self->upload_arg;
 
     # Add uploads if there are any
-    $data{file_uploads} = $upload if $upload;
+    $data{ $upload_arg } = $upload if defined $upload;
+    
+    my $env_arg = $self->env_arg;
 
-    $data{_env} = $env;
+    $data{ $env_arg } = $env if $env_arg;
 
     return %data;
 }
@@ -226,13 +237,24 @@ sub prepare_named_arguments {
     
     my $env   = $arg{env};
     my $input = $arg{input};
-    
-    my %data  = %$input;
-    my @names = @{ $self->params };
+
     my %actual_arg;
     
-    @actual_arg{ @names } = @data{ @names };
-    $actual_arg{_env} = $env;
+    my $strict = $self->strict;
+    $strict = 1 unless defined $strict;
+    
+    if ( $strict ) {
+        my @names = @{ $self->params };
+    
+        @actual_arg{ @names } = @$input{ @names };
+    }
+    else {
+        %actual_arg = %$input;
+    }
+    
+    my $env_arg = $self->env_arg;
+    
+    $actual_arg{ $env_arg } = $env if defined $env_arg;
 
     return %actual_arg;
 }
@@ -250,8 +272,11 @@ sub prepare_ordered_arguments {
     
     my @data = @$input;
     my @arg  = splice @data, 0, $self->len;
-
-    push @arg, $env;
+    
+    my $env_arg = $self->env_arg;
+    
+    no warnings;
+    splice @arg, $env_arg, 0, $env if defined $env_arg;
     
     return @arg;
 }
@@ -291,6 +316,8 @@ my $accessors = [qw/
     is_named
     strict
     package
+    env_arg
+    upload_arg
 /,
     __PACKAGE__->HOOK_TYPES,
 ];
