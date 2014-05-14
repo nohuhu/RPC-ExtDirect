@@ -218,7 +218,7 @@ sub parse_attribute {
         }
 
         # Strict is a boolean attribute, but let's be flexible about it
-        elsif { $param_def =~ / \A strict \z /ixms ) {
+        elsif ( $param_def =~ / \A strict \z /ixms ) {
             $attr{strict} = 1;
 
             # ...but not too flexible
