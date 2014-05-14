@@ -25,14 +25,12 @@ use Carp;
 # This one croaks merrily
 sub bar_foo : ExtDirect(4) { croak 'bar foo!' }
 
-# Return number of passed arguments
-sub bar_bar : ExtDirect(5) { shift; pop; return scalar @_; }
+# Return the number of passed arguments
+sub bar_bar : ExtDirect(5) { shift; return scalar @_; }
 
 # This is a form handler
 sub bar_baz : ExtDirect( formHandler ) {
     my ($class, %param) = @_;
-
-    delete $param{_env};
 
     # Simulate uploaded file handling
     my $uploads = $param{file_uploads};

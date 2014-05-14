@@ -15,7 +15,7 @@ use Carp;
 sub bar_foo : ExtDirect(4) { croak 'bar foo!' }
 
 # Return number of passed arguments
-sub bar_bar : ExtDirect(5) { shift; pop; return scalar @_; }
+sub bar_bar : ExtDirect(5) { shift; return scalar @_; }
 
 # This is a form handler
 sub bar_baz : ExtDirect( formHandler ) {
