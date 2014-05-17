@@ -75,7 +75,7 @@ sub add_accessors {
     my ($self, %arg) = @_;
     
     RPC::ExtDirect::Util::Accessor->mk_accessors(
-        class  => ref $self,
+        class  => ref $self || $self, # Class method, too
         ignore => 1,
         %arg,
     );
