@@ -374,7 +374,7 @@ sub add_hook {
     
     my $hook_class = $self->config->api_hook_class;
     
-    # This is to avoid hard binding on RPC::ExtDirect::Hook
+    # This is to avoid hard binding on RPC::ExtDirect::API::Hook
     { local $@; eval "require $hook_class"; }
     
     my $hook = $hook_class->new( type => $type, code => $code );
