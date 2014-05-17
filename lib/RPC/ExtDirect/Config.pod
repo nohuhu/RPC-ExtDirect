@@ -49,62 +49,6 @@ setting L</debug_request> to falsy value.
 It is possible to add your own configuration options, both simple and
 chained. Read RPC::ExtDirect::Config source to see how it is done.
 
-=head1 INSTANCE METHODS
-
-=over 4
-
-=item new(%options)
-
-Create a new Config instance and populate it with key/value pairs from
-%options. If an option is not specified, a default value will be assumed;
-see L</OPTIONS> for more information.
-
-The supported legacy package global variables will be read before the
-%options is processed; thus any option passed directly to constructor
-will override its namesake in a package global. This won't prevent the
-warnings from being emitted; package global vars are strongly deprecated
-and should not be used. There is no way to disable the warnings.
-
-=item clone()
-
-Create and return a new instance of Config as a copy of the current one.
-This method only does shallow copy, i.e. any config option that is a
-reference will refer to the same object.
-
-=item set_options(%options)
-
-Apply the passed options to the current Config instance.
-
-=item get_router_path()
-
-Return the current L</router_path> value.
-
-This method is deprecated and is provided only for backwards compatibility
-with RPC::ExtDirect 1.x and 2.x.
-
-=item get_poll_path()
-
-Return the current L</poll_path> value.
-
-This method is deprecated and is provided only for backwards compatibility
-with RPC::ExtDirect 1.x and 2.x
-
-=item get_remoting_var()
-
-Return the current L</remoting_var> value.
-
-This method is deprecated and is provided only for backwards compatibility
-with RPC::ExtDirect 1.x and 2.x.
-
-=item get_polling_var()
-
-Return the current L</polling_var> value.
-
-This method is deprecated and is provided only for backwards compatibility
-with RPC::ExtDirect 1.x. and 2.x.
-
-=back
-
 =head1 ACCESSOR METHODS
 
 For every option held in a Config instance, there are two accessor
@@ -194,7 +138,7 @@ Default: C<undef>, chained to: L</debug>.
 =item debug_serialize
 
 Turn debugging on/off for serialization method in
-L<RPC::ExtDirect::Serializer> module. This option only affects
+C<RPC::ExtDirect::Serializer> module. This option only affects
 "from Perl to JSON" conversion.
 
 Default: C<undef>, chained to: L</debug>.
@@ -202,14 +146,14 @@ Default: C<undef>, chained to: L</debug>.
 =item debug_deserialize
 
 Turn debugging on/off for deserialization method in
-L<RPC::ExtDirect::Serializer> module. This option only affects
+C<RPC::ExtDirect::Serializer> module. This option only affects
 "from JSON to Perl" conversion.
 
 Default: C<undef>, chained to: L</debug>.
 
 =item debug_request
 
-Turn debugging on/off for L<RPC::ExtDirect::Request> module. When
+Turn debugging on/off for C<RPC::ExtDirect::Request> module. When
 debugging is on, Request will provide verbose exceptions. There
 is no other effect at this time, but this can change in the
 future.
@@ -221,7 +165,7 @@ Default: C<undef>, chained to: L</debug>.
 
 =item debug_router
 
-Turn debugging on/off for L<RPC::ExtDirect::Router> module. When
+Turn debugging on/off for C<RPC::ExtDirect::Router> module. When
 debugging is on, all Requests or Exceptions generated in the Router
 will provide verbose exceptions. There are no other effects at this
 time, but this can change in the future.
@@ -233,7 +177,7 @@ Default: C<undef>, chained to: L</debug>.
 
 =item exception_class
 
-Class name to be used instead of L<RPC::ExtDirect::Exception> when
+Class name to be used instead of C<RPC::ExtDirect::Exception> when
 instantiating new Exception objects.
 
 This option will affect all places in the code that can throw
@@ -244,7 +188,7 @@ Default: C<'RPC::ExtDirect::Exception'>.
 =item exception_class_serialize
 
 Class name to be used when instantiating Exception objects thrown
-in serialization method of L<RPC::ExtDirect::Serializer> module.
+in serialization method of C<RPC::ExtDirect::Serializer> module.
 
 This option will not affect any other place in the code that can
 throw Exceptions.
@@ -254,7 +198,7 @@ Default: C<undef>, chained to: L</exception_class>.
 =item exception_class_deserialize
 
 Class name to be used when instantiating Exception objects thrown
-in deserialization method of L<RPC::ExtDirect::Serializer> module.
+in deserialization method of C<RPC::ExtDirect::Serializer> module.
 
 This option will not affect any other place in the code that can
 throw Exceptions.
@@ -264,7 +208,7 @@ Default: C<undef>, chained to: L</exception_class>.
 =item exception_class_request
 
 Class name to be used when instantiating Exception objects thrown
-in L<RPC::ExtDirect::Request>, when a Request is being processed.
+in C<RPC::ExtDirect::Request>, when a Request is being processed.
 
 This option will not affect any other place in the code that can
 throw Exceptions.
@@ -273,7 +217,7 @@ Default: C<undef>, chained to: L</exception_class>.
 
 =item request_class
 
-Class name to be used instead of L<RPC::ExtDirect::Request> when
+Class name to be used instead of C<RPC::ExtDirect::Request> when
 instantiating new Request objects.
 
 Default: C<'RPC::ExtDirect::Request'>.
@@ -281,7 +225,7 @@ Default: C<'RPC::ExtDirect::Request'>.
 =item request_class_deserialize
 
 Class name to be used when instantiating Request objects in
-deserialization method of L<RPC::ExtDirect::Serializer> module.
+deserialization method of C<RPC::ExtDirect::Serializer> module.
 
 This option will not affect any other place in the code.
 
@@ -289,8 +233,8 @@ Default: C<undef>, chained to: L</request_class>.
 
 =item request_class_eventprovider
 
-Class name to be used instead of L<RPC::ExtDirect::Request::PollHandler>
-when instantiating Request objects in L<RPC::ExtDirect::EventProvider>
+Class name to be used instead of C<RPC::ExtDirect::Request::PollHandler>
+when instantiating Request objects in C<RPC::ExtDirect::EventProvider>
 module.
 
 PollHandler is a subclass of Request; when configuring this option
@@ -300,7 +244,7 @@ Default: C<'RPC::ExtDirect::Request::PollHandler'>.
 
 =item serializer_class
 
-Class name to be used instead of L<RPC::ExtDirect::Serializer> when
+Class name to be used instead of C<RPC::ExtDirect::Serializer> when
 instantiating new objects to be used to serialize data (Perl to JSON).
 
 Default: C<'RPC::ExtDirect::Serializer'>.
@@ -315,20 +259,20 @@ Default: C<undef>, chained to: L</serializer_class>.
 =item serializer_class_eventprovider
 
 Class name to be used when instantiating Serializer objects used to
-serialize Request results in L<RPC::ExtDirect::EventProvider> module.
+serialize Request results in C<RPC::ExtDirect::EventProvider> module.
 
 Default: C<undef>, chained to: L</serializer_class>.
 
 =item serializer_class_router
 
 Class name to be used when instantiating Serializer objects used to
-serialize Request results in L<RPC::ExtDirect::Router> module.
+serialize Request results in C<RPC::ExtDirect::Router> module.
 
 Default: C<undef>, chained to: L</serializer_class>.
 
 =item deserializer_class
 
-Class name to be used instead of L<RPC::ExtDirect::Serializer> when
+Class name to be used instead of C<RPC::ExtDirect::Serializer> when
 instantiating new objects to be used to deserialize data (JSON to Perl).
 
 Default: C<'RPC::ExtDirect::Serializer'>.
@@ -336,7 +280,7 @@ Default: C<'RPC::ExtDirect::Serializer'>.
 =item deserializer_class_router
 
 Class name to be used when instantiating Serializer objects used to
-deserialize incoming Request data in L<RPC::ExtDirect::Router> module.
+deserialize incoming Request data in C<RPC::ExtDirect::Router> module.
 
 Default: C<undef>, chained to: L</deserializer_class>.
 
@@ -367,7 +311,7 @@ Default: C<undef>, chained to: L</json_options>.
 =item router_class
 
 Class name to be used when instantiating Router objects instead of
-L<RPC::ExtDirect::Router>. This config option is not used directly by
+C<RPC::ExtDirect::Router>. This config option is not used directly by
 the core RPC::ExtDirect code, but rather by the gateways like
 L<CGI::ExtDirect> and L<Plack::Middleware::ExtDirect>.
 
@@ -376,7 +320,7 @@ Default: C<'RPC::ExtDirect::Router'>.
 =item eventprovider_class
 
 Class name to be used when instantiating EventProvider objects instead of
-L<RPC::ExtDirect::EventProvider>. Similar to L</router_class>,
+C<RPC::ExtDirect::EventProvider>. Similar to L</router_class>,
 this option is used by the gateway modules.
 
 Default: C<'RPC::ExtDirect::EventProvider'>.
@@ -464,6 +408,94 @@ API, even if there are EventProvider modules registered with RPC::ExtDirect
 stack. This option is mostly used for testing and debugging.
 
 Default: C<!1> (false).
+
+=back
+
+=head1 CONFIG OBJECT INTERFACE
+
+L<RPC::ExtDirect::Config> provides several public methods:
+
+=over 4
+
+=item C<new>
+
+Constructor. Returns a new L<RPC::ExtDirect::Config> object populated
+with key/value pairs passed in the arguments. If an option is not
+specified, a default value will be assumed; see L</OPTIONS> for more
+information.
+
+The supported legacy package global variables will be read before the
+arguments are processed; thus any option passed directly to constructor
+will override its namesake in a package global. This won't prevent the
+warnings from being emitted; package global vars are strongly deprecated
+and should not be used. There is no way to disable the warnings.
+
+This method accepts named arguments in a hash or hashref.
+
+Parameters: see L</OPTIONS>.
+
+=item C<clone>
+
+Constructor, instance method. Returns a new L<RPC::ExtDirect::Config> object
+with options copied from the instance C<clone> was called on. This method
+only does shallow copying, i.e. any config option that is a reference will
+refer to the same underlying object.
+
+=item C<read_global_vars>
+
+Instance method. Reads legacy package global variables used to configure
+L<RPC::ExtDirect> in versions 1.x and 2.x; issues the warnings about their
+usage. The warnings cannot be turned off; change your code not to use
+package globals instead.
+
+=item C<add_accessors>
+
+Class/instance method. Adds L<accessor methods|/"ACCESSOR METHODS"> from
+arguments; this can be used in subclasses to extend the list of Config
+options. This method accepts named arguments in a hash.
+
+=item C<set_options>
+
+Instance method. Sets one or more Config options in the object it was
+called on. Accepts named arguments in a hash or hashref.
+
+Parameters: see L</OPTIONS>.
+
+=item C<get_router_path>
+
+Class method. Returns the current L</router_path> value from the
+L<global API Config instance|RPC::ExtDirect::API/"GLOBAL API TREE INSTANCE">.
+
+This method is B<DEPRECATED> and provided only for backward compatibility.
+Use C<router_path> L<accessor method|/"ACCESSOR METHODS"> on a Config
+instance instead.
+
+=item C<get_poll_path>
+
+Class method. Returns the current L</poll_path> value from the
+L<global API Config instance|RPC::ExtDirect::API/"GLOBAL API TREE INSTANCE">.
+
+This method is B<DEPRECATED> and provided only for backward compatibility.
+Use C<poll_path> L<accessor method|/"ACCESSOR METHODS"> on a Config
+instance instead.
+
+=item C<get_remoting_var>
+
+Class method. Returns the current L</remoting_var> value from the
+L<global API Config instance|RPC::ExtDirect::API/"GLOBAL API TREE INSTANCE">.
+
+This method is B<DEPRECATED> and provided only for backward compatibility.
+Use C<remoting_var> L<accessor method|/"ACCESSOR METHODS"> on a Config
+instance instead.
+
+=item C<get_polling_var>
+
+Class method. Returns the current L</polling_var> value from the
+L<global API Config instance|RPC::ExtDirect::API/"GLOBAL API TREE INSTANCE">.
+
+This method is B<DEPRECATED> and provided only for backward compatibility.
+Use C<polling_var> L<accessor method|/"ACCESSOR METHODS"> on a Config
+instance instead.
 
 =back
 

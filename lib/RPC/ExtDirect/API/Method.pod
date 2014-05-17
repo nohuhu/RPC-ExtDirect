@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API::Method - Ext.Direct Method implementation
+RPC::ExtDirect::API::Method - Ext.Direct Method object
 
 =head1 DESCRIPTION
 
@@ -341,8 +341,8 @@ See L</new>.
 
 =item C<before|instead|after>
 
-Return the Hook object for the corresponding hook slot assigned
-to this Method.
+Return the L<Hook|RPC::ExtDirect::API::Hook> object for the corresponding
+hook slot assigned to this Method.
 
 =back
 

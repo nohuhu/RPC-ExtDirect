@@ -8,9 +8,9 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
 
     package Foo::Bar;
     
-    use RPC::ExtDirect;
+    use RPC::ExtDirect Action => 'FooBar';
     
-    sub sum : ExtDirect(2) {
+    sub sum : ExtDirect( len => 2 ) {
         my ($class, $a, $b) = @_;
         
         return $a + $b;
@@ -35,14 +35,20 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
 =head1 DESCRIPTION
 
 RPC::ExtDirect suite of modules provides an easy, simple and robust way to
-write Perl server side code that could be used with Rich Internet Applications
-based on JavaScript frameworks L<Ext JS|http://www.sencha.com/products/extjs/>
-and L<Sencha Touch|http://www.sencha.com/products/touch/>.
+write Perl server side code that could be used with HTML5 Rich Internet
+Applications based on JavaScript frameworks
+L<Ext JS|http://www.sencha.com/products/extjs/> and
+L<Sencha Touch|http://www.sencha.com/products/touch/>.
 
 The suite consists of the core RPC::ExtDirect module that implements Ext.Direct
-protocol and transport layer, several server environment-specific gateways,
-a standalone pure Perl server, two Perl clients, and even its own specialized
-unit test helper! We've got it covered front to back. :)
+protocol and transport layer, several server environment-specific peripheral
+gateways, a standalone pure Perl server, two Perl clients, and even its own
+specialized testing scaffold! We've got it covered front to back. :)
+
+=head1 INTRODUCTION AND EXAMPLES
+
+If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
+for more explanations and a few examples, both easy and more advanced.
 
 =head1 WHEN TO USE IT, AND WHY
 
@@ -83,14 +89,7 @@ All this makes Ext.Direct a no-brainer when developing Web apps with Ext JS or
 Sencha Touch. And with RPC::ExtDirect, choosing Perl to write server side code
 for Web apps comes naturally, too. :)
 
-=head1 INTRODUCTION AND TUTORIAL
-
-If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
-for more explanations and a few examples. There is also a 
-L<tutorial|RPC::ExtDirect::Tutorial> that may be helpful at getting your feet
-wet.
-
-=head1 USING RPC::EXTDIRECT
+=head1 HOW TO USE
 
 Since Ext.Direct is just a transport layer, you don't need to change your app
 architecture to work around it. If you have an existing server side API you
@@ -135,10 +134,6 @@ Method; any extra will be dropped silently. Less arguments than declared
 will result in an L<Exception|RPC::ExtDirect::Intro/Exception> returned
 to the client side, and Method never gets called.
 
-The last argument is an environment object (see L</"ENVIRONMENT OBJECTS">).
-For methods that take 0 arguments, it will be the first argument after the
-class name.
-
 =item *
 
 Named arguments are passed as a hash in C<@_>. No arguments other than
@@ -152,8 +147,6 @@ Starting with Ext JS 4.2.2, it is possble to relax the argument checking
 requirements; see L<RPC::ExtDirect::API/"Lazy parameter checking"> for
 more information.
 
-Environment object will be passed in the C<_env> key.
-
 =item *
 
 Form handlers are passed their arguments as a hash in C<@_>. Standard
@@ -164,8 +157,6 @@ see L</"FILE UPLOADS">.
 
 Note that any field values in a submitted form will be JSON encoded
 by the client side.
-
-Environment object will be passed in the C<_env> key.
 
 =item *
 
@@ -212,8 +203,8 @@ environment or care about it; Hooks are expected to know how to deal with
 Web intricacies but not be task oriented.
 
 The best uses for Hooks are: application or package-wide pre-call setup,
-user authorization, logging, cleanup, testing, etc. Think of the Hooks
-as a poor man's method wrappers without L<Moose's|Moose> power
+user authorization, logging, cleanup, testing, etc. Or you can think of
+the Hooks as poor man's method wrappers without L<Moose's|Moose> power
 (and associated costs).
 
 See more in L<RPC::ExtDirect::API::Hook>.
@@ -265,6 +256,11 @@ way if you like to, however do not rely on it having a well-known class
 name as it is not guaranteed. Environment objects are simple helpers
 held together by duck type.
 
+Starting with RPC::ExtDirect 3.0, only L<Hooks|/HOOKS> will receive
+an environment object by default. For Methods to receive them as well,
+you need to specify a L<RPC::ExtDirect::API::Method/env_arg> parameter
+in Method definition.
+
 =head1 FILE UPLOADS
 
 Ext.Direct offers native support for file uploading by using temporary
@@ -277,8 +273,11 @@ RPC::ExtDirect.
 
 In a Form Handler Method, arguments are passed as a hash. If one or more
 file uploads were associated with request, the argument hash will contain
-C<file_uploads> key with value set to arrayref of file hashrefs. Each file
-hashref will have the following keys:
+a key with value set to arrayref of file hashrefs. The default name for
+this key is C<file_uploads>; this can be configured using
+L<upload_arg|RPC::ExtDirect::API::Method/upload_arg> Method parameter.
+
+Each file hashref will have the following keys:
 
 =over 4
 
@@ -357,6 +356,12 @@ Apache/Plack handlers.
 
 =back
 
+=head1 MIGRATING FROM PREVIOUS VERSIONS
+
+If you are using less than current RPC::ExtDirect version, please
+refer to L<RPC::ExtDirect::Migration> document for the notes and
+explanations that might prove useful for migration.
+
 =head1 DEPENDENCIES
 
 RPC::ExtDirect is dependent on the following modules: L<Attribute::Handlers>,
@@ -367,11 +372,38 @@ L<JSON>.
 There are no known bugs in this module. Please report problems to the author,
 patches are welcome.
 
-Use CPAN RT tracker or Github tracker (preferable) to open issues.
+Use L<Github tracker|https://github.com/nohuhu/RPC-ExtDirect/issues> to open
+bug reports, this is the easiest and quickest way to get your issue fixed.
 
 =head1 SEE ALSO
 
-You can find additional information in the following Web site links:
+Take a look at these useful modules that are a part of RPC::ExtDirect
+family:
+
+=over 4
+
+=item *
+
+L<RPC::ExtDirect::Server> - a prebuilt Ext.Direct server in Perl, based on
+L<HTTP::Server::Simple>.
+
+=item *
+
+L<RPC::ExtDirect::Client> - a synchronous Ext.Direct client in Perl.
+
+=item *
+
+L<RPC::ExtDirect::Client::Async> - a fully asynchronous Ext.Direct client
+in Perl, with API compatible to L<RPC::ExtDirect::Client>.
+
+=item *
+
+L<Test::ExtDirect> - a set of helper subroutines that make unit testing
+Ext.Direct APIs a breeze.
+
+=back
+
+Also you can find additional information in the following Web site links:
 
 =over 4
 
@@ -400,7 +432,7 @@ Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
 =head1 ACKNOWLEDGEMENTS
 
 I would like to thank IntelliSurvey, Inc for sponsoring my work
-on versions 2.0-3.0 of the RPC::ExtDirect suite of modules.
+on versions 2.x and 3.x of the RPC::ExtDirect suite of modules.
 
 =head1 LICENSE AND COPYRIGHT
 
