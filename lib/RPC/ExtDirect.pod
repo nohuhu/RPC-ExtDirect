@@ -1,5 +1,14 @@
 =pod
 
+=begin readme text
+
+RPC::ExtDirect
+==============
+
+=end readme
+
+=for readme stop
+
 =head1 NAME
 
 RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
@@ -32,6 +41,8 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
         }
     }
 
+=for readme continue
+
 =head1 DESCRIPTION
 
 RPC::ExtDirect suite of modules provides an easy, simple and robust way to
@@ -45,10 +56,14 @@ protocol and transport layer, several server environment-specific peripheral
 gateways, a standalone pure Perl server, two Perl clients, and even its own
 specialized testing scaffold! We've got it covered front to back. :)
 
+=for readme stop
+
 =head1 INTRODUCTION AND EXAMPLES
 
 If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
 for more explanations and a few examples, both easy and more advanced.
+
+=for readme continue
 
 =head1 WHEN TO USE IT, AND WHY
 
@@ -88,6 +103,8 @@ Asynchronous push notifications via event polling
 All this makes Ext.Direct a no-brainer when developing Web apps with Ext JS or
 Sencha Touch. And with RPC::ExtDirect, choosing Perl to write server side code
 for Web apps comes naturally, too. :)
+
+=for readme stop
 
 =head1 HOW TO USE
 
@@ -362,10 +379,27 @@ If you are using less than current RPC::ExtDirect version, please
 refer to L<RPC::ExtDirect::Migration> document for the notes and
 explanations that might prove useful for migration.
 
+=begin readme
+
+=head1 INSTALLATION
+
+To install this module type the following:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+=end readme
+
+=for readme continue
+
 =head1 DEPENDENCIES
 
 RPC::ExtDirect is dependent on the following modules: L<Attribute::Handlers>,
 L<JSON>.
+
+=for readme stop
 
 =head1 BUGS AND LIMITATIONS
 
@@ -433,6 +467,8 @@ Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
 
 I would like to thank IntelliSurvey, Inc for sponsoring my work
 on versions 2.x and 3.x of the RPC::ExtDirect suite of modules.
+
+=for readme continue
 
 =head1 LICENSE AND COPYRIGHT
 
