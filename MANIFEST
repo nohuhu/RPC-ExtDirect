@@ -4,9 +4,13 @@ lib/RPC/ExtDirect.pod
 lib/RPC/ExtDirect/API.pm
 lib/RPC/ExtDirect/API.pod
 lib/RPC/ExtDirect/API/Action.pm
+lib/RPC/ExtDirect/API/Action.pod
 lib/RPC/ExtDirect/API/Hook.pm
+lib/RPC/ExtDirect/API/Hook.pod
 lib/RPC/ExtDirect/API/Method.pm
+lib/RPC/ExtDirect/API/Method.pod
 lib/RPC/ExtDirect/Config.pm
+lib/RPC/ExtDirect/Config.pod
 lib/RPC/ExtDirect/Demo/PollProvider.pm
 lib/RPC/ExtDirect/Demo/Profile.pm
 lib/RPC/ExtDirect/Demo/TestAction.pm
@@ -15,6 +19,8 @@ lib/RPC/ExtDirect/Event.pm
 lib/RPC/ExtDirect/Event.pod
 lib/RPC/ExtDirect/EventProvider.pm
 lib/RPC/ExtDirect/Exception.pm
+lib/RPC/ExtDirect/Intro.pod
+lib/RPC/ExtDirect/Migration.pod
 lib/RPC/ExtDirect/NoEvents.pm
 lib/RPC/ExtDirect/Request.pm
 lib/RPC/ExtDirect/Request/PollHandler.pm
