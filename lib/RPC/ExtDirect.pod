@@ -41,9 +41,9 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
         }
     }
 
-=for readme continue
-
 =head1 DESCRIPTION
+
+=for readme continue
 
 RPC::ExtDirect suite of modules provides an easy, simple and robust way to
 write Perl server side code that could be used with HTML5 Rich Internet
@@ -62,8 +62,6 @@ specialized testing scaffold! We've got it covered front to back. :)
 
 If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
 for more explanations and a few examples, both easy and more advanced.
-
-=for readme continue
 
 =head1 WHEN TO USE IT, AND WHY
 
