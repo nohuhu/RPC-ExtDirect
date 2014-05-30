@@ -101,7 +101,11 @@ sub deparse_api {
         
         my $api_def = JSON::from_json($json);
         
-        $api_def->{actions} = sort_action_methods($api_def->{actions});
+        my $actions = sort_action_methods($api_def->{actions});
+
+        if ( defined $actions ) {
+            $api_def->{actions} = $actions;
+        }
 
         $part = { $var => $api_def };
     }
@@ -140,6 +144,10 @@ sub prepare_input {
 
 sub sort_action_methods {
     my ($api_href) = @_;
+
+    # %$api_href will auto-vivify if $api_href is undef
+    # This can bite your ass.
+    return unless $api_href;
     
     my $new_href = {};
     
