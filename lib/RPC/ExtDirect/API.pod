@@ -23,11 +23,11 @@ RPC::ExtDirect::API - Ext.Direct service discovery handler
             before => 'MyApp::Util::global_before_hook',
             after  => 'MyApp::Util::global_after_hook',
             
-            action => 'MyApp.Server.Foo', # JavaScript style with dots
-            
             'MyApp::Server::Foo' => {
                 before  => 'MyApp::Server::Foo::package_before_hook',
                 
+                action => 'MyApp.Server.Foo', # JavaScript style with dots
+            
                 methods => {
                     foo => {
                         len => 1,
@@ -461,7 +461,7 @@ Global C<after> hook. See L<RPC::ExtDirect/HOOKS>.
 
 =head1 API OBJECT INTERFACE
 
-L<RPC::ExtDirect::API> provides several public methods:
+RPC::ExtDirect::API provides several public methods:
 
 =over 4
 
