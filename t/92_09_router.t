@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-no  warnings 'uninitialized', 'once';
+no  warnings 'once';
 
 use Test::More;
 
