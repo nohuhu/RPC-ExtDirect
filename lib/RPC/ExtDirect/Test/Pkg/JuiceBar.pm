@@ -20,7 +20,6 @@ use base 'RPC::ExtDirect::Test::Pkg::Foo';
 use RPC::ExtDirect;
 
 use Carp;
-use Data::Dumper;
 
 our $CHEAT = 0;
 
