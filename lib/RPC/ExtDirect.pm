@@ -15,7 +15,7 @@ use RPC::ExtDirect::Util;
 # Version of this module.
 #
 
-our $VERSION = 3.00;
+our $VERSION = '3.00';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
