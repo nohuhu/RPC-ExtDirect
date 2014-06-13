@@ -25,11 +25,10 @@ my $MMVersion = $ExtUtils::MakeMaker::VERSION;
 
 WriteMakefile(
     NAME              => 'RPC::ExtDirect',
-    VERSION_FROM      => 'lib/RPC/ExtDirect.pm', # finds $VERSION
+    VERSION_FROM      => 'lib/RPC/ExtDirect.pm',
     ($MMVersion >= 6.55
         ? ( BUILD_REQUIRES => {
                 'Test::More' => '0.48',
-                'Test::Pod'  => '1.00',
             },
             PREREQ_PM => {
                 'Attribute::Handlers' => '0.87',
@@ -38,17 +37,15 @@ WriteMakefile(
         )
         : ( PREREQ_PM => {
                 'Test::More'            => '0.48',
-                'Test::Pod'             => '1.00',
                 'Attribute::Handlers'   => '0.87',
                 'JSON'                  => '2.0',
             },
         )
     ),
-    ($] >= 5.005 ?
-      (ABSTRACT => 'Core Ext.Direct implementation for Perl',
-       AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
-       LICENSE  => 'perl',
-      ) : ()),
+
+    ABSTRACT => 'Core Ext.Direct implementation',
+    AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
+    LICENSE  => 'perl',
 
     ($MMVersion >= 6.46
         ? ( META_MERGE => {

@@ -1,4 +1,4 @@
-3.00  Thu Apr 10 22:09:11 2014
+3.00  Thu Jun 12 17:54:23 2014
     - Major refactoring of the RPC::ExtDirect module internals
     - Configuration is now instance-based with RPC::ExtDirect::Config
     - Package global variables are deprecated

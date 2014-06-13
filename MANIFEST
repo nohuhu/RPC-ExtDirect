@@ -56,6 +56,8 @@ t/063_api.t
 t/064_api.t
 t/065_api.t
 t/066_api.t
+t/067_api.t
+t/068_method.t
 t/071_request.t
 t/072_request.t
 t/08_deserialize.t
