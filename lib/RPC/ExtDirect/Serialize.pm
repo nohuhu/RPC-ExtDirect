@@ -1,141 +1,64 @@
+#
+# WARNING: This package is deprecated.
+#
+# See RPC::ExtDirect::Config perldoc for the description
+# of the instance-based configuration options to be used
+# instead of the former global variables in this package.
+#
+
 package RPC::ExtDirect::Serialize;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
-
-use Carp;
-
-use RPC::ExtDirect::Exception;
-
-use JSON;
+no  warnings 'uninitialized';       ## no critic
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Turn on for debugging
 #
+# DEPRECATED. Use `debug_serialize` or `debug` Config options instead.
+#
 
-our $DEBUG = 0;
+our $DEBUG;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Exception class name so it could be configured
 #
+# DEPRECATED. Use `exception_class_serialize` or `exception_class`
+# Config options instead.
+#
 
-our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+our $EXCEPTION_CLASS;
 
 ### PUBLIC CLASS METHOD ###
 #
-# Serializes the data passed to it in JSON
+# Serialize the passed data into JSON form
+#
+# DEPRECATED. Use RPC::ExtDirect::Serializer->serializer instance method
+# instead.
 #
 
 sub serialize {
-    my ($class, $suppress_exceptions, @data) = @_;
-
-    # Try to serialize each response separately;
-    # if one fails it's better to return an exception
-    # for one response than fail all of them
-    my @serialized = map { $class->_encode_response($_, $suppress_exceptions) }
-                         @data;
-
-    my $text = @serialized == 1 ? shift @serialized
-             :                    '[' . join(',', @serialized) . ']'
-             ;
-
-    return $text;
-}
-
-############## PRIVATE METHODS BELOW ##############
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Return new Exception object
-#
-
-sub _exception {
-    my $self = shift;
+    # Class name
+    shift;
     
-    return $EXCEPTION_CLASS->new(@_);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Clean error message
-#
-
-sub _clean_msg {
-    my ($class, $msg) = @_;
+    my $mute_exceptions = shift;
     
-    return $EXCEPTION_CLASS->clean_message($msg);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Try encoding response into JSON
-#
-
-sub _encode_response {
-    my ($class, $response, $suppress_exceptions) = @_;
+    warn __PACKAGE__.'->serialize class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->serialize ' .
+                     'instance method instead';
     
-    my $text = eval { $class->_encode_json($response) };
-
-    if ( $@ and not $suppress_exceptions ) {
-        my $msg = $class->_clean_msg($@);
-
-        my $exception = $class->_exception({
-            debug   => $DEBUG,
-            action  => $response->{action},
-            method  => $response->{method},
-            tid     => $response->{tid},
-            where   => __PACKAGE__,
-            message => $msg,
-        });
-        
-        $text = eval { $class->_encode_json( $exception->result() ) };
-    };
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
     
-    return $text;
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Actually encode JSON
-#
-
-sub _encode_json {
-    my ($class, $data) = @_;
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
     
-    return JSON->new->utf8->canonical($DEBUG)->encode($data);
+    return $serializer->serialize(
+        mute_exceptions => $mute_exceptions,
+        data => [ @_ ],
+    );
 }
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::Serialize - Provides data serialization into JSON
-
-=head1 SYNOPSIS
-
-This module is not intended to be used directly.
-
-=head1 DEPENDENCIES
-
-RPC::ExtDirect::Serialize is dependent on the following modules: L<JSON>.
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

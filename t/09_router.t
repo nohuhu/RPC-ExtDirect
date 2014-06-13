@@ -1,14 +1,15 @@
 use strict;
 use warnings;
-no  warnings 'uninitialized';
 
-use Test::More tests => 25;
+use Test::More tests => 24;
 
-BEGIN { use_ok 'RPC::ExtDirect::Router'; }
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Config;
+
+use RPC::ExtDirect::Router;
 
 # Test modules are simple
-use lib 't/lib';
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: $@";
@@ -19,34 +20,35 @@ for my $test ( @$tests ) {
     my $input  = $test->{input};
     my $expect = $test->{output};
 
-    local $RPC::ExtDirect::Router::DEBUG = $debug;
+    my $config = RPC::ExtDirect::Config->new(
+        debug_router => $debug,
+    );
 
-    my $result = eval { RPC::ExtDirect::Router->route($input) };
+    my $router = RPC::ExtDirect::Router->new(
+        config => $config,
+    );
+
+    my $result = eval { $router->route($input) };
 
     # Remove whitespace
     s/\s//g for ( $expect->[2]->[0], $result->[2]->[0] );
 
     # Remove reference addresses. On different platforms
     # stringified reference has different length so we're
-    # trying to compensate for it here.
+    # trying to compensate for that here.
     # Additionally, JSON error output may change (again) and
     # that will break this test (again), so we cheat instead.
     if ( $result->[2]->[0] =~ /HASH\(/ ) {
-        my $ref_len = length({} . '') - length 'HASH(blessed)';
-
         s/HASH\([^\)]+\)[^"]+/HASH(blessed)'/g
             for ( $expect->[2]->[0], $result->[2]->[0] );
 
         $result->[1]->[3] = $expect->[1]->[3] = length $expect->[2]->[0];
     };
 
-    is        $@,      '',      "$name eval $@";
-    is ref    $result, 'ARRAY', "$name result ARRAY";
-    is_deeply $result, $expect, "$name result deep"
-        or diag explain "Expected:", $expect, "Actual:", $result;
+    is      $@,      '',      "$name eval $@";
+    is ref  $result, 'ARRAY', "$name result ARRAY";
+    is_deep $result, $expect, "$name result deep";
 };
-
-exit 0;
 
 __DATA__
 [
@@ -57,14 +59,14 @@ __DATA__
                     200,
                     [
                         'Content-Type', 'application/json',
-                        'Content-Length', 221,
+                        'Content-Length', 222,
                     ],
                 [
                 q|{"action":"Foo","message":"encountered object |.
                 q|'foo=HASH(0x10088fca0)', but neither allow_blessed|.
                 q| nor convert_blessed settings are enabled","method"|.
                 q|:"foo_blessed","tid":1,"type":"exception","where":|.
-                q|"RPC::ExtDirect::Serialize"}|,
+                q|"RPC::ExtDirect::Serializer"}|,
                 ],
                 ],
     },
@@ -72,7 +74,7 @@ __DATA__
       input  => '{"something":"invalid":"here"}',
       output => [ 200,
                   [ 'Content-Type', 'application/json',
-                    'Content-Length', 250,
+                    'Content-Length', 249,
                   ],
                   [ q|{"action":null,|.
                     q|"message":"ExtDirect error decoding POST data: |.
@@ -80,7 +82,7 @@ __DATA__
                     q|character offset 22 (before \":\"here\"}\")'",|.
                     q|"method":null,"tid":null,|.
                     q|"type":"exception",|.
-                    q|"where":"RPC::ExtDirect::Deserialize->decode_post"}|
+                    q|"where":"RPC::ExtDirect::Serializer->decode_post"}|
                   ],
                 ],
     },

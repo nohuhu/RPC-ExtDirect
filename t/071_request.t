@@ -1,20 +1,19 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-local $Data::Dumper::Indent = 1;
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
 
 ### Testing successful requests
 
-use Test::More tests => 65;
+use Test::More tests => 64;
 
-BEGIN { use_ok 'RPC::ExtDirect::Request'; }
+use RPC::ExtDirect::Request;
 
-# Test modules are so simple they can't fail
-use lib 't/lib';
-use RPC::ExtDirect::Test::Foo;
-use RPC::ExtDirect::Test::Bar;
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Foo;
+use RPC::ExtDirect::Test::Pkg::Bar;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";
@@ -27,7 +26,8 @@ for my $test ( @$tests ) {
                 };
 
     # Set debug flag according to test
-    local $RPC::ExtDirect::Request::DEBUG = $debug;
+    $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug, );
+    $data->{api}    = RPC::ExtDirect->get_api();
 
     # Try to create object
     my $request = eval { RPC::ExtDirect::Request->new($data) };
@@ -48,10 +48,9 @@ for my $test ( @$tests ) {
     # Try to get results
     my $result = eval { $request->result() };
 
-    is        $@,      '',               "$name result() eval $@";
-    ok        $result,                   "$name result() not empty";
-    is_deeply $result, $expected_result, "$name result() deep"
-        or diag( Data::Dumper->Dump( [$result], ['result'] ) );
+    is      $@,      '',               "$name result() eval $@";
+    ok      $result,                   "$name result() not empty";
+    is_deep $result, $expected_result, "$name result() deep";
 };
 
 __DATA__

@@ -1,16 +1,16 @@
 use strict;
 use warnings;
 
-use Test::More tests => 65;
+use Test::More tests => 64;
 
-use Data::Dumper;
-$Data::Dumper::Indent = 1;
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
 
-BEGIN { use_ok 'RPC::ExtDirect::Deserialize'; }
+use RPC::ExtDirect::Serializer;
 
 # Test modules are simple and effective
-use lib 't/lib';
-use RPC::ExtDirect::Test::Qux;
+use RPC::ExtDirect::Test::Pkg::Qux;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval DATA: $@";
@@ -23,11 +23,22 @@ for my $test ( @$tests ) {
     my $expect  = $test->{result};
     my $run_exp = $test->{run};
 
-    # Set the debug flags
-    local $RPC::ExtDirect::Request::DEBUG     = $debug;
-    local $RPC::ExtDirect::Deserialize::DEBUG = $debug;
+    my $api    = RPC::ExtDirect->get_api;
+    my $config = RPC::ExtDirect::Config->new(
+        debug_request     => $debug,
+        debug_deserialize => $debug,
+    );
 
-    my $requests = eval { RPC::ExtDirect::Deserialize->$method($data) };
+    my $serializer = RPC::ExtDirect::Serializer->new(
+        api    => $api,
+        config => $config,
+    );
+
+    my $requests = eval {
+        $serializer->$method(
+            data => $data
+        )
+    };
 
     is     $@, '',               "$name $method() requests eval $@";
     ok ref $requests eq 'ARRAY', "$name $method requests is ARRAY";
@@ -39,20 +50,16 @@ for my $test ( @$tests ) {
 
     my $runs    = eval { [ map { $_->run()    } @$requests ] };
 
-    is     $@, '',               "$name $method() runs eval $@";
-    ok ref $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
-    is_deeply $runs, $run_exp,   "$name $method() runs deep";
+    is      $@, '',               "$name $method() runs eval $@";
+    ok ref  $runs eq 'ARRAY',     "$name $method() runs is ARRAY";
+    is_deep $runs, $run_exp,   "$name $method() runs deep";
 
     my $results = eval { [ map { $_->result() } @$requests ] };
 
-    is     $@, '',               "$name $method() results eval $@";
-    ok ref $results eq 'ARRAY',  "$name $method() results is ARRAY";
-
-    is_deeply $results, $expect, "$name $method() results deep"
-        or print Data::Dumper->Dump( [$results], ['results'] );
+    is      $@, '',              "$name $method() results eval $@";
+    ok ref  $results eq 'ARRAY', "$name $method() results is ARRAY";
+    is_deep $results, $expect,   "$name $method() results deep";
 };
-
-exit 0;
 
 __DATA__
 [
@@ -71,7 +78,7 @@ __DATA__
       run    => [ '' ],
       result => [ { type  => 'exception', action => undef,
                     tid   => undef,       method => undef,
-              where => 'RPC::ExtDirect::Deserialize->decode_post',
+              where => 'RPC::ExtDirect::Serializer->decode_post',
               message => q!ExtDirect error decoding POST data: '!.
                          q!, or } expected while parsing object/hash!.
                          q!, at character offset 16 (before !.

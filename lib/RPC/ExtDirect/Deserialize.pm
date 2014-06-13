@@ -1,40 +1,52 @@
+#
+# WARNING: This package is deprecated.
+#
+# See RPC::ExtDirect::Config perldoc for the description
+# of the instance-based configuration options to be used
+# instead of the former global variables in this package.
+#
+
 package RPC::ExtDirect::Deserialize;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
-
-use Carp;
-
-use JSON;
-
-use RPC::ExtDirect::Request;
-use RPC::ExtDirect::Exception;
+no  warnings 'uninitialized';       ## no critic
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set it to true value to turn on debugging
 #
+# DEPRECATED. Use `debug_deserialize` or `debug` Config options instead.
+#
 
-our $DEBUG = 0;
+our $DEBUG;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Exception class name so it could be configured
 #
+# DEPRECATED. Use `exception_class_deserialize` or `exception_class`
+# Config options instead.
+#
 
-our $EXCEPTION_CLASS = 'RPC::ExtDirect::Exception';
+our $EXCEPTION_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Set Request class name so it could be configured
 #
+# DEPRECATED. Use `request_class_deserialize` or `request_class`
+# Config options instead.
+#
 
-our $REQUEST_CLASS = 'RPC::ExtDirect::Request';
+our $REQUEST_CLASS;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # JSON decoding options
+#
+# DEPRECATED. Use `json_options_deserialize` or `json_options`
+# Config options instead.
 #
 
 our %JSON_OPTIONS;
@@ -45,29 +57,28 @@ our %JSON_OPTIONS;
 # RPC::ExtDirect::Request (Exception) objects. Returns reference
 # to array.
 #
+# DEPRECATED. Use RPC::ExtDirect::Serializer->decode_post() instead.
+#
 
 sub decode_post {
-    my ($class, $post_text) = @_;
-
-    # Try to decode data, return Exception upon failure
-    my $data = eval { from_json $post_text, \%JSON_OPTIONS };
-
-    # TODO This looks strikingly similar to what Serialize is doing,
-    # time for a bit of refactoring?
-    if ( $@ ) {
-        my $error = $class->_clean_msg($@);
-
-        my $msg = "ExtDirect error decoding POST data: '$error'";
-        return [ $class->_exception({ debug => $DEBUG, message => $msg }) ];
-    };
-
-    # Normalize data
-    $data = [ $data ] unless ref $data eq 'ARRAY';
-
-    # Create array of Requests (or Exceptions)
-    my @requests = map { $class->_request($_) } @$data;
-
-    return \@requests;
+    shift; # class name
+    
+    my $post_text = shift;
+    
+    warn __PACKAGE__.'->decode_post class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->decode_post ' .
+                     'instance method instead';
+    
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
+    
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
+    
+    return $serializer->decode_post(
+        data => $post_text,
+        @_
+    );
 }
 
 ### PUBLIC CLASS METHOD ###
@@ -75,82 +86,28 @@ sub decode_post {
 # Instantiates Request based on form submitted to ExtDirect handler
 # Returns arrayref with single Request.
 #
+# DEPRECATED. Use RPC::ExtDirect::Serializer->decode_form() instead.
+#
 
 sub decode_form {
-    my ($class, $form_hashref) = @_;
-
-    # Create the Request (or Exception)
-    my $request = $class->_request($form_hashref);
-
-    return [ $request ];
-}
-
-############## PRIVATE METHODS BELOW ##############
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Return new Exception object
-#
-
-sub _exception {
-    my ($self, $params) = @_;
+    shift; # class name
     
-    $params->{where} ||= $EXCEPTION_CLASS->get_where(2);
+    my $form_href = shift;
     
-    return $EXCEPTION_CLASS->new($params);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Clean error message
-#
-
-sub _clean_msg {
-    my ($class, $msg) = @_;
+    warn __PACKAGE__.'->decode_form class method is deprecated; ' .
+                     'use RPC::ExtDirect::Serializer->decode_form ' .
+                     'instance method instead';
     
-    return $EXCEPTION_CLASS->clean_message($msg);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Return new Request object
-#
-
-sub _request {
-    my ($self, $arg) = @_;
+    require RPC::ExtDirect::Config;
+    require RPC::ExtDirect::Serializer;
     
-    return $REQUEST_CLASS->new($arg);
+    my $config     = RPC::ExtDirect::Config->new();
+    my $serializer = RPC::ExtDirect::Serializer->new( config => $config );
+    
+    return $serializer->decode_form(
+        data => $form_href,
+        @_
+    );
 }
 
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::Deserialize - Handles JSON Ext.Direct requests
-
-=head1 SYNOPSIS
-
-This module is not intended to be used directly.
-
-=head1 DEPENDENCIES
-
-RPC::ExtDirect::Deserialize is dependent on the following modules:
-L<JSON>
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

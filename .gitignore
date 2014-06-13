@@ -1,4 +1,6 @@
 *.swp
 MYMETA.json
 MYMETA.yml
+*.swp
+cover_db
 

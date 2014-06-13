@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-use Test::More tests => 25;
+use Test::More tests => 32;
 
-BEGIN { use_ok 'RPC::ExtDirect::Exception'; }
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Exception;
 
 package RPC::ExtDirect::Test;
 
@@ -26,46 +26,28 @@ sub bar {
                                             message => 'bar fail' });
 }
 
+sub baz {
+    return RPC::ExtDirect::Exception->new({ debug   => !1,
+                                            verbose => 1,
+                                            action  => 'Test',
+                                            method  => 'baz',
+                                            tid     => 3,
+                                            message => 'baz fail' });
+}
+
 sub qux {
     return RPC::ExtDirect::Exception->new({ debug   => 1,
                                             action  => 'Test',
                                             method  => 'qux',
-                                            tid     => 3,
+                                            tid     => 4,
                                             message => 'qux fail',
                                             where => 'X->qux' });
 }
 
 package main;
 
-my $tests = [
-    { method  => 'foo',
-      ex => { type    => 'exception',
-              action  => 'Test',
-              method  => 'foo',
-              tid     => 1,
-              where   => 'ExtDirect',
-              message => 'An error has occured while processing request',
-      },
-    },
-    { method  => 'bar',
-      ex => { type    => 'exception',
-              action  => 'Test',
-              method  => 'bar',
-              tid     => 2,
-              where   => 'RPC::ExtDirect::Test->bar',
-              message => 'bar fail',
-      },
-    },
-    { method  => 'qux',
-      ex => { type    => 'exception',
-              action  => 'Test',
-              method  => 'qux',
-              tid     => 3,
-              where   => 'X->qux',
-              message => 'qux fail',
-      },
-    },
-];
+my $tests = eval do { local $/; <DATA>; }           ## no critic
+    or die "Can't eval DATA: '$@'";
 
 for my $test ( @$tests ) {
     my $method = $test->{method};
@@ -84,10 +66,48 @@ for my $test ( @$tests ) {
 
     my $result = eval { $ex->result() };
 
-    is        $@,      '',      "$method() result eval $@";
-    ok        $result,          "$method() result not empty";
-    is_deeply $result, $expect, "$method() exception deep"
-        or diag( Data::Dumper->Dump( [ $result ], [ 'result' ] ) );
+    is      $@,      '',      "$method() result eval $@";
+    ok      $result,          "$method() result not empty";
+    is_deep $result, $expect, "$method() exception deep";
 };
 
-exit 0;
+__DATA__
+
+[
+    { method  => 'foo',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'foo',
+              tid     => 1,
+              where   => 'ExtDirect',
+              message => 'An error has occured while processing request',
+      },
+    },
+    { method  => 'bar',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'bar',
+              tid     => 2,
+              where   => 'RPC::ExtDirect::Test->bar',
+              message => 'bar fail',
+      },
+    },
+    { method  => 'baz',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'baz',
+              tid     => 3,
+              where   => 'RPC::ExtDirect::Test->baz',
+              message => 'baz fail',
+      },
+    },
+    { method  => 'qux',
+      ex => { type    => 'exception',
+              action  => 'Test',
+              method  => 'qux',
+              tid     => 4,
+              where   => 'X->qux',
+              message => 'qux fail',
+      },
+    },
+]

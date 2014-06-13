@@ -7,128 +7,231 @@ no  warnings 'uninitialized';           ## no critic
 use Carp;
 
 use RPC::ExtDirect::Config;
-use RPC::ExtDirect::Serialize;
-use RPC::ExtDirect;
+use RPC::ExtDirect::Serializer;
+use RPC::ExtDirect::Util::Accessor;
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
 # Turn this on for debugging
 #
-
-our $DEBUG = 0;
-
-### PACKAGE PRIVATE VARIABLE ###
-#
-# Holds configuration parameters for API
+# DEPRECATED. Use `debug_api` or `debug` Config options instead.
 #
 
-my %OPTION_FOR = ();
+our $DEBUG;
 
 ### PUBLIC PACKAGE SUBROUTINE ###
 #
 # Does not import anything to caller namespace but accepts
-# configuration parameters
+# configuration parameters. This method always operates on
+# the "default" API object stored in RPC::ExtDirect
 #
 
 sub import {
-    my ($class, @parameters) = @_;
+    my ($class, @args) = @_;
 
     # Nothing to do
-    return unless @parameters;
+    return unless @args;
 
     # Only hash-like arguments are supported
-    croak 'Odd number of parameters in RPC::ExtDirect::API::import()'
-        unless (@parameters % 2) == 0;
+    croak 'Odd number of arguments in RPC::ExtDirect::API::import()'
+        unless (@args % 2) == 0;
 
-    my %param = @parameters;
-       %param = map { lc $_ => delete $param{ $_ } } keys %param;
+    my %arg = @args;
+       %arg = map { lc $_ => delete $arg{ $_ } } keys %arg;
+    
+    # In most cases that's a formality since RPC::ExtDirect
+    # should be already required elsewhere; some test scripts
+    # may not load it on purpose so we guard against that
+    # just in case. We don't want to `use` RPC::ExtDirect above,
+    # because that would create a circular dependency.
+    require RPC::ExtDirect;
 
-    # Hook definitions are exported to RPC::ExtDirect hash
-    for my $type ( qw(before instead after) ) {
-        my $code = delete $param{ $type };
-
-        RPC::ExtDirect->add_hook( type => $type, code => $code )
+    my $api = RPC::ExtDirect->get_api;
+    
+    for my $type ( $class->HOOK_TYPES ) {
+        my $code = delete $arg{ $type };
+        
+        $api->add_hook( type => $type, code => $code )
             if $code;
     };
-
-    # General options
-    my @options = qw(
-        namespace       router_path     poll_path
-        auto_connect    remoting_var    polling_var
-        no_polling
-    );
-
-    # Set defaults
-    $OPTION_FOR{no_polling} = 0;
-
-    OPTION:
-    for my $option ( @options ) {
-        my $value = $param{ $option };
-
-        next OPTION unless defined $value;
-
-        $OPTION_FOR{ $option } = $value;
-    };
+    
+    my $api_config = $api->config;
+    
+    for my $option ( keys %arg ) {
+        my $value = $arg{$option};
+        
+        $api_config->$option($value);
+    }
 }
 
-### PUBLIC CLASS METHOD ###
+### PUBLIC CLASS METHOD (ACCESSOR) ###
 #
-# Returns JavaScript chunk for REMOTING_API
+# Return the hook types supported by the API
+#
+
+sub HOOK_TYPES { qw/ before instead after/ }
+
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
+#
+# Init a new API object
+#
+
+sub new {
+    my $class = shift;
+    
+    my %arg = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
+    
+    $arg{config} ||= RPC::ExtDirect::Config->new();
+    
+    return bless {
+        %arg,
+        actions => {},
+    }, $class;
+}
+
+### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
+#
+# Init a new API object and populate it from the supplied hashref
+#
+
+sub new_from_hashref {
+    my ($class, %arg) = @_;
+    
+    my $api_href = delete $arg{api_href};
+    
+    my $self = $class->new(%arg);
+    
+    $self->init_from_hashref($api_href);
+    
+    return $self;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Initialize the API from a hashref
+#
+
+sub init_from_hashref {
+    my ($self, $api_href) = @_;
+    
+    # Global hooks go first
+    for my $type ( $self->HOOK_TYPES ) {
+        $self->add_hook( type => $type, code => delete $api_href->{$type} )
+            if exists $api_href->{$type};
+    }
+    
+    for my $key ( keys %$api_href ) {
+        my $action_def  = $api_href->{ $key };
+        my $remote      = $action_def->{remote};
+        my $package     = $remote ? undef : $key;
+        my $action_name = $remote ? $key  : $action_def->{action};
+        
+        my $action = $self->add_action(
+            action       => $action_name,
+            package      => $package,
+            no_overwrite => 1,
+        );
+        
+        for my $hook_type ( $remote ? () : $self->HOOK_TYPES ) {
+            my $hook_code = $action_def->{$hook_type};
+            
+            if ( $hook_code ) {
+                $self->add_hook(
+                    package => $package,
+                    type    => $hook_type,
+                    code    => $hook_code,
+                );
+            }
+        }
+        
+        my $methods = $action_def->{methods};
+        
+        for my $method_name ( keys %$methods ) {
+            my $method_def = $methods->{ $method_name };
+            
+            $self->add_method(
+                action  => $action_name,
+                package => $package,
+                method  => $method_name,
+                %$method_def
+            );
+        }
+    }
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Returns the JavaScript chunk for REMOTING_API
 #
 
 sub get_remoting_api {
-    my ($class) = @_;
+    my ($class, %arg) = @_;
+    
+    my ($self, $config);
+    
+    # There is an option to pass config externally; mainly for testing
+    $config = $arg{config};
+    
+    # Environment object is optional
+    my $env = $arg{env};
+    
+    # Backwards compatibility: if called as a class method, operate on
+    # the "global" API object instead, and create a new Config instance
+    # as well to take care of possibly-modified-since global variables
+    if ( ref $class ) {
+        $self     = $class;
+        $config ||= $self->config;
+    }
+    else {
+        require RPC::ExtDirect;
 
-    # Set the debugging flag
-    local $RPC::ExtDirect::Serialize::DEBUG = $DEBUG;
-
-    # Get configuration class name
-    my $config_class = $class->_get_config_class();
-
-    # Get configurable parameters
-    my %param;
-    $param{namespace}    =  $OPTION_FOR{namespace}
-                         || undef;
-    $param{router_path}  =  $OPTION_FOR{router_path}
-                         || $config_class->get_router_path();
-    $param{poll_path}    =  $OPTION_FOR{poll_path}
-                         || $config_class->get_poll_path();
-    $param{remoting_var} =  $OPTION_FOR{remoting_var}
-                         || $config_class->get_remoting_var();
-    $param{polling_var}  =  $OPTION_FOR{polling_var}
-                         || $config_class->get_polling_var();
-    $param{auto_connect} =  $OPTION_FOR{auto_connect};
-
+        $self     = RPC::ExtDirect->get_api();
+        $config ||= $self->config->clone();
+        
+        $config->read_global_vars();
+    }
+    
     # Get REMOTING_API hashref
-    my $remoting_api = $class->_get_remoting_api(\%param);
+    my $remoting_api = $self->_get_remoting_api($config, $env);
 
     # Get POLLING_API hashref
-    my $polling_api  = $class->_get_polling_api(\%param);
+    my $polling_api  = $self->_get_polling_api($config, $env);
 
     # Return empty string if we got nothing to declare
     return '' if !$remoting_api && !$polling_api;
 
     # Shortcuts
-    my $remoting_var = $param{remoting_var};
-    my $polling_var  = $param{polling_var};
-    my $auto_connect = $param{auto_connect};
-
-    my $serializer = 'RPC::ExtDirect::Serialize';
+    my $remoting_var = $config->remoting_var;
+    my $polling_var  = $config->polling_var;
+    my $auto_connect = $config->auto_connect;
+    my $no_polling   = $config->no_polling;
+    my $s_class      = $config->serializer_class_api;
+    my $debug_api    = $config->debug_api;
+    
+    my $serializer = $s_class->new( config => $config );
+    
+    my $api_json = $serializer->serialize(
+        mute_exceptions => 1,
+        debug           => $debug_api,
+        data            => [$remoting_api],
+    );
 
     # Compile JavaScript for REMOTING_API
-    my $js_chunk = "$remoting_var = "
-                 . ($serializer->serialize(1, $remoting_api) || '{}')
-                 . ";\n";
+    my $js_chunk = "$remoting_var = " . ($api_json || '{}') . ";\n";
 
     # If auto_connect is on, add client side initialization code
     $js_chunk .= "Ext.direct.Manager.addProvider($remoting_var);\n"
         if $auto_connect;
 
     # POLLING_API is added only when there's something in it
-    if ( $polling_api && !$OPTION_FOR{no_polling} ) {
-        $js_chunk .= "$polling_var = "
-                  .  ($serializer->serialize(1, $polling_api) || '{}')
-                  .  ";\n";
+    if ( $polling_api && !$no_polling ) {
+        $api_json = $serializer->serialize(
+            mute_exceptions => 1,
+            debug           => $debug_api,
+            data            => [$polling_api],
+        );
+        
+        $js_chunk .= "$polling_var = " . ($api_json || '{}' ) . ";\n";
 
         # Same initialization code for POLLING_API if auto connect is on
         $js_chunk .= "Ext.direct.Manager.addProvider($polling_var);\n"
@@ -138,101 +241,277 @@ sub get_remoting_api {
     return $js_chunk;
 }
 
+### PUBLIC INSTANCE METHOD ###
+#
+# Get the list of all defined Actions' names
+#
+
+sub actions { keys %{ $_[0]->{actions} } }
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Add an Action (class), or update if it exists
+#
+
+sub add_action {
+    my ($self, %arg) = @_;
+    
+    $arg{action} = $self->_get_action_name( $arg{package} )
+        unless defined $arg{action};
+    
+    my $action_name = $arg{action};
+    
+    return $self->{actions}->{ $action_name }
+        if $arg{no_overwrite} && exists $self->{actions}->{ $action_name };
+    
+    my $config  = $self->config;
+    my $a_class = $config->api_action_class();
+    
+    # This is to avoid hard binding on the Action class
+    eval "require $a_class";
+    
+    my $action_obj = $a_class->new(
+        config => $config,
+        %arg,
+    );
+    
+    $self->{actions}->{ $action_name } = $action_obj;
+    
+    return $action_obj;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return Action object by its name
+#
+
+sub get_action_by_name {
+    my ($self, $action_name) = @_;
+    
+    return $self->{actions}->{ $action_name };
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return Action object by package name
+#
+
+sub get_action_by_package {
+    my ($self, $package) = @_;
+    
+    for my $action ( values %{ $self->{actions} } ) {
+        return $action if $action->package eq $package;
+    }
+    
+    return;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Add a Method, or update if it exists.
+# Also create the Method's Action if it doesn't exist yet
+#
+
+sub add_method {
+    my ($self, %arg) = @_;
+    
+    my $package     = delete $arg{package};
+    my $action_name = delete $arg{action};
+    my $method_name = $arg{method};
+    
+    # Try to find the Action by the package name
+    my $action = $action_name ? $self->get_action_by_name($action_name)
+               :                $self->get_action_by_package($package)
+               ;
+    
+    # If Action is not found, create a new one
+    if ( !$action ) {
+        $action_name = $self->_get_action_name($package)
+            unless $action_name;
+            
+        $action = $self->add_action(
+            action  => $action_name,
+            package => $package,
+        );
+    }
+    
+    # Usually redefining a Method means a typo or something
+    croak "Attempting to redefine Method '$method_name' ".
+          ($package ? "in package $package" : "in Action '$action_name'")
+          if $action->can($method_name);
+    
+    $action->add_method(\%arg);
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the Method object by Action and Method name
+#
+
+sub get_method_by_name {
+    my ($self, $action_name, $method_name) = @_;
+    
+    my $action = $self->get_action_by_name($action_name);
+    
+    return unless $action;
+    
+    return $action->method($method_name);
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Add a hook instance
+#
+
+sub add_hook {
+    my ($self, %arg) = @_;
+    
+    my $package     = $arg{package};
+    my $action_name = $arg{action};
+    my $method_name = $arg{method};
+    my $type        = $arg{type};
+    my $code        = $arg{code};
+    
+    my $hook_class = $self->config->api_hook_class;
+    
+    # This is to avoid hard binding on RPC::ExtDirect::API::Hook
+    { local $@; eval "require $hook_class"; }
+    
+    my $hook = $hook_class->new( type => $type, code => $code );
+    
+    if ( $package || $action_name ) {
+        my $action;
+        
+        if ( $package ) {
+            $action = $self->get_action_by_package($package);
+            
+            croak "Can't find the Action for package '$package'"
+                unless $action;
+        }
+        else {
+            $action = $self->get_action_by_name($action_name);
+            
+            croak "Can't find the '$action_name' Action"
+                unless $action;
+        }
+        
+        if ( $method_name ) {
+            my $method = $action->method($method_name);
+            
+            croak "Can't find Method '$method_name'"
+                unless $method;
+                
+            $method->$type($hook);
+        }
+        else {
+            $action->$type($hook);
+        }
+    }
+    else {
+        $self->$type($hook);
+    }
+    
+    return $hook;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the hook object by Method name, Action or package, and type
+#
+
+sub get_hook {
+    my ($self, %arg) = @_;
+    
+    my           ($action_name, $package, $method_name, $type)
+        = @arg{qw/ action        package   method        type/};
+    
+    my $action = $action_name ? $self->get_action_by_name($action_name)
+               :                $self->get_action_by_package($package)
+               ;
+    
+    croak "Can't find action '", ($action_name || $package), 
+          "' for Method $method_name"
+        unless $action;
+    
+    my $method = $action->method($method_name);
+    
+    my $hook = $method->$type || $action->$type || $self->$type;
+    
+    return $hook;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Return the list of all installed poll handlers
+#
+
+sub get_poll_handlers {
+    my ($self) = @_;
+    
+    my @handlers;
+    
+    ACTION:
+    for my $action ( values %{ $self->{actions} } ) {
+        my @methods = map { $action->method($_) }
+                          $action->polling_methods();
+        
+        push @handlers, @methods;
+    }
+    
+    return @handlers;
+}
+
+### PUBLIC INSTANCE METHODS ###
+#
+# Simple read-write accessors
+#
+
+my $accessors = [qw/
+    config
+/,
+    __PACKAGE__->HOOK_TYPES,
+];
+
+RPC::ExtDirect::Util::Accessor::mk_accessors(
+    simple => $accessors,
+);
+
 ############## PRIVATE METHODS BELOW ##############
 
 ### PRIVATE CLASS METHOD ###
 #
-# Returns name of the class used to get configuration defaults
-# It should be subclassed from RPC::ExtDirect::Config
-#
-
-sub _get_config_class { 'RPC::ExtDirect::Config' }
-
-### PRIVATE CLASS METHOD ###
-#
-# Prepares REMOTING_API hashref
+# Prepare REMOTING_API hashref
 #
 
 sub _get_remoting_api {
-    my ($class, $config) = @_;
+    my ($self, $config, $env) = @_;
 
-    # Map Action names to hash keys
-    my %actions = map { $_ => 1 } RPC::ExtDirect->get_action_list();
-
-    # Compile the list of "actions"
+    my %api;
+    
+    my %actions = %{ $self->{actions} };
+    
     ACTION:
-    for my $action ( keys %actions ) {
+    while ( my ($name, $action) = each %actions ) {
         # Get the list of methods for Action
-        my @methods = RPC::ExtDirect->get_method_list($action);
+        my @methods = $action->remoting_api($env);
 
         next ACTION unless @methods;
-
-        my @definitions;
-
-        # Go over each method
-        METHOD:
-        for my $method ( @methods ) {
-            # Get the definition
-            my $def_ref = $class->_define_method($action, $method);
-
-            next METHOD unless $def_ref;
-
-            # Store it if it's good
-            push @definitions, $def_ref;
-        };
-
-        # No definitions means nothing to export (all poll handlers?)
-        if ( !@definitions ) {
-            delete $actions{ $action };
-            next ACTION;
-        };
-
-        # Now convert it to a hashref
-        $actions{ $action } = [ @definitions ];
+        
+        $api{ $name } = [ @methods ];
     };
 
     # Compile hashref
     my $remoting_api = {
-        url     => $config->{router_path},
+        url     => $config->router_path,
         type    => 'remoting',
-        actions => \%actions,
+        actions => { %api },
     };
 
     # Add namespace if it's defined
-    $remoting_api->{namespace} = $config->{namespace}
-        if $config->{namespace};
+    $remoting_api->{namespace} = $config->namespace
+        if $config->namespace;
 
     return $remoting_api;
-}
-
-### PRIVATE CLASS METHOD ###
-#
-# Returns Action method definition for REMOTING_API
-#
-
-sub _define_method {
-    my ($class, $action, $method) = @_;
-
-    # Get the parameters
-    my %param = RPC::ExtDirect->get_method_parameters($action, $method);
-
-    # Skip poll handlers
-    return undef if $param{pollHandler};        ## no critic
-
-    # Form handlers are defined like this (\1 for JSON::true)
-    return { name => $method, len => 0, formHandler => \1 }
-        if $param{formHandler};
-
-    # Ordinary method with named arguments
-    return { name => $method, params => $param{param_names} }
-        if $param{param_names};
-
-    # Ordinary method with numbered arguments
-    return { name => $method, len => $param{param_no} + 0 }
-        if $param{param_no} =~ /\d+/;
-    
-    # No arguments specified means we're not checking them
-    return { name => $method };
 }
 
 ### PRIVATE CLASS METHOD ###
@@ -241,146 +520,46 @@ sub _define_method {
 #
 
 sub _get_polling_api {
-    my ($class, $config) = @_;
-
+    my ($self, $config, $env) = @_;
+    
     # Check if we have any poll handlers in our definitions
     my $has_poll_handlers;
+    
+    my %actions = %{ $self->{actions} };
+    
     ACTION:
-    for my $action ( RPC::ExtDirect->get_action_list() ) {
-        # Don't want to depend on List::Util so grep is OK
-        $has_poll_handlers = RPC::ExtDirect->get_poll_handlers();
+    while ( my ($name, $action) = each %actions ) {
+        $has_poll_handlers = $action->has_pollHandlers($env);
 
         last ACTION if $has_poll_handlers;
     };
 
     # No sense in setting up polling if there ain't no Event providers
     return undef unless $has_poll_handlers;         ## no critic
-
-    # Got poll handlers, return definition
+    
+    # Got poll handlers, return definition hashref
     return {
         type => 'polling',
-        url  => $config->{poll_path},
+        url  => $config->poll_path,
     };
 }
 
+### PRIVATE INSTANCE METHOD ###
+#
+# Make an Action name from a package name (strip namespace)
+#
+
+sub _get_action_name {
+    my ($self, $action_name) = @_;
+    
+    if ( $self->config->api_full_action_names ) {
+        $action_name =~ s/::/./g;
+    }
+    else {
+        $action_name =~ s/^.*:://;
+    }
+    
+    return $action_name;
+}
+
 1;
-
-__END__
-
-=pod
-
-=head1 NAME
-
-RPC::ExtDirect::API - Remoting API generator for Ext.Direct
-
-=head1 SYNOPSIS
-
- use RPC::ExtDirect::API         namespace    => 'myApp',
-                                 router_path  => '/router',
-                                 poll_path    => '/events',
-                                 remoting_var => 'Ext.app.REMOTING_API',
-                                 polling_var  => 'Ext.app.POLLING_API',
-                                 auto_connect => 0,
-                                 no_polling   => 0,
-                                 before       => \&global_before_hook,
-                                 after        => \&global_after_hook,
-                                 ;
-
-=head1 DESCRIPTION
-
-This module provides Ext.Direct API code generation.
-
-In order for Ext.Direct client code to know about what Actions (classes)
-and Methods are available on the server side, these should be defined in
-a chunk of JavaScript code that gets requested from the client at startup
-time. It is usually included in the index.html after main ExtJS code:
-
-  <script type="text/javascript" src="extjs/ext-debug.js"></script>
-  <script type="text/javascript" src="/extdirect_api"></script>
-  <script type="text/javascript" src="myapp.js"></script>
-
-RPC::ExtDirect::API provides a way to configure Ext.Direct definition
-variable(s) to accomodate specific application needs. To do so, pass
-configuration options to the module when you 'use' it, like shown above.
-
-The following configuration options are supported:
-
- namespace      - Declares the namespace your Actions will
-                  live in. To call the Methods on client side,
-                  you will have to qualify them with namespace:
-                  namespace.Action.Method, e.g.: myApp.Foo.Bar
- 
- router_path    - URI for Ext.Direct Router calls. For CGI
-                  implementation, this should be the name of
-                  CGI script that provides API; for more
-                  sophisticated environments it is an anchor
-                  for specified PATH_INFO.
- 
- poll_path      - URI for Ext.Direct Event provider calls.
-                  Client side will poll this URI periodically,
-                  hence the name.
- 
- remoting_var   - By default, Ext.Direct Configuration for
-                  remoting (forward) Methods is stored in
-                  Ext.app.REMOTING_API variable. If for any
-                  reason you would like to change that, do this
-                  by setting remoting_var.
-                  Note that in production environment you would
-                  probably want to use a compiled version of
-                  JavaScript application that consist of one
-                  big JavaScript file. In this case, it is
-                  recommended to include API declaration as the
-                  first script in your index.html and change
-                  remoting API variable name to something like
-                  EXT_DIRECT_API. Default variable name depends
-                  on Ext.app namespace being available by the
-                  time Ext.Direct API is downloaded, which is
-                  often not the case.
- 
- polling_var    - By default, Ext.Direct does not provide a
-                  standard name for Event providers to be
-                  advertised in. For similarity, POLLING_API
-                  name is used to declare Event provider so
-                  it can be used on client side without
-                  having to hardcode any URIs explicitly.
-                  POLLING_API configuration will only be
-                  advertised to client side if there are any
-                  Event provider Methods declared.
-                  Note that the same caveat applies here as
-                  with remoting_var.
- 
- no_polling     - Explicitly declare that no Event providers
-                  are supported by server side. This results
-                  in POLLING_API configuration being suppressed
-                  even if there are any Methods with declared
-                  pollHandler ExtDirect attribute.
- 
- auto_connect   - Generate the code that adds Remoting and
-                  Polling providers on the client side without
-                  having to do this manually.
-
- before         - Global "before" hook.
- 
- instead        - Global "instead" hook.
- 
- after          - Global "after" hook.
- 
- For more information on hooks and their usage, see L<RPC::ExtDirect>.
-
-=head1 SUBROUTINES/METHODS
-
-There are no methods intended for external use in this module.
-
-=head1 AUTHOR
-
-Alexander Tokarev E<lt>tokarev@cpan.orgE<gt>
-
-=head1 COPYRIGHT AND LICENSE
-
-Copyright (c) 2011-2012 Alexander Tokarev.
-
-This module is free software; you can redistribute it and/or modify it under
-the same terms as Perl itself. See L<perlartistic>.
-
-=cut
-

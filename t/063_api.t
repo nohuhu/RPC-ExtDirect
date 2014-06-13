@@ -1,67 +1,42 @@
+# Statically (compile time) defined Hooks with lazy code resolution
+
 use strict;
 use warnings;
 
 use Test::More tests => 2;
+use RPC::ExtDirect::Test::Util;
+
+use RPC::ExtDirect::Test::Pkg::Foo;
+use RPC::ExtDirect::Test::Pkg::Bar;
+
+our $WAS_THERE;
+
+sub global_after {
+    $WAS_THERE = 1;
+}
+
+use RPC::ExtDirect;
+use RPC::ExtDirect::API
+        before  => 'test::hooks::global_before',
+        after   => \&global_after;
 
 use lib 't/lib';
+use test::hooks;
 
-# Test modules are so simple they can't be broken
-use RPC::ExtDirect::Test::Foo;
-use RPC::ExtDirect::Test::Bar;
-use RPC::ExtDirect::Test::Qux;
-use RPC::ExtDirect::Test::PollProvider;
+my $api        = RPC::ExtDirect->get_api();
+my $method_ref = $api->get_method_by_name('Foo', 'foo_zero');
 
-use RPC::ExtDirect::API     namespace    => 'myApp.Server',
-                            router_path  => '/router.cgi',
-                            poll_path    => '/poll.cgi',
-                            remoting_var => 'Ext.app.REMOTE_CALL_API',
-                            polling_var  => 'Ext.app.REMOTE_EVENT_API',
-                            auto_connect => 'HELL YEAH!';
+$api->before->run(
+    api        => $api,
+    method_ref => $method_ref,
+);
 
-local $RPC::ExtDirect::API::DEBUG = 1;
+ok $test::hooks::WAS_THERE, "Before hook resolved";
 
-my $expected = q~
-Ext.app.REMOTE_CALL_API = {
-    "actions":{
-        "Bar":[
-                { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
-                { "len":4, "name":"bar_foo" }
-              ],
-        "Foo":[
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "name":"foo_blessed" },
-                { "len":1, "name":"foo_foo" },
-                { "len":0, "name":"foo_zero" }
-              ],
-        "Qux":[
-                { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
-                { "len":4, "name":"bar_foo" },
-                { "len":2, "name":"foo_bar" },
-                { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "len":1, "name":"foo_foo" }
-              ]
-    },
-    "namespace":"myApp.Server",
-    "type":"remoting",
-    "url":"/router.cgi"
-};
-Ext.direct.Manager.addProvider(Ext.app.REMOTE_CALL_API);
-Ext.app.REMOTE_EVENT_API = {
-    "type":"polling",
-    "url":"/poll.cgi"
-};
-Ext.direct.Manager.addProvider(Ext.app.REMOTE_EVENT_API);
-~;
+$api->after->run(
+    api        => $api,
+    method_ref => $method_ref,
+);
 
-my $remoting_api = eval { RPC::ExtDirect::API->get_remoting_api() };
+ok $::WAS_THERE, "After hook resolved";
 
-# Remove whitespace
-s/\s//g for ( $expected, $remoting_api );
-
-is $@,            '',        "remoting_api() 3 eval $@";
-is $remoting_api, $expected, "remoting_api() 3 result";
-
-exit 0;

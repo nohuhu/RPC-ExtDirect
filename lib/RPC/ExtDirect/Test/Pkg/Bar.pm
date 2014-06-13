@@ -1,10 +1,21 @@
-package RPC::ExtDirect::Test::Bar;
+#
+# WARNING WARNING WARNING
+#
+# DO NOT CHANGE ANYTHING IN THIS MODULE. OTHERWISE, A LOT OF API
+# AND OTHER TESTS MAY BREAK.
+#
+# This module is here to test certain behaviors. If you need
+# to test something else, add another test module.
+# It's that simple.
+#
+
+package RPC::ExtDirect::Test::Pkg::Bar;
 
 use strict;
 use warnings;
 no  warnings 'uninitialized';
 
-use base 'RPC::ExtDirect::Test::Foo';
+use base 'RPC::ExtDirect::Test::Pkg::Foo';
 
 # Define package scope hooks
 use RPC::ExtDirect BEFORE => \&bar_before, after => \&bar_after;
@@ -14,14 +25,12 @@ use Carp;
 # This one croaks merrily
 sub bar_foo : ExtDirect(4) { croak 'bar foo!' }
 
-# Return number of passed arguments
-sub bar_bar : ExtDirect(5) { shift; pop; return scalar @_; }
+# Return the number of passed arguments
+sub bar_bar : ExtDirect(5) { shift; return scalar @_; }
 
 # This is a form handler
 sub bar_baz : ExtDirect( formHandler ) {
     my ($class, %param) = @_;
-
-    delete $param{_env};
 
     # Simulate uploaded file handling
     my $uploads = $param{file_uploads};

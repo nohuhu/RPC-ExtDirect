@@ -1,22 +1,21 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
-local $Data::Dumper::Indent = 1;
+use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Config;
+use RPC::ExtDirect;
 
 ### Testing invalid inputs
 
-use Test::More tests => 102;
+use Test::More tests => 94;
 
-BEGIN { use_ok 'RPC::ExtDirect::Request'; }
+use RPC::ExtDirect::Request;
 
-# Test modules are so simple they can't fail
-use lib 't/lib';
-use RPC::ExtDirect::Test::Foo;
-use RPC::ExtDirect::Test::Bar;
-use RPC::ExtDirect::Test::Qux;
-use RPC::ExtDirect::Test::Hooks;
-use RPC::ExtDirect::Test::PollProvider;
+use RPC::ExtDirect::Test::Pkg::Foo;
+use RPC::ExtDirect::Test::Pkg::Bar;
+use RPC::ExtDirect::Test::Pkg::Qux;
+use RPC::ExtDirect::Test::Pkg::Hooks;
+use RPC::ExtDirect::Test::Pkg::PollProvider;
 
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";
@@ -29,8 +28,9 @@ for my $test ( @$tests ) {
         = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt)
                 };
 
-    # Set debug flag according to test
-    local $RPC::ExtDirect::Request::DEBUG = $debug;
+    # Set debug flag according to the test
+    $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug );
+    $data->{api}    = RPC::ExtDirect->get_api();
 
     # Try to create object
     my $request = eval { RPC::ExtDirect::Request->new($data) };
@@ -44,8 +44,8 @@ for my $test ( @$tests ) {
 
     $exception ||= '';
 
-    is_deeply $@,      $exception,    "$name run() eval";
-    is        $ran_ok, $expected_ran, "$name run() no error";
+    is_deep $@,      $exception,    "$name run() eval";
+    is      $ran_ok, $expected_ran, "$name run() no error";
 
     # Try to run method second time, no result checks this time
     $ran_ok = eval { $request->run() } if $run_twice;
@@ -56,8 +56,7 @@ for my $test ( @$tests ) {
     is $@, '', "$name result() eval $@";
 
     if ( $expected_result ) {
-        is_deeply $result, $expected_result, "$name result() deep"
-            or print Data::Dumper->Dump( [$result], ['result'] );
+        is_deep $result, $expected_result, "$name result() deep";
     };
 
     ok $code->(), "$name custom check" if $code;
@@ -94,18 +93,6 @@ __DATA__
                     where   => 'ExtDirect',
                     message => 'An error has occured while processing '.
                                'request', },
-    },
-    # Null input, debug on
-    {
-        name   => 'Null input, debug on', debug  => 1, ran_ok => '',
-        data   => undef,
-        isa    => 'RPC::ExtDirect::Exception',
-        result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
-                    where   => 'RPC::ExtDirect::Request->new',
-                    message => 'ExtDirect input error: invalid input', },
     },
     # Invalid input 1, debug on
     {
@@ -186,7 +173,7 @@ __DATA__
                     action  => 'Qux',
                     method  => 'bar_foo',
                     tid     => 444,
-                    where   => 'RPC::ExtDirect::Test::Qux->bar_foo',
+                    where   => 'RPC::ExtDirect::Test::Pkg::Qux->bar_foo',
                     message => "bar foo!", },
     },
     # Form handler called directly
@@ -230,12 +217,12 @@ __DATA__
                     action  => 'Hooks',
                     method  => 'foo_foo',
                     tid     => 777,
-                    where   => 'RPC::ExtDirect::Test::Hooks->foo_foo',
+                    where   => 'RPC::ExtDirect::Test::Pkg::Hooks->foo_foo',
                     message => 'Undefined subroutine '.
-                               '&RPC::ExtDirect::Test::Hooks::'.
+                               '&RPC::ExtDirect::Test::Pkg::Hooks::'.
                                'nonexistent_before_hook called',
                   },
-        code   => sub { !$RPC::ExtDirect::Test::Hooks::foo_foo_called },
+        code   => sub { !$RPC::ExtDirect::Test::Pkg::Hooks::foo_foo_called },
     },
 
     # Before hook unset (NONE)
@@ -246,7 +233,7 @@ __DATA__
         isa    => 'RPC::ExtDirect::Request',
         result => { type => 'rpc', action => 'Hooks', method => 'foo_bar',
                     tid => 888, result => 1 },
-        code   => sub { $RPC::ExtDirect::Test::Hooks::foo_bar_called },
+        code   => sub { $RPC::ExtDirect::Test::Pkg::Hooks::foo_bar_called },
     },
 
     # After hook
@@ -260,7 +247,7 @@ __DATA__
                     action => 'Hooks', method => 'foo_baz',
                     result => { msg  => 'foo! bar! baz!',
                                 foo => 111, bar => 222, baz => 333 }, },
-        code   => sub { !!$RPC::ExtDirect::Test::Hooks::foo_baz_called },
+        code   => sub { !!$RPC::ExtDirect::Test::Pkg::Hooks::foo_baz_called },
     },
 ]
 

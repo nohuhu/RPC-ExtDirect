@@ -7,8 +7,6 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
-use Carp;
-
 use base 'RPC::ExtDirect::Request';
 
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
@@ -17,9 +15,9 @@ use base 'RPC::ExtDirect::Request';
 #
 
 sub new {
-    my ($class, $arguments) = @_;
+    my ($class, $arg) = @_;
     
-    my $self = $class->SUPER::new($arguments);
+    my $self = $class->SUPER::new($arg);
     
     # We can't return exceptions from poll handler anyway
     return $self->{message} ? undef : $self;
@@ -35,10 +33,10 @@ sub result {
 
     my $events = $self->{result};
     
-    # A hook can return something that is not event list
+    # A hook can return something that is not an event list
     $events = [] unless 'ARRAY' eq ref $events;
     
-    return @$events ? map { $_->result } @$events : ();
+    return map { $_->result } @$events;
 }
 
 ############## PRIVATE METHODS BELOW ##############
@@ -49,38 +47,10 @@ sub result {
 #
 
 sub _check_arguments {
-    my ($self, %params) = @_;
-    
+
     # There are no parameters to poll handlers
     # so we return undef which means no error
     return undef;       ## no critic
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Prepares method arguments to be passed along to the method
-#
-
-sub _prepare_method_arguments {
-    my ($self, $env) = @_;
-    
-    return ($env);
-}
-   
-### PRIVATE INSTANCE METHOD ###
-#
-# Actually run the method or hook and return result
-#
-
-sub _do_run_method {
-    my ($self, $env, $arg) = @_;
-    
-    my $package  = $self->package;
-    my $referent = $self->referent;
-    
-    my @events = $referent->($package, @$arg);
-    
-    return [@events];
 }
 
 ### PRIVATE INSTANCE METHOD ###

@@ -1,14 +1,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 11;
+use Test::More tests => 10;
 
-use lib 't/lib';
-use RPC::ExtDirect::Test::PollProvider;
+use RPC::ExtDirect::Test::Pkg::PollProvider;
 
-BEGIN { use_ok 'RPC::ExtDirect::EventProvider'; }
+use RPC::ExtDirect::Test::Util qw/ cmp_json /;
+use RPC::ExtDirect::Config;
 
-local $RPC::ExtDirect::EventProvider::DEBUG = 1;
+use RPC::ExtDirect::EventProvider;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: '$@'";
@@ -18,19 +18,22 @@ for my $test ( @$tests ) {
     my $password = $test->{password};
     my $expect   = $test->{result};
 
-    local $RPC::ExtDirect::Test::PollProvider::WHAT_YOURE_HAVING
+    local $RPC::ExtDirect::Test::Pkg::PollProvider::WHAT_YOURE_HAVING
             = $password;
 
-    my $result = eval { RPC::ExtDirect::EventProvider->poll() };
+    my $config = RPC::ExtDirect::Config->new(
+        debug_serialize => 1,
+    );
 
-    # Remove whitespace
-    s/\s//g for ( $expect, $result );
+    my $provider = RPC::ExtDirect::EventProvider->new(
+        config => $config,
+    );
 
-    is $@,      '',      "$name eval $@";
-    is $result, $expect, "$name result";
+    my $result = eval { $provider->poll() };
+
+    is       $@,      '',      "$name eval $@";
+    cmp_json $result, $expect, "$name result";
 };
-
-exit 0;
 
 __DATA__
 [

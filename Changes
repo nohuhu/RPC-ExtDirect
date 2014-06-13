@@ -1,3 +1,20 @@
+3.00  Thu Jun 12 17:54:23 2014
+    - Major refactoring of the RPC::ExtDirect module internals
+    - Configuration is now instance-based with RPC::ExtDirect::Config
+    - Package global variables are deprecated
+    - API tree is now kept in an RPC::ExtDirect::API instance rather
+      than internal data structures; Action and Method are full fledged
+      objects with public API
+    - API tree can now be initialized from a hashref as an alternative
+      to sub attributes
+    - Class-based Serialize and Deserialize packages are deprecated
+      in favor of combined instance based Serializer
+    - Improved authorization support for API generation and Method
+      invocation
+    - Tests used in all gateways are now unified and shipped with the
+      core RPC::ExtDirect package
+    - Tons of other changes and fixes, and no doubt more bugs
+
 2.15  Tue May 6  17:44:10 2014
     - Fixed failing tests due to changes in JSON::XS error output
 
