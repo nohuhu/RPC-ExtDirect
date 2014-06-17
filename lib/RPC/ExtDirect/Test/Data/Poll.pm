@@ -1,5 +1,8 @@
 package RPC::ExtDirect::Test::Data::Poll;
 
+use strict;
+use warnings;
+
 # This aref contains definitions/data for Poll tests
 my $tests = [{
     name => 'Two events',

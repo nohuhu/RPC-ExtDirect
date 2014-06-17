@@ -1,5 +1,8 @@
 package RPC::ExtDirect::Test::Data::Router;
 
+use strict;
+use warnings;
+
 # This aref contains definitions/data for Router tests
 my $tests = [{
     name => 'Invalid raw POST',

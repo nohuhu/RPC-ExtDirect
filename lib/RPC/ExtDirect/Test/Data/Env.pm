@@ -1,5 +1,8 @@
 package RPC::ExtDirect::Test::Data::Env;
 
+use strict;
+use warnings;
+
 # This aref contains definitions/data for Env tests
 my $tests = [{
     name => 'http list',

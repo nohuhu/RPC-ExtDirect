@@ -1,5 +1,8 @@
 package RPC::ExtDirect::Test::Data::API;
 
+use strict;
+use warnings;
+
 # This aref contains definitions/data for API tests
 my $tests = [{
     name => 'API 1',
