@@ -24,6 +24,8 @@ sub mk_accessors {
     $simplexes = [ $simplexes ] unless 'ARRAY' eq ref $simplexes;
     
     for my $accessor ( @$simplexes ) {
+        next unless defined $accessor;
+
         _create_accessor(
             type     => 'simple',
             accessor => $accessor,
@@ -69,6 +71,8 @@ sub _create_accessor {
     my $type      = $arg{type};
     my $accessor  = $arg{accessor};
     my $fallback  = $arg{fallback};
+
+    return unless defined $accessor;
 
     if ( $class->can($accessor) ) {
         croak "Accessor $accessor already exists in class $class"
