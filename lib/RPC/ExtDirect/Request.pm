@@ -80,7 +80,7 @@ sub new {
     }) unless $method_ref;
 
     # Check if arguments passed in $data are of right kind
-    my $exception = $self->_check_arguments(
+    my $exception = $self->check_arguments(
         action_name => $action_name,
         method_name => $method_name,
         method_ref  => $method_ref,
@@ -107,6 +107,72 @@ sub new {
     }
 
     return $self;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Checks if method arguments are in order
+#
+
+sub check_arguments {
+    my ($self, %arg) = @_;
+    
+    my $action_name = $arg{action_name};
+    my $method_name = $arg{method_name};
+    my $method_ref  = $arg{method_ref};
+    my $tid         = $arg{tid};
+    my $data        = $arg{data};
+
+    # Event poll handlers return Event objects instead of plain data;
+    # there is no sense in calling them directly
+    if ( $method_ref->pollHandler ) {
+        return $self->_exception({
+            action  => $action_name,
+            method  => $method_name,
+            tid     => $tid,
+            message => "ExtDirect pollHandler method ".
+                       "$action_name.$method_name should not ".
+                       "be called directly"
+        });
+    }
+
+    # There's not much to check for formHandler methods
+    elsif ( $method_ref->formHandler ) {
+        if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
+             !exists $data->{extMethod} )
+        {
+            return $self->_exception({
+                action  => $action_name,
+                method  => $method_name,
+                tid     => $tid,
+                message => "ExtDirect formHandler method ".
+                           "$action_name.$method_name should only ".
+                           "be called with form submits"
+            })
+        }
+    }
+    
+    # The actual heavy lifting happens in the Method itself
+    else {
+        local $@;
+        
+        my $result = eval { $method_ref->check_method_arguments($data) };
+        
+        if ( my $error = $@ ) {
+            $error =~ s/\n$//;
+            
+            return $self->_exception({
+                action  => $action_name,
+                method  => $method_name,
+                tid     => $tid,
+                message => $error,
+                where   => ref($method_ref) .'->check_method_arguments',
+            });
+        }
+    }
+
+    # undef means no exception
+    return undef;               ## no critic
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -317,108 +383,6 @@ sub _unpack_arguments {
         unless defined $method && length $method > 0;
 
     return ($action, $method, $tid, $data, $type, $upload);
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Checks if method arguments are in order
-#
-
-sub _check_arguments {
-    my ($self, %arg) = @_;
-    
-    my $action_name = $arg{action_name};
-    my $method_name = $arg{method_name};
-    my $method_ref  = $arg{method_ref};
-    my $tid         = $arg{tid};
-    my $data        = $arg{data};
-
-    my $params      = $method_ref->params;
-    my $len         = $method_ref->len;
-
-    # Event poll handlers return Event objects instead of plain data;
-    # there is no sense in calling them directly
-    if ( $method_ref->pollHandler ) {
-        return $self->_exception({
-            action  => $action_name,
-            method  => $method_name,
-            tid     => $tid,
-            message => "ExtDirect pollHandler method ".
-                       "$action_name.$method_name should not ".
-                       "be called directly"
-        });
-    }
-
-    # There's not much to check for formHandler methods
-    elsif ( $method_ref->formHandler ) {
-        if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
-             !exists $data->{extMethod} )
-        {
-            return $self->_exception({
-                action  => $action_name,
-                method  => $method_name,
-                tid     => $tid,
-                message => "ExtDirect formHandler method ".
-                           "$action_name.$method_name should only ".
-                           "be called with form submits"
-            })
-        }
-    }
-
-    # Check if we have right $data type for method's calling convention
-    # If the params list is empty, we skip the check
-    elsif ( defined $params && @$params ) {
-        if ( not $self->_check_params($params, $data) ) {
-            return $self->_exception({
-                action  => $action_name,
-                method  => $method_name,
-                tid     => $tid,
-                message => "ExtDirect method $action_name.$method_name ".
-                           "needs named parameters: " .
-                           join( ', ', @$params )
-            });
-        }
-    }
-
-    # Check if we have enough data for the method with numbered arguments
-    elsif ( defined $len ) {
-        my $real_len = @$data;
-
-        if ( $real_len < $len ) {
-            return $self->_exception({
-                action  => $action_name,
-                method  => $method_name,
-                tid     => $tid,
-                message => "ExtDirect method $action_name.$method_name ".
-                           "needs $len arguments instead of $real_len"
-            });
-        }
-    };
-
-    # undef means no exception
-    return undef;               ## no critic
-}
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Checks if data passed to method has all named parameters
-# defined for the method
-#
-
-sub _check_params {
-    my ($self, $params, $data) = @_;
-
-    # $data should be a hashref
-    return unless ref $data eq 'HASH';
-
-    # Note that we don't check definedness -- a parameter
-    # may be optional for all we care
-    for my $param ( @$params ) {
-        return unless exists $data->{ $param };
-    };
-
-    # Got 'em all
-    return 1;
 }
 
 ### PRIVATE INSTANCE METHOD ###

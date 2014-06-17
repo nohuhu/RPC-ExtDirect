@@ -34,8 +34,15 @@ sub new {
     my $is_ordered
         = defined $arg{len} && !$pollHandler && !$formHandler;
     
+    my $processor = $pollHandler ? 'pollHandler'
+                  : $formHandler ? 'formHandler'
+                  : $is_named    ? 'named'
+                  : $is_ordered  ? 'ordered'
+                  :                'default'
+                  ;
+    
     # We avoid hard binding on the hook class
-    { local $@; eval "require $hook_class"; }
+    eval "require $hook_class";
     
     my %hooks;
     
@@ -47,9 +54,11 @@ sub new {
     }
     
     return bless {
-        upload_arg => 'file_uploads',
-        is_named   => $is_named,
-        is_ordered => $is_ordered,
+        upload_arg        => 'file_uploads',
+        is_named          => $is_named,
+        is_ordered        => $is_ordered,
+        argument_checker  => "check_${processor}_arguments",
+        argument_preparer => "prepare_${processor}_arguments",
         %arg,
         %hooks,
     }, $class;
@@ -160,6 +169,30 @@ sub run {
 
 ### PUBLIC INSTANCE METHOD ###
 #
+# Check the arguments that were passed in the Ext.Direct request
+# to make sure they conform to the API declared by this Method.
+# Arguments should be passed in a reference, either hash- or array-.
+# This method is expected to die if anything is wrong, or return 1
+# on success.
+#
+# This method is intentionally split into several submethods,
+# instead of using polymorphic subclasses with method overrides.
+# Having all these in the same class is easier to maintain and
+# augment in user subclasses.
+#
+# The same applies to `prepare_method_arguments` below.
+#
+
+sub check_method_arguments {
+    my $self = shift;
+    
+    my $checker = $self->argument_checker;
+    
+    return $self->$checker(@_);
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
 # Prepare the arguments to be passed to the called Method,
 # according to the Method's expectations
 #
@@ -167,14 +200,19 @@ sub run {
 sub prepare_method_arguments {
     my $self = shift;
     
-    my $preparer = $self->pollHandler ? "prepare_pollHandler_arguments"
-                 : $self->formHandler ? "prepare_formHandler_arguments"
-                 : $self->params      ? "prepare_named_arguments"
-                 : defined $self->len ? "prepare_ordered_arguments"
-                 :                      "prepare_default_arguments"
-                 ;
+    my $preparer = $self->argument_preparer;
     
     return $self->$preparer(@_);
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Check the arguments for a pollHandler
+#
+
+sub check_pollHandler_arguments {
+    # pollHandlers are not supposed to receive any arguments
+    return 1;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -193,6 +231,22 @@ sub prepare_pollHandler_arguments {
     splice @actual_arg, $env_arg, 0, $arg{env} if defined $env_arg;
     
     return @actual_arg;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Check the arguments for a formHandler
+#
+
+sub check_formHandler_arguments {
+    my ($self, $arg) = @_;
+    
+    # Nothing to check here really except that it's a hashref
+    die sprintf "ExtDirect formHandler Method %s.%s expects arguments " .
+                "in a hashref\n", $self->action, $self->name
+        unless 'HASH' eq ref $arg;
+    
+    return 1;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -229,6 +283,31 @@ sub prepare_formHandler_arguments {
 
 ### PUBLIC INSTANCE METHOD ###
 #
+# Check the arguments for a Method with named parameters
+#
+
+sub check_named_arguments {
+    my ($self, $arg) = @_;
+    
+    die sprintf "ExtDirect Method %s.%s expects arguments " .
+                "in a hashref\n", $self->action, $self->name
+        unless 'HASH' eq ref $arg;
+    
+    my @params = @{ $self->params };
+    
+    my @missing = map { !exists $arg->{$_} ? $_ : () } @params;
+    
+    die sprintf "ExtDirect Method %s.%s requires the following ".
+                 "parameters: '%s'; these are missing: '%s'\n",
+                 $self->action, $self->name,
+                 join(', ', @params), join(', ', @missing)
+        if @missing;
+    
+    return 1;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
 # Prepare the arguments for a Method with named parameters
 #
 
@@ -261,6 +340,29 @@ sub prepare_named_arguments {
 
 ### PUBLIC INSTANCE METHOD ###
 #
+# Check the arguments for a Method with ordered parameters
+#
+
+sub check_ordered_arguments {
+    my ($self, $arg) = @_;
+    
+    die sprintf "ExtDirect Method %s.%s expects arguments in ".
+                "an arrayref\n"
+        unless 'ARRAY' eq ref $arg;
+    
+    my $want_len = $self->len;
+    my $have_len = @$arg;
+    
+    die sprintf "ExtDirect Method %s.%s requires %d argument(s) ".
+                "but only %d are provided\n",
+                $self->action, $self->name, $want_len, $have_len
+        unless $have_len >= $want_len;
+    
+    return 1;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
 # Prepare the arguments for a Method with ordered parameters
 #
 
@@ -279,6 +381,17 @@ sub prepare_ordered_arguments {
     splice @arg, $env_arg, 0, $env if defined $env_arg;
     
     return @arg;
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
+# Check the arguments when the Method signature is unknown
+#
+
+sub check_default_arguments {
+    # No checking means the arguments are not checked.
+    # Sincerely, C.O.
+    return 1;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -318,6 +431,8 @@ my $accessors = [qw/
     package
     env_arg
     upload_arg
+    argument_checker
+    argument_preparer
 /,
     __PACKAGE__->HOOK_TYPES,
 ];

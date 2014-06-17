@@ -25,6 +25,18 @@ sub new {
 
 ### PUBLIC INSTANCE METHOD ###
 #
+# Checks if method arguments are in order
+#
+
+sub check_arguments {
+
+    # There are no parameters to poll handlers
+    # so we return undef which means no error
+    return undef;       ## no critic
+}
+
+### PUBLIC INSTANCE METHOD ###
+#
 # Return Events data extracted
 #
 
@@ -40,18 +52,6 @@ sub result {
 }
 
 ############## PRIVATE METHODS BELOW ##############
-
-### PRIVATE INSTANCE METHOD ###
-#
-# Checks if method arguments are in order
-#
-
-sub _check_arguments {
-
-    # There are no parameters to poll handlers
-    # so we return undef which means no error
-    return undef;       ## no critic
-}
 
 ### PRIVATE INSTANCE METHOD ###
 #

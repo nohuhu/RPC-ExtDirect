@@ -196,6 +196,39 @@ L</prepare_method_arguments> method.
 
 =back
 
+=item C<check_method_arguments>
+
+Instance method. Accepts one positional argument, which is incoming
+data that should be validated as Method's arguments. A specific
+I<checker method> (see below) will be executed to run the actual
+checks on this data; that method is expected to C<die> with an error,
+or return C<1> if the arguments are valid.
+
+=item C<check_ordered_arguments>
+
+Instance method. Takes input data and checks that it's an arrayref,
+and it has enough elements to satisfy the L</len> requirement of
+the Method.
+
+=item C<check_named_arguments>
+
+Instance method. Takes input data and checks that it's a hashref,
+and that keys for all mandatory L</params> exist in that hashref.
+If the Method declares empty L</params>, the check will pass and
+effectively all arguments will be passed on to the Method call.
+
+=item C<check_formHandler_arguments>
+
+Instance method. Takes input data and checks that it's a hashref.
+Since a Form Handler arguments are not known before invocation,
+no other checks are performed.
+
+=item C<check_pollHandler_arguments>
+
+Instance method. Does not in fact run any checks, since Poll Handler
+Methods are not supposed to be called directly and do not receive
+any arguments.
+
 =item C<prepare_method_arguments>
 
 Instance method. Accepts named arguments in a hash, and runs a
