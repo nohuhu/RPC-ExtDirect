@@ -47,6 +47,11 @@ WriteMakefile(
     AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
     LICENSE  => 'perl',
 
+    ($MMVersion >= 6.48
+        ? ( MIN_PERL_VERSION => 5.006, )
+        : (),
+    ),
+
     ($MMVersion >= 6.46
         ? ( META_MERGE => {
             resources   => {
