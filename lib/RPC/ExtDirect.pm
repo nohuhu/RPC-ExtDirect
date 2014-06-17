@@ -12,10 +12,12 @@ use RPC::ExtDirect::Util;
 
 ### PACKAGE VARIABLE ###
 #
-# Version of this module.
+# Version of this module. This should be kept as a string
+# because otherwise 'make dist' strips "insignificant" digits
+# at the end.
 #
 
-our $VERSION = '3.00';
+our $VERSION = '3.01';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #
