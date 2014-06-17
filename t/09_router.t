@@ -125,14 +125,14 @@ __DATA__
       input  => { extTID => 100, action => 'Bar', method => 'bar_baz',
                   type => 'rpc', data => undef, },
       output => [ 200, [ 'Content-Type', 'application/json',
-                         'Content-Length', 209, ],
+                         'Content-Length', 208, ],
                   [
                   q|{"action":"Bar",|.
                   q|"message":"ExtDirect formHandler method |.
                   q|Bar.bar_baz should only be called with form submits",|.
                   q|"method":"bar_baz","tid":100,|.
                   q|"type":"exception",|.
-                  q|"where":"RPC::ExtDirect::Request->_check_arguments"}|,
+                  q|"where":"RPC::ExtDirect::Request->check_arguments"}|,
                   ],
                 ],
     },

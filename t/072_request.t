@@ -144,9 +144,11 @@ __DATA__
                     action  => 'Qux',
                     method  => 'bar_foo',
                     tid     => 222,
-                    where   => 'RPC::ExtDirect::Request->_check_arguments',
-                    message => 'ExtDirect method Qux.bar_foo '.
-                               'needs 4 arguments instead of 3', },
+                    where   => 'RPC::ExtDirect::API::Method->'.
+                               'check_method_arguments',
+                    message => 'ExtDirect Method Qux.bar_foo '.
+                               'requires 4 argument(s) but only 3 '.
+                               'are provided', },
     },
     # Tried to run method twice
     {
@@ -186,7 +188,7 @@ __DATA__
                     action  => 'Bar',
                     method  => 'bar_baz',
                     tid     => 555,
-                    where   => 'RPC::ExtDirect::Request->_check_arguments',
+                    where   => 'RPC::ExtDirect::Request->check_arguments',
                     message => "ExtDirect formHandler method ".
                                "Bar.bar_baz should only be called ".
                                "with form submits", },
@@ -201,7 +203,7 @@ __DATA__
                     action  => 'PollProvider',
                     method  => 'foo',
                     tid     => 666,
-                    where   => 'RPC::ExtDirect::Request->_check_arguments',
+                    where   => 'RPC::ExtDirect::Request->check_arguments',
                     message => "ExtDirect pollHandler method ".
                                "PollProvider.foo should not ".
                                "be called directly", },
