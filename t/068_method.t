@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 44;
+use Test::More tests => 59;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -44,11 +44,11 @@ for my $test ( @$tests ) {
         }
     }
     else {
-        my @prep_arg = $method->prepare_method_arguments(%$input);
+        my @prep_out = $method->prepare_method_arguments(%$input);
+        my $prep_out = $method->prepare_method_arguments(%$input);
 
-        my $arg = $out_type eq 'array' ? [ @prep_arg ] : { @prep_arg };
-
-        is_deep $arg, $output, "$name: prepare output";
+        is      ref($prep_out), uc $out_type, "$name: scalar context ref";
+        is_deep $prep_out,      $output,      "$name: prepare output";
     }
 }
 
@@ -62,7 +62,7 @@ __DATA__
             len => 0,
         },
         input => { foo => 'bar' },
-        exception => qr/expects arguments in an arrayref/,
+        exception => qr/expects ordered arguments in arrayref/,
     },
     {
         name => 'Ordered zero passed [0]',
@@ -152,7 +152,7 @@ __DATA__
             params => [qw/ foo bar /],
         },
         input => [],
-        exception => qr/expects arguments in a hashref/,
+        exception => qr/expects named arguments in hashref/,
     },
     {
         name => 'Named strict passed empty {}',
@@ -293,7 +293,7 @@ __DATA__
             formHandler => 1,
         },
         input => [],
-        exception => qr/expects arguments in a hashref/,
+        exception => qr/expects named arguments in hashref/,
     },
     {
         name => 'formHandler passed {}',

@@ -151,7 +151,7 @@ sub code {
 # and input data; return the result or die with exception
 #
 # We accept named parameters here to keep the signature compatible
-# with the corresponding Hook method
+# with the corresponding Hook method.
 #
 
 sub run {
@@ -194,7 +194,16 @@ sub check_method_arguments {
 ### PUBLIC INSTANCE METHOD ###
 #
 # Prepare the arguments to be passed to the called Method,
-# according to the Method's expectations
+# according to the Method's expectations. This works two ways:
+# on the server side, Request will call this method to prepare
+# the arguments that are to be passed to the actual Method code
+# that does things; on the client side, Client will call this
+# method to prepare the arguments that are about to be encoded
+# in JSON and passed over to the client side.
+#
+# The difference is that the server side wants an unfolded list,
+# and the client side wants a reference, either hash- or array-.
+# Because of that, prepare_*_arguments are context sensitive.
 #
 
 sub prepare_method_arguments {
@@ -225,12 +234,13 @@ sub prepare_pollHandler_arguments {
     
     my @actual_arg = ();
     
+    # When called from the client, env_arg should not be defined
     my $env_arg = $self->env_arg;
     
     no warnings;
     splice @actual_arg, $env_arg, 0, $arg{env} if defined $env_arg;
     
-    return @actual_arg;
+    return wantarray ? @actual_arg : [ @actual_arg ];
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -242,8 +252,8 @@ sub check_formHandler_arguments {
     my ($self, $arg) = @_;
     
     # Nothing to check here really except that it's a hashref
-    die sprintf "ExtDirect formHandler Method %s.%s expects arguments " .
-                "in a hashref\n", $self->action, $self->name
+    die sprintf "ExtDirect formHandler Method %s.%s expects named " .
+                "arguments in hashref\n", $self->action, $self->name
         unless 'HASH' eq ref $arg;
     
     return 1;
@@ -278,7 +288,7 @@ sub prepare_formHandler_arguments {
 
     $data{ $env_arg } = $env if $env_arg;
 
-    return %data;
+    return wantarray ? %data : { %data };
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -289,8 +299,8 @@ sub prepare_formHandler_arguments {
 sub check_named_arguments {
     my ($self, $arg) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects arguments " .
-                "in a hashref\n", $self->action, $self->name
+    die sprintf "ExtDirect Method %s.%s expects named arguments " .
+                "in hashref\n", $self->action, $self->name
         unless 'HASH' eq ref $arg;
     
     my @params = @{ $self->params };
@@ -335,7 +345,7 @@ sub prepare_named_arguments {
     
     $actual_arg{ $env_arg } = $env if defined $env_arg;
 
-    return %actual_arg;
+    return wantarray ? %actual_arg : { %actual_arg };
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -346,8 +356,8 @@ sub prepare_named_arguments {
 sub check_ordered_arguments {
     my ($self, $arg) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects arguments in ".
-                "an arrayref\n"
+    die sprintf "ExtDirect Method %s.%s expects ordered arguments " .
+                "in arrayref\n"
         unless 'ARRAY' eq ref $arg;
     
     my $want_len = $self->len;
@@ -372,15 +382,15 @@ sub prepare_ordered_arguments {
     my $env   = $arg{env};
     my $input = $arg{input};
     
-    my @data = @$input;
-    my @arg  = splice @data, 0, $self->len;
+    my @data       = @$input;
+    my @actual_arg = splice @data, 0, $self->len;
     
     my $env_arg = $self->env_arg;
     
     no warnings;
-    splice @arg, $env_arg, 0, $env if defined $env_arg;
+    splice @actual_arg, $env_arg, 0, $env if defined $env_arg;
     
-    return @arg;
+    return wantarray ? @actual_arg : [ @actual_arg ];
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -402,7 +412,9 @@ sub check_default_arguments {
 sub prepare_default_arguments {
     my ($self, %arg) = @_;
     
-    return ( $arg{input}, $arg{env} );
+    my @actual_arg = ( $arg{input}, $arg{env} );
+    
+    return wantarray ? @actual_arg : [ @actual_arg ];
 }
 
 ### PUBLIC INSTANCE METHOD ###
