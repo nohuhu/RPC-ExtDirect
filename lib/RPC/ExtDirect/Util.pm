@@ -161,6 +161,14 @@ sub parse_attribute {
     croak "Method attribute is not ExtDirect at $file line $line"
         unless $attr eq 'ExtDirect';
 
+    # Attribute::Handlers automagically parses the data into arrayref
+    # *if* it is parseable Perl (which it should be). If not, the data
+    # is going to be a garbled string which is kaput for us. However,
+    # an *empty* string means the bare attribute was used with no
+    # parameters, which is strange but is not an error.
+    croak "Malformed ExtDirect attribute '$data' at $file line $line"
+        if $data ne '' && 'ARRAY' ne ref $data;
+
     my $symbol_name = eval { no strict 'refs'; *{$symbol}{NAME} };
     croak "Can't resolve symbol '$symbol' for package '$package' ".
           "at $file line $line: $@"
@@ -169,10 +177,16 @@ sub parse_attribute {
     # Attribute may be empty, means no argument checking
     $data ||= [];
 
+    # Calling convention attributes are mutually exclusive
+    my @calling_convention;
+
     my %attr;
     
     # Compatibility form (n, ...), where n stands for (len => n)
-    unshift @$data, 'len' if $data->[0] =~ / \A \d+ \z /xms;
+    if ( $data->[0] =~ / \A \d+ \z /xms ) {
+        $attr{len} = shift @$data;
+        push @calling_convention, 'len';
+    }
 
     while ( @$data ) {
         my $param_def = shift @$data;
@@ -180,16 +194,25 @@ sub parse_attribute {
         # len means ordered (by position) arguments
         if ( $param_def =~ / \A len \z /xms ) {
             $attr{len} = shift @$data;
+
+            croak "ExtDirect attribute 'len' should be followed ".
+                  "by a number of ordered arguments at file $file ".
+                  "line $line"
+                unless $attr{len} =~ / \A \d+ \z /xms;
+            
+            push @calling_convention, 'len';
         }
 
         # formHandler means exactly that, a handler for form requests
         elsif ( $param_def =~ / \A formHandler \z /xms ) {
             $attr{formHandler} = 1;
+            push @calling_convention, 'formHandler';
         }
 
         # pollHandlers are used with EventProvider
         elsif ( $param_def =~ / \A pollHandler \z /xms ) {
             $attr{pollHandler} = 1;
+            push @calling_convention, 'pollHandler';
         }
         
         # named arguments for the method
@@ -203,6 +226,8 @@ sub parse_attribute {
 
             # Copy the names
             $attr{params} = [ @{ $arg_names } ];
+
+            push @calling_convention, 'params';
         }
 
         # Hooks
@@ -210,26 +235,35 @@ sub parse_attribute {
             my $type = $1;
             my $code = shift @$data;
 
-            croak "ExtDirect attribute '$type' must be followed by coderef ".
-                  "or 'NONE' at $file line $line"
-                if $code ne 'NONE' && 'CODE' ne ref $code;
+            croak "ExtDirect attribute '$type' must be followed by coderef, ".
+                  "undef, or 'NONE' at $file line $line"
+                if defined $code && $code ne 'NONE' && 'CODE' ne ref $code;
             
             $attr{ $type } = $code;
         }
 
         # Strict is a boolean attribute, but let's be flexible about it
         elsif ( $param_def =~ / \A strict \z /ixms ) {
-            $attr{strict} = 1;
-
-            # ...but not too flexible
-            shift @$data if $data->[0] =~ / \A \d+ \z /xms;
+            $attr{strict} = !!(shift @$data);
         }
         
         # Assume a generic foo => 'bar' attribute and fall through
         else {
             $attr{ $param_def } = shift @$data;
         }
+
+        # There should be at most one calling convention attribute defined,
+        # but we don't care how many exactly if more than one
+        croak sprintf "ExtDirect attributes '%s' and '%s' are ".
+                      "mutually exclusive at file $file line $line",
+                      @calling_convention
+            if @calling_convention > 1;
     };
+
+    # strict should only be defined for named methods
+    croak "ExtDirect attribute 'strict' should be used with 'params' ".
+          "for named Methods at file $file line $line"
+        if exists $attr{strict} && !defined $attr{params};
     
     return {
         package => $package,
