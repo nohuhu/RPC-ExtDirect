@@ -44,7 +44,8 @@ lib/RPC/ExtDirect/Util/Accessor.pm
 Makefile.PL
 MANIFEST
 README
-t/00_util.t
+t/001_util.t
+t/002_attr_parser.t
 t/01_conf.t
 t/02_exception.t
 t/03_event.t
