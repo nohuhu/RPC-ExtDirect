@@ -384,8 +384,7 @@ explanations that might prove useful for migration.
 To install this module type the following:
 
     perl Makefile.PL
-    make
-    make test
+    make && make test
     make install
 
 =end readme
@@ -394,18 +393,22 @@ To install this module type the following:
 
 =head1 DEPENDENCIES
 
-RPC::ExtDirect is dependent on the following modules: L<Attribute::Handlers>,
-L<JSON>.
+RPC::ExtDirect is dependent on the following modules:
+L<Attribute::Handlers>, L<JSON>.
+
+The oldest Perl version RPC::ExtDirect is routinely tested against
+is 5.6.2.
 
 =for readme stop
 
 =head1 BUGS AND LIMITATIONS
 
-There are no known bugs in this module. Please report problems to the author,
-patches are welcome.
+At this time there are no known bugs in this module. Please report
+problems to the author, patches are always welcome.
 
-Use L<Github tracker|https://github.com/nohuhu/RPC-ExtDirect/issues> to open
-bug reports, this is the easiest and quickest way to get your issue fixed.
+Use L<Github tracker|https://github.com/nohuhu/RPC-ExtDirect/issues>
+to open bug reports, this is the easiest and quickest way to get your
+issue fixed.
 
 =head1 SEE ALSO
 
@@ -454,6 +457,10 @@ L<Ext.Direct specification|http://www.sencha.com/products/extjs/extdirect/>
 =item *
 
 L<Ext.Direct support forum|http://www.sencha.com/forum/forumdisplay.php?47>
+
+=item *
+
+L<Ext.Direct plugin for jQuery|https://github.com/ha-sash/jquery-ext-direct-client>
 
 =back
 
