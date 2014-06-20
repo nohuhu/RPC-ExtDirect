@@ -464,10 +464,6 @@ L<Ext.Direct plugin for jQuery|https://github.com/ha-sash/jquery-ext-direct-clie
 
 =back
 
-=head1 AUTHOR
-
-Alex Tokarev E<lt>tokarev@cpan.orgE<gt>
-
 =head1 ACKNOWLEDGEMENTS
 
 I would like to thank IntelliSurvey, Inc for sponsoring my work
@@ -477,7 +473,7 @@ on versions 2.x and 3.x of the RPC::ExtDirect suite of modules.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (c) 2011-2014 by Alex Tokarev.
+Copyright (c) 2011-2014 by Alex Tokarev E<lt>tokarev@cpan.orgE<gt>.
 
 This module is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself. See L<"perlartistic">.
