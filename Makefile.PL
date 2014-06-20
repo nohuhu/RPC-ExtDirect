@@ -28,27 +28,27 @@ WriteMakefile(
     VERSION_FROM      => 'lib/RPC/ExtDirect.pm',
     ($MMVersion >= 6.55
         ? ( BUILD_REQUIRES => {
-                'Test::More' => '0.48',
+                'Test::More'            => '0.82',
             },
             PREREQ_PM => {
-                'Attribute::Handlers' => '0.87',
-                'JSON'                => '2.0',
+                'Attribute::Handlers'   => '0.87',
+                'JSON'                  => '2.0',
             },
         )
         : ( PREREQ_PM => {
-                'Test::More'            => '0.48',
+                'Test::More'            => '0.82',
                 'Attribute::Handlers'   => '0.87',
                 'JSON'                  => '2.0',
             },
         )
     ),
 
-    ABSTRACT => 'Core Ext.Direct implementation',
+    ABSTRACT => 'Core Ext.Direct implementation for Perl',
     AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
     LICENSE  => 'perl',
 
     ($MMVersion >= 6.48
-        ? ( MIN_PERL_VERSION => 5.006, )
+        ? ( MIN_PERL_VERSION => 5.006000, )
         : (),
     ),
 
@@ -62,7 +62,5 @@ WriteMakefile(
         )
         : ()
     ),
-
-    MIN_PERL_VERSION => 5.006000,
 );
 
