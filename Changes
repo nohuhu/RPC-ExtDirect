@@ -1,3 +1,13 @@
+3.01  Thu Jun 19 23:01:25 2014
+    - Minor refactoring of the Method argument checking; it now happens
+      in the Method itself, as opposed to be divided among other modules.
+      It should have been this way since the beginning, but oh well.
+    - Tests updated to accommodate for the Method changes
+    - ExtDirect attribute parsing is more robust now, and tested
+    - Fixed several minor but very embarrassing bugs uncovered by the
+      new attribute parser tests
+    - Assorted tiny fixes here and there
+
 3.00  Thu Jun 12 17:54:23 2014
     - Major refactoring of the RPC::ExtDirect module internals
     - Configuration is now instance-based with RPC::ExtDirect::Config
