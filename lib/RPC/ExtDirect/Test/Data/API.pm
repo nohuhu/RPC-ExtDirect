@@ -1,4 +1,6 @@
-package RPC::ExtDirect::Test::Data::API;
+# This does not need to be indexed by PAUSE
+package
+     RPC::ExtDirect::Test::Data::API;
 
 use strict;
 use warnings;

@@ -9,7 +9,9 @@
 # It's that simple.
 #
 
-package RPC::ExtDirect::Test::Pkg::Env;
+# This does not need to be indexed by PAUSE
+package
+    RPC::ExtDirect::Test::Pkg::Env;
 
 use strict;
 use warnings;

@@ -18,7 +18,8 @@ use warnings;
 sub new     { bless { message => $_[1] }, $_[0] }
 sub result  { $_[0] }
 
-package RPC::ExtDirect::Test::Pkg::PollProvider;
+package
+    RPC::ExtDirect::Test::Pkg::PollProvider;
 
 use strict;
 use warnings;
