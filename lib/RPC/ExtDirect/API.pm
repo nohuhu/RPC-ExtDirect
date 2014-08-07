@@ -507,6 +507,14 @@ sub _get_remoting_api {
         actions => { %api },
     };
 
+    # Add timeout if it's defined
+    $remoting_api->{timeout} = $config->timeout
+        if $config->timeout;
+
+    # Add maxRetries if it's defined
+    $remoting_api->{maxRetries} = $config->max_retries
+        if $config->max_retries;
+
     # Add namespace if it's defined
     $remoting_api->{namespace} = $config->namespace
         if $config->namespace;
