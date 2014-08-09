@@ -409,6 +409,20 @@ stack. This option is mostly used for testing and debugging.
 
 Default: C<!1> (false).
 
+=item max_retries
+
+Number of times for the client side to re-attempt delivery on failure
+of a call. (see Ext.direct.RemotingProvider.maxRetries).
+
+Default: C<undef>.
+
+=item timeout
+
+The timeout for the client side to use for each request
+(see Ext.direct.RemotingProvider.timeout).
+
+Default: C<undef>.
+
 =back
 
 =head1 CONFIG OBJECT INTERFACE

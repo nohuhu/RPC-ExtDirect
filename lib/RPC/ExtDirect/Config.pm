@@ -315,6 +315,10 @@ my $DEFINITIONS = [{
     accessor => 'router_class',
     default  => 'RPC::ExtDirect::Router',
 }, {
+    accessor => 'timeout'
+}, {
+    accessor => 'max_retries'
+}, {
     accessor => 'eventprovider_class',
     default  => 'RPC::ExtDirect::EventProvider',
 }, {
