@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 84;
+use Test::More tests => 86;
 
 use RPC::ExtDirect::Test::Util;
 
