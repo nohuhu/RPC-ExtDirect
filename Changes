@@ -1,4 +1,9 @@
-3.01  Thu Jun 19 23:01:25 2014
+3.02  Mon Oct 27 17:36:12 PDT 2014
+    - Added timeout and max_retries API config options
+    - Some test fixes and improvements
+    - Miscellaneous doc fixes
+
+3.01  Thu Jun 19 23:01:25 PDT 2014
     - Minor refactoring of the Method argument checking; it now happens
       in the Method itself, as opposed to be divided among other modules.
       It should have been this way since the beginning, but oh well.
@@ -8,7 +13,7 @@
       new attribute parser tests
     - Assorted tiny fixes here and there
 
-3.00  Thu Jun 12 17:54:23 2014
+3.00  Thu Jun 12 17:54:23 PDT 2014
     - Major refactoring of the RPC::ExtDirect module internals
     - Configuration is now instance-based with RPC::ExtDirect::Config
     - Package global variables are deprecated
