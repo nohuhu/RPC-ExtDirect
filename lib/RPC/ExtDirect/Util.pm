@@ -220,9 +220,8 @@ sub parse_attribute {
             my $arg_names = shift @$data;
 
             croak "ExtDirect attribute 'params' must be followed by ".
-                  "arrayref containing at least one parameter name ".
-                  "at $file line $line"
-                if ref $arg_names ne 'ARRAY' || @$arg_names < 1;
+                  "arrayref at $file line $line"
+                if ref $arg_names ne 'ARRAY';
 
             # Copy the names
             $attr{params} = [ @{ $arg_names } ];

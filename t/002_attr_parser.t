@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 75;
+use Test::More tests => 74;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Util;
@@ -105,10 +105,6 @@ __DATA__
 }, {
     name  => 'params no arrayref',
     input => [ params => {} ],
-    xcpt  => qr{attribute 'params' must be followed},
-}, {
-    name  => 'params empty arrayref',
-    input => [ params => [] ],
     xcpt  => qr{attribute 'params' must be followed},
 }, {
     name  => 'formHandler',
