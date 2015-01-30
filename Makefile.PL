@@ -1,6 +1,9 @@
 use 5.006000;
 use ExtUtils::MakeMaker;
 
+use strict;
+use warnings;
+
 # Add the `devtest` target to run regression and POD tests in one go
 sub MY::postamble {
     return <<'END';
@@ -21,12 +24,13 @@ disttest : distdir
 END
 }
 
-my $MMVersion = $ExtUtils::MakeMaker::VERSION;
+my $MM_VERSION  = $ExtUtils::MakeMaker::VERSION;
+my $github_repo = 'https://github.com/nohuhu/RPC-ExtDirect';
 
 WriteMakefile(
     NAME              => 'RPC::ExtDirect',
     VERSION_FROM      => 'lib/RPC/ExtDirect.pm',
-    ($MMVersion >= 6.55
+    ($MM_VERSION >= 6.55
         ? ( BUILD_REQUIRES => {
                 'Test::More'            => '0.82',
             },
@@ -47,16 +51,16 @@ WriteMakefile(
     AUTHOR   => 'Alex Tokarev <tokarev@cpan.org>',
     LICENSE  => 'perl',
 
-    ($MMVersion >= 6.48
+    ($MM_VERSION >= 6.48
         ? ( MIN_PERL_VERSION => 5.006000, )
         : (),
     ),
 
-    ($MMVersion >= 6.46
+    ($MM_VERSION >= 6.46
         ? ( META_MERGE => {
             resources   => {
-                bugtracker  => 'http://github.com/nohuhu/RPC-ExtDirect/issues',
-                repository  => 'http://github.com/nohuhu/RPC-ExtDirect',
+                bugtracker  => "$github_repo/issues",
+                repository  => $github_repo,
             },
            },
         )
