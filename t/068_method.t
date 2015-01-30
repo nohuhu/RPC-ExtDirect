@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 59;
+use Test::More tests => 63;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -403,6 +403,32 @@ __DATA__
         },
         out_type => 'array',
         output => [1, 'env', 2],
+    },
+    {
+        name => 'Named empty params strict no env',
+        type => 'prepare',
+        method => {
+            params => [],
+        },
+        input => {
+            env => 'env',
+            input => { foo => 1, bar => 2, },
+        },
+        out_type => 'hash',
+        output => { foo => 1, bar => 2, },
+    },
+    {
+        name => 'Named empty params !strict no env',
+        type => 'prepare',
+        method => {
+            params => [], strict => !1,
+        },
+        input => {
+            env => 'env',
+            input => { foo => 1, bar => 2, },
+        },
+        out_type => 'hash',
+        output => { foo => 1, bar => 2, },
     },
     {
         name => 'Named strict no env',

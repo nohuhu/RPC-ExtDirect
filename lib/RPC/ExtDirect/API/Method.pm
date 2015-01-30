@@ -41,6 +41,12 @@ sub new {
                   :                'default'
                   ;
     
+    # If the Method is named, and params array is empty, force !strict
+    if ( $is_named ) {
+        $arg{params} = $arg{params} || []; # Better safe than sorry
+        $arg{strict} = !1 if !@{ $arg{params} };
+    }
+    
     # We avoid hard binding on the hook class
     eval "require $hook_class";
     
