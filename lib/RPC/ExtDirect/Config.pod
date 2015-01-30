@@ -111,8 +111,8 @@ Default: C<'RPC::ExtDirect::API::Hook'>.
 
 When set to truthy value, API L<Action|RPC::ExtDirect::Intro/Action> names
 will default to package name with C<'::'> replaced with dots:
-C<'Foo::Bar::Baz' -> 'Foo.Bar.Baz'>, instead of using only the last chunk
-of the package name: C<'Foo::Bar::Baz' -> 'Baz'>.
+C<< 'Foo::Bar::Baz' -> 'Foo.Bar.Baz' >>, instead of using only the last
+chunk of the package name: C<< 'Foo::Bar::Baz' -> 'Baz' >>.
 
 Default: C<!1> (false).
 
@@ -328,7 +328,7 @@ Default: C<'RPC::ExtDirect::EventProvider'>.
 =item verbose_exceptions
 
 Turn informative exceptions on/off. For whatever reason, Ext.Direct spec
-requires server stack to return detailed exceptions in debugging mode,
+requires server stack to return detailed exceptions in debugging mode only,
 replacing them with generic "An error has occured" in production mode.
 Most probably this was done to increase application security, but as the
 result it hinders development and support greatly.
@@ -387,7 +387,7 @@ Default: C<'Ext.app.POLLING_API'>.
 =item namespace
 
 JavaScript namespace to be declared in the remoting API. See
-L<Ext.direct.RemotingProvider|http://docs-origin.sencha.com/extjs/5.0.0/apidocs/#!/api/Ext.direct.RemotingProvider-cfg-namespace>
+L<Ext.direct.RemotingProvider|http://docs.sencha.com/extjs/5.1/5.1.0-apidocs/#!/api/Ext.direct.RemotingProvider>
 documentation for more detailed information on this option.
 
 Default: C<''> (empty string).
@@ -398,6 +398,9 @@ When set to truthy value, RPC::ExtDirect::API will add JavaScript code
 to automatically set up RemotingProvider and PollingProvider on the
 client side to the Ext.Direct declaration JavaScript chunk, so that
 JavaScript application won't need to do that.
+
+This option is deprecated as of RPC::ExtDirect 3.0, and should not
+be used going forward.
 
 Default: C<!1> (false).
 
@@ -412,14 +415,14 @@ Default: C<!1> (false).
 =item max_retries
 
 Number of times for the client side to re-attempt delivery on failure
-of a call. (see Ext.direct.RemotingProvider.maxRetries).
+of a call. (see L<Ext.direct.RemotingProvider.maxRetries|http://docs.sencha.com/extjs/5.1/5.1.0-apidocs/#!/api/Ext.direct.RemotingProvider-cfg-maxRetries>).
 
 Default: C<undef>.
 
 =item timeout
 
 The timeout for the client side to use for each request
-(see Ext.direct.RemotingProvider.timeout).
+(see L<Ext.direct.RemotingProvider.timeout|http://docs.sencha.com/extjs/5.1/5.1.0-apidocs/#!/api/Ext.direct.RemotingProvider-cfg-timeout>).
 
 Default: C<undef>.
 

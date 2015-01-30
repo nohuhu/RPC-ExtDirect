@@ -131,6 +131,11 @@ declared for this method, an exception will be thrown as well, unless
 strict argument checking is turned off
 (L<see below|/"Lazy parameter checking">).
 
+It is also possible to declare a named Method with I<no> mandatory
+parameters at all; do that by setting L</params> option to an empty
+arrayref: C<[]>. In that case, the calling convention is still honored
+but all parameters are treated as optional and no checks are performed.
+
 =head2 Lazy parameter checking
 
 Starting with Ext JS 4.2.2 and RPC::ExtDirect 3.0+, it is possible to
@@ -640,8 +645,8 @@ used.
 =item C<get_method_by_name>
 
 Instance method. Return the L<Method|RPC::ExtDirect::Intro/Method> object
-for the corresponding Action and Method name. Accepts two ordered
-arguments:
+for the corresponding Action and Method name, or C<undef>. Accepts two
+ordered arguments:
 
 =over 8
 
@@ -707,8 +712,8 @@ This parameter is mandatory.
 
 =item C<get_hook>
 
-Instance method. Returns the Hook object for a given criteria. Accepts
-named arguments in a hash.
+Instance method. Returns the Hook object for given criteria, or C<undef>.
+Accepts named arguments in a hash.
 
 When looking up Method level hook, C<action> or C<package> parameter is
 mandatory, as well as the C<method> name and hook C<type>. For Action

@@ -44,11 +44,10 @@ to serialize a self-contained object. To avoid this, set a global Config
 option L<json_options|RPC::ExtDirect::Config/json_options> to include
 C<allow_blessed> flag:
 
-    my $config = RPC::ExtDirect::Config->new(
-        json_options => {
-            allow_blessed => 1,
-        },
-    );
+    my $config = RPC::ExtDirect->get_api->config;
+    $config->json_options({
+        allow_blessed => 1,
+    });
 
 =head1 METHODS
 
@@ -80,7 +79,7 @@ typing compatibility with Exception and Request objects.
 
 =item C<result>
 
-Instance method. Returns an Event hashref in format supported by
+Instance method. Returns an Event hashref in format required by
 Ext.Direct client stack. Not intended to be called directly.
 
 =back
