@@ -1,3 +1,9 @@
+3.03  Thu Jan 29 22:58:24 PST 2015
+    - Fixed outdated attribute parser check that required at least one
+      name in params arrayref for named Methods
+    - Named Methods with empty params will force !strict in constructor
+    - Misc documentation fixes
+
 3.02  Mon Oct 27 17:36:12 PDT 2014
     - Added timeout and max_retries API config options
     - Some test fixes and improvements
