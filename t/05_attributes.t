@@ -136,7 +136,7 @@ __DATA__
                 foo_blessed => { package => 'RPC::ExtDirect::Test::Pkg::Foo',
                              method => 'foo_blessed', param_no => undef,
                              formHandler => 0, pollHandler => 0,
-                             param_names => undef, },
+                             param_names => [], },
 
             },
         },

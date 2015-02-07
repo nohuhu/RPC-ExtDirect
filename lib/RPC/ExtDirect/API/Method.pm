@@ -28,23 +28,55 @@ sub new {
     my $pollHandler = $arg{pollHandler};
     my $formHandler = $arg{formHandler};
     
-    my $is_named
-        = defined $arg{params} && !$pollHandler && !$formHandler;
-    
     my $is_ordered
         = defined $arg{len} && !$pollHandler && !$formHandler;
     
+    my $is_named
+        = !$pollHandler && !$formHandler && !$is_ordered;
+    
     my $processor = $pollHandler ? 'pollHandler'
                   : $formHandler ? 'formHandler'
-                  : $is_named    ? 'named'
                   : $is_ordered  ? 'ordered'
-                  :                'default'
+                  :                'named'
                   ;
     
     # If the Method is named, and params array is empty, force !strict
     if ( $is_named ) {
         $arg{params} = $arg{params} || []; # Better safe than sorry
-        $arg{strict} = !1 if !@{ $arg{params} };
+        $arg{strict} = !1 unless @{ $arg{params} };
+    }
+
+    if ( my $meta = delete $arg{metadata} ) {
+        my $metadata = {};
+
+        if ( defined (my $len = $meta->{len}) ) {
+            # Metadata is optional so ordered with 0 arguments does not
+            # make any sense
+            die "Ordered metadata cannot have 0 arguments"
+                unless $len > 0;
+
+            $metadata->{len} = $len;
+        }
+        else {
+            my $params = $meta->{params} || [];
+
+            # Same as with main arguments; force !strict if named metadata
+            # has empty params
+            my $strict = defined $meta->{strict} ? $meta->{strict}
+                       : !@$params               ? !1
+                       :                           undef
+                       ;
+
+            if ( defined $strict ) {
+                $metadata->{strict} = $strict;
+            }
+
+            $metadata->{params} = $params;
+            $metadata->{arg}
+                = defined $meta->{arg} ? $meta->{arg} : 'metadata';
+        }
+
+        $arg{metadata} = $metadata;
     }
     
     # We avoid hard binding on the hook class
@@ -86,27 +118,51 @@ sub get_api_definition {
     # Poll handlers are not declared in the API
     return if $self->pollHandler;
     
-    my $name   = $self->name;
-    my $strict = $self->strict;
+    my $name = $self->name;
+
+    my $def;
     
     # Form handlers are defined like this
     # (\1 means JSON::true and doesn't force us to `use JSON`)
-    return { name => $name, len => 0, formHandler => \1 }
-        if $self->formHandler;
-    
+    if ( $self->formHandler ) {
+        $def = { name => $name, len => 0, formHandler => \1 };
+    }
+
     # Ordinary method with positioned arguments
-    return { name => $name, len => $self->len + 0 },
-        if $self->is_ordered;
-    
+    elsif ( $self->is_ordered ) {
+        $def = { name => $name, len => $self->len + 0 }
+    }
+
     # Ordinary method with named arguments
-    return {
-        name   => $name,
-        params => $self->params,
-        defined $strict ? (strict => $strict) : (),
-    } if $self->params;
-    
-    # No arguments specified means we're not checking them
-    return { name => $name };
+    else {
+        my $strict = $self->strict;
+
+        $def = {
+            name   => $name,
+            params => $self->params || [],
+            defined $strict ? (strict => ($strict ? \1 : \0)) : (),
+        };
+    }
+
+    if ( my $meta = $self->metadata ) {
+        $def->{metadata} = {};
+
+        if ( $meta->{len} ) {
+            $def->{metadata} = {
+                len => $meta->{len},
+            };
+        }
+        else {
+            my $strict = $meta->{strict};
+
+            $def->{metadata} = {
+                params => $meta->{params},
+                defined $strict ? (strict => ($strict ? \1 : \0)) : (),
+            };
+        }
+    }
+
+    return $def;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -441,6 +497,7 @@ my $accessors = [qw/
     name
     params
     len
+    metadata
     formHandler
     pollHandler
     is_ordered
