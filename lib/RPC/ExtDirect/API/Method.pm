@@ -457,30 +457,6 @@ sub prepare_ordered_arguments {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Check the arguments when the Method signature is unknown
-#
-
-sub check_default_arguments {
-    # No checking means the arguments are not checked.
-    # Sincerely, C.O.
-    return 1;
-}
-
-### PUBLIC INSTANCE METHOD ###
-#
-# Prepare the arguments when the Method signature is unknown
-#
-
-sub prepare_default_arguments {
-    my ($self, %arg) = @_;
-    
-    my @actual_arg = ( $arg{input}, $arg{env} );
-    
-    return wantarray ? @actual_arg : [ @actual_arg ];
-}
-
-### PUBLIC INSTANCE METHOD ###
-#
 # Read-only getter for backward compatibility
 #
 
