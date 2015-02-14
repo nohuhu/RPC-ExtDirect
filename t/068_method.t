@@ -43,12 +43,30 @@ for my $test ( @$tests ) {
             is_deep $result, $output, "$name: check result";
         }
     }
-    else {
+    elsif ( $type eq 'prepare' ) {
         my @prep_out = $method->prepare_method_arguments(%$input);
         my $prep_out = $method->prepare_method_arguments(%$input);
 
-        is      ref($prep_out), uc $out_type, "$name: scalar context ref";
+        is      ref($prep_out), uc $out_type, "$name: prepare ref type";
         is_deep $prep_out,      $output,      "$name: prepare output";
+    }
+    elsif ( $type eq 'check_meta' ) {
+        my $result = eval { $method->check_method_metadata($input) };
+        
+        if ( $exception ) {
+            like $@, $exception, "$name: check_meta exception";
+        }
+        else {
+            is_deep $result, $output, "$name: check_meta result";
+        }
+    }
+    elsif ( $type eq 'prepare_meta' ) {
+        my $prep_out = $method->prepare_method_metadata(%$input);
+        
+        is_deep $prep_out, $output, "$name: prepare_meta output";
+    }
+    else {
+        BAIL_OUT "Unknown test type: $type";
     }
 }
 
@@ -570,6 +588,46 @@ __DATA__
         input => { env => 'env', input => { foo => 'bar' }, },
         out_type => 'array',
         output => ['env'],
+    },
+    {
+        name => 'Ordered metadata passed {}',
+        type => 'check_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, },
+        },
+        input => {},
+        exception => qr/expects metadata in arrayref/,
+    },
+    {
+        name => 'Ordered metadata passed [0]',
+        type => 'check_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, },
+        },
+        input => [],
+        exception => qr/requires 1 metadata value/,
+    },
+    {
+        name => 'Ordered meta passed [1]',
+        type => 'check_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, },
+        },
+        input => [42],
+        output => 1,
+    },
+    {
+        name => 'Ordered meta passed [2]',
+        type => 'check_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, },
+        },
+        input => [42, 43],
+        output => 1,
     },
 ];
 

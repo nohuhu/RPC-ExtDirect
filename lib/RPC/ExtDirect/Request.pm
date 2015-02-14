@@ -59,7 +59,7 @@ sub new {
     }, $class;
 
     # Unpack and validate arguments
-    my ($action_name, $method_name, $tid, $data, $type, $upload)
+    my ($action_name, $method_name, $tid, $data, $type, $upload, $meta, $aux)
         = eval { $self->_unpack_arguments($arg) };
     
     return $self->_exception({
@@ -86,13 +86,14 @@ sub new {
         method_ref  => $method_ref,
         tid         => $tid,
         data        => $data,
+        metadata    => $meta,
     );
     
     return $exception if defined $exception;
     
     # Bulk assignment for brevity
-    @$self{ qw/ tid   type   data   upload   method_ref  run_count/ }
-        = (    $tid, $type, $data, $upload, $method_ref, 0 );
+    @$self{ qw/ tid type data metadata upload method_ref run_count aux / }
+        = ($tid, $type, $data, $meta, $upload, $method_ref, 0, $aux);
     
     # Finally, resolve the hooks; it's easier to do that upfront
     # since it involves API lookup
@@ -114,6 +115,8 @@ sub new {
 # Checks if method arguments are in order
 #
 
+my @checkers = qw/ check_method_arguments check_method_metadata /;
+
 sub check_arguments {
     my ($self, %arg) = @_;
     
@@ -122,6 +125,7 @@ sub check_arguments {
     my $method_ref  = $arg{method_ref};
     my $tid         = $arg{tid};
     my $data        = $arg{data};
+    my $metadata    = $arg{metadata};
 
     # Event poll handlers return Event objects instead of plain data;
     # there is no sense in calling them directly
@@ -136,38 +140,24 @@ sub check_arguments {
         });
     }
 
-    # There's not much to check for formHandler methods
-    elsif ( $method_ref->formHandler ) {
-        if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
-             !exists $data->{extMethod} )
-        {
-            return $self->_exception({
-                action  => $action_name,
-                method  => $method_name,
-                tid     => $tid,
-                message => "ExtDirect formHandler method ".
-                           "$action_name.$method_name should only ".
-                           "be called with form submits"
-            })
-        }
-    }
-    
     # The actual heavy lifting happens in the Method itself
     else {
-        local $@;
-        
-        my $result = eval { $method_ref->check_method_arguments($data) };
-        
-        if ( my $error = $@ ) {
-            $error =~ s/\n$//;
+        for my $checker ( @checkers ) {
+            local $@;
             
-            return $self->_exception({
-                action  => $action_name,
-                method  => $method_name,
-                tid     => $tid,
-                message => $error,
-                where   => ref($method_ref) .'->check_method_arguments',
-            });
+            eval { $method_ref->$checker($data) };
+            
+            if ( my $error = $@ ) {
+                $error =~ s/\n$//;
+            
+                return $self->_exception({
+                    action  => $action_name,
+                    method  => $method_name,
+                    tid     => $tid,
+                    message => $error,
+                    where   => ref($method_ref) ."->${checker}",
+                });
+            }
         }
     }
 
@@ -195,9 +185,10 @@ sub run {
 
     # Prepare the arguments
     my @method_arg = $method_ref->prepare_method_arguments(
-        env    => $env,
-        input  => $self->{data},
-        upload => $self->upload,
+        env      => $env,
+        input    => $self->{data},
+        upload   => $self->upload,
+        metadata => $self->metadata,
     );
     
     my %params = (
@@ -205,6 +196,8 @@ sub run {
         method_ref => $method_ref,
         env        => $env,
         arg        => \@method_arg,
+        metadata   => $self->metadata,
+        aux_data   => $self->aux,
     );
 
     my ($run_method, $callee, $result, $exception) = (1);
@@ -281,6 +274,8 @@ my $accessors = [qw/
     message
     upload
     run_count
+    metadata
+    aux
 /,
     __PACKAGE__->HOOK_TYPES,
 ];
@@ -362,14 +357,20 @@ sub _set_error {
 # Unpacks arguments into a list and validates them
 #
 
+my @std_keys = qw/
+    extAction action extMethod method extTID tid data metadata type
+    extUpload
+/;
+
 sub _unpack_arguments {
     my ($self, $arg) = @_;
 
     # Unpack and normalize arguments
     my $action = $arg->{extAction} || $arg->{action};
     my $method = $arg->{extMethod} || $arg->{method};
-    my $tid    = $arg->{extTID}    || $arg->{tid};
+    my $tid    = $arg->{extTID}    || $arg->{tid}; # can't be 0
     my $data   = $arg->{data}      || $arg;
+    my $meta   = $arg->{metadata};
     my $type   = $arg->{type}      || 'rpc';
     my $upload = $arg->{extUpload} eq 'true' ? $arg->{_uploads}
                :                               undef
@@ -382,7 +383,15 @@ sub _unpack_arguments {
     die [ "ExtDirect method name required" ]
         unless defined $method && length $method > 0;
 
-    return ($action, $method, $tid, $data, $type, $upload);
+    my @keys = keys %$arg;
+    delete @keys{ @std_keys };
+
+    # Collect ancillary data that might be passed in the packet
+    # and make it available to the Hooks. This might be used e.g.
+    # for passing CSRF protection tokens, etc.
+    my %aux = @$arg{ @keys };
+
+    return ($action, $method, $tid, $data, $type, $upload, $meta, \%aux);
 }
 
 ### PRIVATE INSTANCE METHOD ###
