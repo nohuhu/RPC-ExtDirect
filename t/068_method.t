@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 63;
+use Test::More tests => 110;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -25,13 +25,35 @@ for my $test ( @$tests ) {
     my $out_type   = $test->{out_type};
     my $output     = $test->{output};
     my $exception  = $test->{exception};
+    my $warning    = $test->{warning};
     
     next TEST if @run_only && !grep { lc $name eq lc $_ } @run_only;
     
-    my $method = RPC::ExtDirect::API::Method->new(
-        config => $config,
-        %$method_arg,
-    );
+    my $have_warning;
+    
+    my $method = eval {
+        local $SIG{__WARN__} = sub { $have_warning = shift };
+        
+        RPC::ExtDirect::API::Method->new(
+            config => $config,
+            %$method_arg,
+        );
+    };
+    
+    if ( $@ ) {
+        if ( $exception ) {
+            like $@, $exception, "$name: new exception";
+        }
+        else {
+            fail "$name: uncaught new exception: $@";
+        }
+        
+        next TEST;
+    }
+    
+    if ( $warning ) {
+        like $have_warning, $warning, "$name: new warning";
+    }
     
     if ( $type eq 'check' ) {
         my $result = eval { $method->check_method_arguments($input) };
@@ -46,9 +68,12 @@ for my $test ( @$tests ) {
     elsif ( $type eq 'prepare' ) {
         my @prep_out = $method->prepare_method_arguments(%$input);
         my $prep_out = $method->prepare_method_arguments(%$input);
-
-        is      ref($prep_out), uc $out_type, "$name: prepare ref type";
-        is_deep $prep_out,      $output,      "$name: prepare output";
+        
+        if ( $out_type ) {
+            is ref($prep_out), uc $out_type, "$name: prepare ref type";
+        }
+        
+        is_deep $prep_out, $output, "$name: prepare output";
     }
     elsif ( $type eq 'check_meta' ) {
         my $result = eval { $method->check_method_metadata($input) };
@@ -590,21 +615,21 @@ __DATA__
         output => ['env'],
     },
     {
-        name => 'Ordered metadata passed {}',
+        name => 'Ordered meta passed {}',
         type => 'check_meta',
         method => {
             len => 0,
-            metadata => { len => 1, },
+            metadata => { len => 1, arg => -1, },
         },
         input => {},
         exception => qr/expects metadata in arrayref/,
     },
     {
-        name => 'Ordered metadata passed [0]',
+        name => 'Ordered meta passed [0]',
         type => 'check_meta',
         method => {
             len => 0,
-            metadata => { len => 1, },
+            metadata => { len => 1, arg => -1, },
         },
         input => [],
         exception => qr/requires 1 metadata value/,
@@ -614,7 +639,7 @@ __DATA__
         type => 'check_meta',
         method => {
             len => 0,
-            metadata => { len => 1, },
+            metadata => { len => 1, arg => -1, },
         },
         input => [42],
         output => 1,
@@ -624,10 +649,505 @@ __DATA__
         type => 'check_meta',
         method => {
             len => 0,
-            metadata => { len => 1, },
+            metadata => { len => 1, arg => -1, },
         },
         input => [42, 43],
         output => 1,
     },
+    {
+        name => 'Named meta passed []',
+        type => 'check_meta',
+        method => {
+            metadata => { params => ['foo'] },
+        },
+        input => [],
+        exception => qr/expects metadata key\/value/,
+    },
+    {
+        name => 'Named meta strict passed {}',
+        type => 'check_meta',
+        method => {
+            metadata => { params => [] },
+        },
+        input => {},
+        output => 1,
+    },
+    {
+        name => 'Named meta default passed []',
+        type => 'check_meta',
+        method => {
+            metadata => {},
+        },
+        input => [],
+        exception => qr/expects metadata key\/value/,
+    },
+    {
+        name => 'Named meta !strict passed {}',
+        type => 'check_meta',
+        method => {
+            metadata => { params => [], strict => !1 },
+        },
+        input => {},
+        output => 1,
+        warning => qr/implies strict argument checking/,
+    },
+    {
+        name => 'Named meta default passed {}',
+        type => 'check_meta',
+        method => {
+            metadata => {},
+        },
+        input => {},
+        output => 1,
+    },
+    {
+        name => 'Named meta strict missing params',
+        type => 'check_meta',
+        method => {
+            metadata => { params => ['foo'] },
+        },
+        input => {},
+        exception => qr/requires.*?metadata keys: 'foo'/,
+    },
+    {
+        name => 'Named meta !strict missing params',
+        type => 'check_meta',
+        method => {
+            metadata => { params => ['foo'], strict => !1 },
+        },
+        input => {},
+        exception => qr/requires.*?metadata keys: 'foo'/,
+    },
+    {
+        name => 'Named meta strict enough params',
+        type => 'check_meta',
+        method => {
+            metadata => { params => ['foo'] },
+        },
+        input => { foo => 'bar' },
+        output => 1,
+    },
+    {
+        name => 'Named meta !strict enough params',
+        type => 'check_meta',
+        method => {
+            metadata => { params => ['foo'], strict => !1 },
+        },
+        input => { foo => 'bar' },
+        output => 1,
+    },
+    {
+        name => 'Named meta default passed params',
+        type => 'check_meta',
+        method => {
+            metadata => {},
+        },
+        input => { foo => 'bar' },
+        output => 1,
+    },
+    {
+        name => 'Ordered meta 0 arguments',
+        type => 'check',
+        method => {
+            len => 0, metadata => { len => 0 },
+        },
+        exception => qr/cannot accept 0 arguments/,
+    },
+    {
+        name => 'Ordered meta missing arg position',
+        type => 'check',
+        method => {
+            len => 0, metadata => { len => 1 },
+        },
+        exception => qr/metadata with no arg position/,
+    },
+    {
+        name => 'Ordered meta [1] passed [1]',
+        type => 'prepare_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => { metadata => [42] },
+        output => [42],
+    },
+    {
+        name => 'Ordered meta [1] passed [2]',
+        type => 'prepare_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => { metadata => [42, 43] },
+        output => [42],
+    },
+    {
+        name => 'Ordered meta [1] passed [3]',
+        type => 'prepare_meta',
+        method => {
+            len => 0,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => { metadata => [42, 43, 44] },
+        output => [42],
+    },
+    {
+        name => 'Ordered meta [2] passed [2]',
+        type => 'prepare_meta',
+        method => {
+            len => 0,
+            metadata => { len => 2, arg => -1, },
+        },
+        input => { metadata => [42, 43] },
+        output => [42, 43],
+    },
+    {
+        name => 'Ordered meta [2] passed [3]',
+        type => 'prepare_meta',
+        method => {
+            len => 0,
+            metadata => { len => 2, arg => -1, },
+        },
+        input => { metadata => [42, 43, 44] },
+        output => [42, 43],
+    },
+    {
+        name => 'Named meta strict 1',
+        type => 'prepare_meta',
+        method => {
+            metadata => { params => ['foo'] },
+        },
+        input => { metadata => { foo => 'bar' } },
+        output => { foo => 'bar' },
+    },
+    {
+        name => 'Named meta strict 2',
+        type => 'prepare_meta',
+        method => {
+            metadata => { params => [qw/ foo bar /] },
+        },
+        input => { metadata => { foo => 42, bar => 43, baz => 44 } },
+        output => { foo => 42, bar => 43, },
+    },
+    {
+        name => 'Named meta !strict 1',
+        type => 'prepare_meta',
+        method => {
+            metadata => { params => ['foo'], strict => !1, },
+        },
+        input => { metadata => { foo => 42, bar => 43, baz => 44 } },
+        output => { foo => 42, bar => 43, baz => 44 },
+    },
+    {
+        name => 'Named meta !strict 2',
+        type => 'prepare_meta',
+        method => {
+            metadata => { params => [], strict => !1, },
+        },
+        input => { metadata => { foo => 42, bar => 43, baz => 44 } },
+        output => { foo => 42, bar => 43, baz => 44 },
+    },
+    {
+        name => 'Named meta default empty',
+        type => 'prepare_meta',
+        method => {
+            metadata => {},
+        },
+        input => {},
+        output => undef,
+    },
+    {
+        name => 'Named meta default !empty',
+        type => 'prepare_meta',
+        method => {
+            metadata => {},
+        },
+        input => { metadata => { foo => 'bar', baz => 'qux' }, },
+        output => { foo => 'bar', baz => 'qux' },
+    },
+    {
+        name => 'Ordered meta input 1',
+        type => 'prepare',
+        method => {
+            len => 0,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ [43] ],
+    },
+    {
+        name => 'Ordered meta input 2',
+        type => 'prepare',
+        method => {
+            len => 0,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ [43] ],
+    },
+    {
+        name => 'Ordered meta input 3',
+        type => 'prepare',
+        method => {
+            len => 0,
+            env_arg => -1,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43, 44]
+        },
+        output => [ [43], 'env' ],
+    },
+    {
+        name => 'Ordered meta input 4',
+        type => 'prepare',
+        method => {
+            len => 0,
+            env_arg => 99,
+            metadata => { len => 1, arg => 99, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43, 44]
+        },
+        output => [ 'env', [43] ],
+    },
+    {
+        name => 'Ordered meta input 5',
+        type => 'prepare',
+        method => {
+            len => 0,
+            env_arg => -1,
+            metadata => { len => 1, arg => -2 },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ [43], 'env' ],
+    },
+    {
+        name => 'Ordered meta input 6',
+        type => 'prepare',
+        method => {
+            len => 0,
+            env_arg => -1,
+            metadata => { len => 1, arg => 99, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ 'env', [43] ],
+    },
+    {
+        name => 'Ordered meta input 7',
+        type => 'prepare',
+        method => {
+            len => 0,
+            env_arg => 99,
+            metadata => { len => 1, arg => -1, },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ [43], 'env' ],
+    },
+    {
+        name => 'Ordered meta input 8',
+        type => 'prepare',
+        method => {
+            len => 1,
+            env_arg => -1,
+            metadata => { len => 1, arg => -1 },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ 'env', [43], 42 ],
+    },
+    {
+        name => 'Ordered meta input 9',
+        type => 'prepare',
+        method => {
+            len => 1,
+            env_arg => 99,
+            metadata => { len => 1, arg => -1 },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ 42, [43], 'env' ],
+    },
+    {
+        name => 'Ordered meta input 10',
+        type => 'prepare',
+        method => {
+            len => 1,
+            env_arg => 99,
+            metadata => { len => 1, arg => 99 },
+        },
+        input => {
+            env => 'env', input => [42], metadata => [43]
+        },
+        output => [ 42, 'env', [43] ],
+    },
+    {
+        name => 'Ordered meta input 11',
+        type => 'prepare',
+        method => {
+            len => 2,
+            env_arg => 99,
+            metadata => { len => 2, arg => -1 },
+        },
+        input => {
+            env => 'env',
+            input => ['foo', 'bar', 'baz'],
+            metadata => [42, 43, 44],
+        },
+        output => [ 'foo', 'bar', [42, 43], 'env' ],
+    },
+    {
+        name => 'Ordered meta input 12',
+        type => 'prepare',
+        method => {
+            params => [],
+            env_arg => '_env',
+            metadata => { len => 2 },
+        },
+        input => {
+            env => 'env',
+            input => { foo => 'bar', baz => 'qux' },
+            metadata => [42, 43, 44],
+        },
+        output => {
+            _env => 'env',
+            foo => 'bar',
+            baz => 'qux',
+            metadata => [42, 43],
+        },
+    },
+    {
+        name => 'Ordered meta input 13',
+        type => 'prepare',
+        method => {
+            formHandler => 1,
+            metadata => { len => 1, },
+        },
+        input => {
+            env => 'env',
+            input => { fred => 'moo', blurg => 'frob' },
+            metadata => [42, 43],
+        },
+        output => {
+            fred => 'moo',
+            blurg => 'frob',
+            metadata => [42],
+        },
+    },
+    {
+        name => 'Ordered meta input 14',
+        type => 'prepare',
+        method => {
+            formHandler => 1,
+            env_arg => '_e',
+            metadata => { len => 1, arg => '_m', },
+        },
+        input => {
+            env => 'env',
+            input => { fred => 'moo', blurg => 'frob' },
+            metadata => [42, 43],
+        },
+        output => {
+            _e => 'env',
+            fred => 'moo',
+            blurg => 'frob',
+            _m => [42],
+        },
+    },
+    {
+        name => 'Named meta input 1', 
+        type => 'prepare',
+        method => {
+            len => 1,
+            env_arg => 99,
+            metadata => { arg => 99, },
+        },
+        input => {
+            env => 'env',
+            input => [42, 43],
+            metadata => { foo => 'bar', baz => 'qux' },
+        },
+        output => [42, 'env', { foo => 'bar', baz => 'qux' }, ],
+    },
+    {
+        name => 'Named meta input 2',
+        type => 'prepare',
+        method => {
+            len => 2,
+            env_arg => 99,
+            metadata => { params => ['foo'], arg => 99, },
+        },
+        input => {
+            env => 'env',
+            input => [42, 43],
+            metadata => { foo => 'bar', baz => 'qux' },
+        },
+        output => [42, 43, 'env', { foo => 'bar' }, ],
+    },
+    {
+        name => 'Named meta input 3',
+        type => 'prepare',
+        method => {
+            len => 0,
+            metadata => { params => ['foo'], strict => !1, arg => 99, },
+        },
+        input => {
+            env => 'env',
+            input => [42, 43],
+            metadata => { foo => 'bar', baz => 'qux' },
+        },
+        output => [{ foo => 'bar', baz => 'qux' }]
+    },
+    {
+        name => 'Named meta input 4',
+        type => 'prepare',
+        method => {
+            params => ['fred', 'frob'],
+            env_arg => '_env',
+            metadata => { params => ['foo'], arg => '_m' },
+        },
+        input => {
+            env => 'env',
+            input => { fred => 'blerg', frob => 'blam', },
+            metadata => { foo => 'bar', baz => 'qux' },
+        },
+        output => {
+            _env => 'env',
+            fred => 'blerg',
+            frob => 'blam',
+            _m => { foo => 'bar' },
+        },
+    },
+    {
+        name => 'Named meta input 5',
+        type => 'prepare',
+        method => {
+            formHandler => 1,
+            env_arg => '_e',
+            metadata => { params => ['foo'], arg => '_m', },
+        },
+        input => {
+            env => 'env',
+            input => { fred => 'moo', blurg => 'frob' },
+            metadata => { foo => 'bar', baz => 'qux' },
+        },
+        output => {
+            _e => 'env',
+            fred => 'moo',
+            blurg => 'frob',
+            _m => { foo => 'bar' },
+        },
+    },
 ];
-

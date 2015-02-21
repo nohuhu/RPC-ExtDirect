@@ -18,7 +18,7 @@ use warnings;
 
 use RPC::ExtDirect;
 
-sub meta0_default : ExtDirect(0, metadata => { len => 1 }) {
+sub meta0_default : ExtDirect(0, metadata => { len => 1, arg => 99, }) {
     my ($class, $meta) = @_;
 
     return { meta => $meta };
@@ -30,7 +30,7 @@ sub meta0_arg : ExtDirect(0, metadata => { len => 2, arg => 0 }) {
     return { meta => $meta };
 }
 
-sub meta1_default : ExtDirect(1, metadata => { len => 1 }) {
+sub meta1_default : ExtDirect(1, metadata => { len => 1, arg => 99, }) {
     my ($class, $arg1, $meta) = @_;
 
     return { arg1 => $arg1, meta => $meta };
@@ -42,7 +42,7 @@ sub meta1_arg : ExtDirect(1, metadata => { len => 2, arg => 0 }) {
     return { arg1 => $arg1, meta => $meta };
 }
 
-sub meta2_default : ExtDirect(2, metadata => { len => 1 }) {
+sub meta2_default : ExtDirect(2, metadata => { len => 1, arg => 99, }) {
     my ($class, $arg1, $arg2, $meta) = @_;
 
     return { arg1 => $arg1, arg2 => $arg2, meta => $meta };

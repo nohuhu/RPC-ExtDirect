@@ -46,16 +46,20 @@ sub new {
         $arg{strict} = !1 unless @{ $arg{params} };
     }
 
-    if ( my $meta = delete $arg{metadata} ) {
-        my $metadata = {};
+    my $meta = delete $arg{metadata};
+    
+    if ( 'HASH' eq ref $meta ) {
+        my $meta_def = {};
 
         if ( defined (my $len = $meta->{len}) ) {
             # Metadata is optional so ordered with 0 arguments does not
             # make any sense
-            die "Ordered metadata cannot have 0 arguments"
+            die sprintf "ExtDirect Method %s.%s cannot accept ".
+                        "0 arguments for ordered metadata",
+                        $arg{action}, $arg{name}
                 unless $len > 0;
-
-            $metadata->{len} = $len;
+            
+            $meta_def->{len} = $len;
             
             $arg{metadata_checker}  = 'check_ordered_metadata';
             $arg{metadata_preparer} = 'prepare_ordered_metadata';
@@ -65,24 +69,46 @@ sub new {
 
             # Same as with main arguments; force !strict if named metadata
             # has empty params
-            my $strict = defined $meta->{strict} ? $meta->{strict}
-                       : !@$params               ? !1
+            my $strict = !@$params               ? !1
+                       : defined $meta->{strict} ? $meta->{strict}
                        :                           undef
                        ;
+            
+            # !strict with no params might be a typo or something;
+            # worth a warning in any case
+            warn sprintf "ExtDirect Method %s.%s implies strict ".
+                         "argument checking for named metadata, ".
+                         "but no parameter names are specified.",
+                         $arg{action}, $arg{name}
+                if !@$params && defined $meta->{strict} &&
+                   !$meta->{strict};
 
-            if ( defined $strict ) {
-                $metadata->{strict} = $strict;
-            }
-
-            $metadata->{params} = $params;
-            $metadata->{arg}
-                = defined $meta->{arg} ? $meta->{arg} : 'metadata';
+            $meta_def->{strict} = $strict;
+            $meta_def->{params} = $params;
             
             $arg{metadata_checker}  = 'check_named_metadata';
             $arg{metadata_preparer} = 'prepare_named_metadata';
         }
+        
+        my $arg = $meta->{arg};
+        
+        if ( $is_ordered ) {
+            # There is no way to splice new elements at the end of array
+            # without knowing array length. Splicing at negative subscripts
+            # will not do what is expected, and I don't see a sane default
+            # otherwise. So insist on having the arg defined.
+            die sprintf "ExtDirect Method %s.%s cannot accept ".
+                        "ordered metadata with no arg position specified",
+                        $arg{action}, $arg{name}
+                unless defined $arg;
+        }
+        else {
+            $arg = defined $arg ? $arg : 'metadata';
+        }
+        
+        $meta_def->{arg} = $arg;
 
-        $arg{metadata} = $metadata;
+        $arg{metadata} = $meta_def;
     }
     
     # We avoid hard binding on the hook class
@@ -339,10 +365,15 @@ sub prepare_pollHandler_arguments {
     my @actual_arg = ();
     
     # When called from the client, env_arg should not be defined
-    my $env_arg = $self->env_arg;
-    
-    no warnings;
-    splice @actual_arg, $env_arg, 0, $arg{env} if defined $env_arg;
+    if ( defined (my $env_arg = +$self->env_arg) ) {
+        # Splicing an empty array at negative subscript will result
+        # in a fatal error; guard against that and put env at the end
+        $env_arg = $env_arg >= 0 ? $env_arg : 0;
+        
+        no warnings;    ## no critic
+        
+        splice @actual_arg, $env_arg, 0, $arg{env} if defined $arg{env};
+    }
     
     return wantarray ? @actual_arg : [ @actual_arg ];
 }
@@ -388,12 +419,14 @@ sub prepare_formHandler_arguments {
     # Add uploads if there are any
     $data{ $upload_arg } = $upload if defined $upload;
     
-    my $env_arg = $self->env_arg;
-
-    $data{ $env_arg } = $env if $env_arg;
+    my $meta_def = $self->metadata;
     
-    if ( my $meta_arg = $self->meta_arg ) {
-        my $meta = $self->prepare_method_metadata($arg{metadata});
+    if ( defined (my $env_arg = $self->env_arg) ) {
+        $data{ $env_arg } = $env;
+    };
+    
+    if ( $meta_def && defined (my $meta_arg = $meta_def->{arg}) ) {
+        my $meta = $self->prepare_method_metadata(%arg);
         $data{ $meta_arg } = $meta if defined $meta;
     }
 
@@ -482,12 +515,14 @@ sub prepare_named_arguments {
         %actual_arg = %$input;
     }
     
-    my $env_arg = $self->env_arg;
-    
-    $actual_arg{ $env_arg } = $env if defined $env_arg;
+    if ( defined (my $env_arg = $self->env_arg) ) {
+        $actual_arg{ $env_arg } = $env;
+    }
 
-    if ( my $meta_arg = $self->meta_arg ) {
-        my $meta = $self->prepare_method_metadata($arg{metadata});
+    my $meta_def = $self->metadata;
+    
+    if ( $meta_def && defined (my $meta_arg = $meta_def->{arg}) ) {
+        my $meta = $self->prepare_method_metadata(%arg);
         $actual_arg{ $meta_arg } = $meta if defined $meta;
     }
 
@@ -504,6 +539,9 @@ sub prepare_named_metadata {
     
     my $meta_def   = $self->metadata;
     my $meta_input = $arg{metadata};
+    
+    return unless $meta_input;
+    
     my %meta;
     
     my $strict = $meta_def->{strict};
@@ -582,14 +620,26 @@ sub prepare_ordered_arguments {
     my @data       = @$input;
     my @actual_arg = splice @data, 0, $self->len;
     
-    my $env_arg = $self->env_arg;
+    no warnings;    ## no critic
     
-    no warnings;
-    splice @actual_arg, $env_arg, 0, $env if defined $env_arg;
+    if ( defined (my $env_arg = +$self->env_arg) ) {
+        # Splicing an empty array at negative subscript will result
+        # in a fatal error; we need to guard against that.
+        $env_arg = 0 if $env_arg < 0 && -$env_arg > @actual_arg;
+        
+        splice @actual_arg, $env_arg, 0, $env;
+    }
     
-    if ( defined (my $meta_arg = $self->meta_arg) ) {
-        my $meta = $self->prepare_method_metadata($arg{metadata});
-        splice @actual_arg, $meta_arg, 0, $meta if defined $meta;
+    my $meta_def = $self->metadata;
+    
+    if ( $meta_def && defined (my $meta_arg = +$meta_def->{arg}) ) {
+        my $meta = $self->prepare_method_metadata(%arg);
+        
+        if ( defined $meta ) {
+            $meta_arg = 0 if $meta_arg < 0 && -$meta_arg > @actual_arg;
+            
+            splice @actual_arg, $meta_arg, 0, $meta;
+        }
     }
 
     return wantarray ? @actual_arg : [ @actual_arg ];
@@ -606,9 +656,13 @@ sub prepare_ordered_metadata {
     my $meta_def   = $self->metadata;
     my $meta_input = $arg{metadata};
     
-    my @meta = splice @$meta_input, 0, $meta_def->{len};
+    return unless $meta_input;
     
-    return \@meta;
+    # Copy array elements to avoid mutating the arrayref
+    my @meta_data   = @$meta_input;
+    my @meta_output = splice @meta_data, 0, $meta_def->{len};
+    
+    return \@meta_output;
 }
 
 ### PUBLIC INSTANCE METHOD ###

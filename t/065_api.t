@@ -66,7 +66,7 @@ __DATA__
             methods => {
                 meta0_default => {
                     len => 0,
-                    metadata => { len => 1 },
+                    metadata => { len => 1, arg => -1 },
                 },
                 meta0_arg => {
                     len => 0,
@@ -74,7 +74,7 @@ __DATA__
                 },
                 meta1_default => {
                     len => 1,
-                    metadata => { len => 1 },
+                    metadata => { len => 1, arg => 99, },
                 },
                 meta1_arg => {
                     len => 1,
@@ -82,7 +82,7 @@ __DATA__
                 },
                 meta2_default => {
                     len => 2,
-                    metadata => { len => 1, },
+                    metadata => { len => 1, arg => -1 },
                 },
                 meta2_arg => {
                     len => 2,
@@ -127,7 +127,7 @@ Ext.app.REMOTE_CALL_API = {
         "Bar": [
                 { "len":5, "name":"bar_bar" },
                 { "len":4, "name":"bar_foo" },
-                { "formHandler":true, "len":0, "name":"bar_baz" }
+                { "formHandler":true, "name":"bar_baz" }
         ],
         "Foo": [
                 { "len":1, "name":"foo_foo" },
@@ -156,7 +156,7 @@ Ext.app.REMOTE_CALL_API = {
                 { "len":1, "name":"foo_foo" },
                 { "len":5, "name":"bar_bar" },
                 { "len":4, "name":"bar_foo" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
+                { "formHandler":true, "name":"bar_baz" },
                 { "len":2, "name":"foo_bar" },
                 { "name":"foo_baz", "params":["foo","bar","baz"] }
         ]
