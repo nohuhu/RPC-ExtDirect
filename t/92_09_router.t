@@ -61,7 +61,7 @@ __DATA__
 [
     { name   => 'Invalid result', debug => 1,
       input  => '{"type":"rpc","tid":1,"action":"Foo","method":"foo_blessed",'.
-                ' "data":[]}',
+                ' "data":{}}',
       output => [
                     200,
                     [

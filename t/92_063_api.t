@@ -37,19 +37,19 @@ Ext.app.REMOTE_CALL_API = {
     "actions":{
         "Bar":[
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
+                { "formHandler":true, "name":"bar_baz" },
                 { "len":4, "name":"bar_foo" }
               ],
         "Foo":[
                 { "len":2, "name":"foo_bar" },
                 { "name":"foo_baz", "params":["foo","bar","baz"] },
-                { "name":"foo_blessed" },
+                { "name":"foo_blessed", "params":[], "strict":false },
                 { "len":1, "name":"foo_foo" },
                 { "len":0, "name":"foo_zero" }
               ],
         "Qux":[
                 { "len":5, "name":"bar_bar" },
-                { "formHandler":true, "len":0, "name":"bar_baz" },
+                { "formHandler":true, "name":"bar_baz" },
                 { "len":4, "name":"bar_foo" },
                 { "len":2, "name":"foo_bar" },
                 { "name":"foo_baz", "params":["foo","bar","baz"] },
