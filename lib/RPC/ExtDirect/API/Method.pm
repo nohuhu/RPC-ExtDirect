@@ -322,6 +322,8 @@ sub prepare_method_arguments {
 sub check_method_metadata {
     my $self = shift;
     
+    return 1 unless $self->metadata;
+    
     my $checker = $self->metadata_checker;
     
     return $self->$checker(@_);
@@ -338,6 +340,8 @@ sub check_method_metadata {
 
 sub prepare_method_metadata {
     my $self = shift;
+    
+    return unless $self->metadata;
     
     my $preparer = $self->metadata_preparer;
     

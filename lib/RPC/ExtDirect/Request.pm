@@ -140,8 +140,24 @@ sub check_arguments {
         });
     }
 
-    # The actual heavy lifting happens in the Method itself
     else {
+        # One extra check for formHandlers
+        if ( $method_ref->formHandler ) {
+            if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
+                 !exists $data->{extMethod} )
+            {
+                return $self->_exception({
+                    action  => $action_name,
+                    method  => $method_name,
+                    tid     => $tid,
+                    message => "ExtDirect formHandler method ".
+                               "$action_name.$method_name should only ".
+                               "be called with form submits"
+                })
+            }
+        }
+        
+        # The actual heavy lifting happens in the Method itself
         for my $checker ( @checkers ) {
             local $@;
             
@@ -359,7 +375,7 @@ sub _set_error {
 
 my @std_keys = qw/
     extAction action extMethod method extTID tid data metadata type
-    extUpload
+    extUpload _uploads
 /;
 
 sub _unpack_arguments {
@@ -383,13 +399,13 @@ sub _unpack_arguments {
     die [ "ExtDirect method name required" ]
         unless defined $method && length $method > 0;
 
-    my @keys = keys %$arg;
-    delete @keys{ @std_keys };
+    my %arg_keys = map { $_ => 1, } keys %$arg;
+    delete @arg_keys{ @std_keys };
 
     # Collect ancillary data that might be passed in the packet
     # and make it available to the Hooks. This might be used e.g.
     # for passing CSRF protection tokens, etc.
-    my %aux = @$arg{ @keys };
+    my %aux = map { $_ => $arg->{$_} } keys %arg_keys;
 
     return ($action, $method, $tid, $data, $type, $upload, $meta, \%aux);
 }
