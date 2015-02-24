@@ -117,6 +117,11 @@ sub new {
 
 my @checkers = qw/ check_method_arguments check_method_metadata /;
 
+my %checker_property = (
+    check_method_arguments => 'data',
+    check_method_metadata  => 'metadata',
+);
+
 sub check_arguments {
     my ($self, %arg) = @_;
     
@@ -124,8 +129,6 @@ sub check_arguments {
     my $method_name = $arg{method_name};
     my $method_ref  = $arg{method_ref};
     my $tid         = $arg{tid};
-    my $data        = $arg{data};
-    my $metadata    = $arg{metadata};
 
     # Event poll handlers return Event objects instead of plain data;
     # there is no sense in calling them directly
@@ -143,6 +146,8 @@ sub check_arguments {
     else {
         # One extra check for formHandlers
         if ( $method_ref->formHandler ) {
+            my $data = $arg{data};
+            
             if ( 'HASH' ne ref($data) || !exists $data->{extAction} ||
                  !exists $data->{extMethod} )
             {
@@ -159,9 +164,12 @@ sub check_arguments {
         
         # The actual heavy lifting happens in the Method itself
         for my $checker ( @checkers ) {
+            my $what = $checker_property{ $checker };
+            my $have = $arg{ $what };
+            
             local $@;
             
-            eval { $method_ref->$checker($data) };
+            eval { $method_ref->$checker($have) };
             
             if ( my $error = $@ ) {
                 $error =~ s/\n$//;
@@ -385,9 +393,12 @@ sub _unpack_arguments {
     my $action = $arg->{extAction} || $arg->{action};
     my $method = $arg->{extMethod} || $arg->{method};
     my $tid    = $arg->{extTID}    || $arg->{tid}; # can't be 0
-    my $data   = $arg->{data}      || $arg;
-    my $meta   = $arg->{metadata};
     my $type   = $arg->{type}      || 'rpc';
+    
+    # For a formHandler, the "data" field is the form itself;
+    # the arguments are fields in the form-encoded POST body
+    my $data   = $arg->{data} || $arg;
+    my $meta   = $arg->{metadata};
     my $upload = $arg->{extUpload} eq 'true' ? $arg->{_uploads}
                :                               undef
                ;

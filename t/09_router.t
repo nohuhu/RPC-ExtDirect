@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 24;
+use Test::More tests => 27;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -10,15 +10,21 @@ use RPC::ExtDirect::Router;
 
 # Test modules are simple
 use RPC::ExtDirect::Test::Pkg::Qux;
+use RPC::ExtDirect::Test::Pkg::Meta;
 
 my $tests = eval do { local $/; <DATA>; }           ## no critic
     or die "Can't eval DATA: $@";
 
+my %only_tests = map { $_ => 1 } @ARGV;
+
+TEST:
 for my $test ( @$tests ) {
     my $name   = $test->{name};
     my $debug  = $test->{debug};
     my $input  = $test->{input};
     my $expect = $test->{output};
+    
+    next TEST if %only_tests && !$only_tests{$name};
 
     my $config = RPC::ExtDirect::Config->new(
         debug_router => $debug,
@@ -120,6 +126,23 @@ __DATA__
                   q|"msg":"foo! bar! baz!"},"tid":3,"type":"rpc"}]|
                   ],
                 ],
+    },
+    {
+        name   => 'Valid POST with metadata 1', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"meta0_default","data":null,|.
+                  q|"metadata":[42]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 86,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"meta0_default",|.
+                        q|"result":{"meta":[42]},"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+            
     },
     { name   => 'Invalid form request', debug => 1,
       input  => { extTID => 100, action => 'Bar', method => 'bar_baz',

@@ -102,7 +102,7 @@ __DATA__
         name => 'Ordered passed {}',
         type => 'check',
         method => {
-            len => 0,
+            len => 1,
         },
         input => { foo => 'bar' },
         exception => qr/expects ordered arguments in arrayref/,

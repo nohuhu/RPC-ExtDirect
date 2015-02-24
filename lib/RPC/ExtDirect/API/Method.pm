@@ -569,14 +569,17 @@ sub prepare_named_metadata {
 #
 
 sub check_ordered_arguments {
-    my ($self, $arg) = @_;
-    
-    die sprintf "ExtDirect Method %s.%s expects ordered arguments " .
-                "in arrayref\n"
-        unless 'ARRAY' eq ref $arg;
+    my ($self, $input) = @_;
     
     my $want_len = $self->len;
-    my $have_len = @$arg;
+    
+    # Historically Ext.Direct on the JavaScript client side sent null value
+    # instead of empty array for ordered Methods that accept 0 arguments.
+    die sprintf "ExtDirect Method %s.%s expects ordered arguments " .
+                "in arrayref\n", $self->action, $self->name
+        if $want_len > 0 && 'ARRAY' ne ref $input;
+
+    my $have_len = $want_len > 0 ? @$input : 0;
     
     die sprintf "ExtDirect Method %s.%s requires %d argument(s) ".
                 "but only %d are provided\n",
@@ -621,8 +624,17 @@ sub prepare_ordered_arguments {
     my $env   = $arg{env};
     my $input = $arg{input};
     
-    my @data       = @$input;
-    my @actual_arg = splice @data, 0, $self->len;
+    my @actual_arg;
+    
+    # For Methods with 0 accepted arguments, input may be either
+    # an empty array from RPC::ExtDirect::Client, or undef from
+    # the JavaScript client. Hysterical raisins are hysterical,
+    # so we have to account for that.
+    if ( my $want_len = $self->len ) {
+        # Input is by reference! Unpack to avoid changing it.
+        my @data = @$input;
+        @actual_arg = splice @data, 0, $want_len;
+    }
     
     no warnings;    ## no critic
     
