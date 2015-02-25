@@ -63,6 +63,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
+#line 66
 [
     # Null input, debug off
     {

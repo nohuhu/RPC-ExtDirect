@@ -403,6 +403,9 @@ sub check_formHandler_arguments {
 # Prepare the arguments for a formHandler
 #
 
+my @std_params = qw/action method extAction extMethod
+                    extTID extUpload _uploads/;
+
 sub prepare_formHandler_arguments {
     my ($self, %arg) = @_;
     
@@ -414,24 +417,27 @@ sub prepare_formHandler_arguments {
     my %data = %$input;
 
     # Ensure there are no runaway ExtDirect form parameters
-    my @runaway_params = qw(action method extAction extMethod
-                            extTID extUpload _uploads);
-    delete @data{ @runaway_params };
+    delete @data{ @std_params };
     
     my $upload_arg = $self->upload_arg;
 
     # Add uploads if there are any
     $data{ $upload_arg } = $upload if defined $upload;
     
-    my $meta_def = $self->metadata;
-    
     if ( defined (my $env_arg = $self->env_arg) ) {
         $data{ $env_arg } = $env;
     };
     
+    my $meta_def = $self->metadata;
+    
     if ( $meta_def && defined (my $meta_arg = $meta_def->{arg}) ) {
         my $meta = $self->prepare_method_metadata(%arg);
         $data{ $meta_arg } = $meta if defined $meta;
+        
+        # Form handlers receive the input hash almost unimpeded;
+        # if $meta_arg value is not default 'metadata' the arguments
+        # will include two copies of metadata. We don't want that.
+        delete $data{metadata} unless $meta_arg eq 'metadata';
     }
 
     return wantarray ? %data : { %data };

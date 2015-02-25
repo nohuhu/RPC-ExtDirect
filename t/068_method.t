@@ -96,7 +96,7 @@ for my $test ( @$tests ) {
 }
 
 __DATA__
-
+#line 99
 [
     {
         name => 'Ordered passed {}',

@@ -126,6 +126,7 @@ sub get_hook_ref {
 }
 
 __DATA__
+#line 129
 [
     # Cancel Method call by throwing error
     {

@@ -103,7 +103,7 @@ for my $test ( @$hook_tests ) {
 };
 
 __DATA__
-
+#line 106
 {
     main_tests => {
         # foo is plain basic package with ExtDirect methods and hooks

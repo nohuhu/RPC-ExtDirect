@@ -54,6 +54,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
+#line 57
 [
     # Numbered one argument with scalar result
     {

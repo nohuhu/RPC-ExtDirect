@@ -18,43 +18,37 @@ use warnings;
 
 use RPC::ExtDirect;
 
-sub meta0_default : ExtDirect(0, metadata => { len => 1, arg => 99, }) {
+sub arg0 : ExtDirect(0, metadata => { len => 2, arg => 0 }) {
     my ($class, $meta) = @_;
 
     return { meta => $meta };
 }
 
-sub meta0_arg : ExtDirect(0, metadata => { len => 2, arg => 0 }) {
-    my ($class, $meta) = @_;
-
-    return { meta => $meta };
-}
-
-sub meta1_default : ExtDirect(1, metadata => { len => 1, arg => 99, }) {
+sub arg1_last : ExtDirect(1, metadata => { len => 1, arg => 99, }) {
     my ($class, $arg1, $meta) = @_;
 
     return { arg1 => $arg1, meta => $meta };
 }
 
-sub meta1_arg : ExtDirect(1, metadata => { len => 2, arg => 0 }) {
+sub arg1_first : ExtDirect(1, metadata => { len => 2, arg => 0 }) {
     my ($class, $meta, $arg1) = @_;
     
     return { arg1 => $arg1, meta => $meta };
 }
 
-sub meta2_default : ExtDirect(2, metadata => { len => 1, arg => 99, }) {
+sub arg2_last : ExtDirect(2, metadata => { len => 1, arg => 99, }) {
     my ($class, $arg1, $arg2, $meta) = @_;
 
     return { arg1 => $arg1, arg2 => $arg2, meta => $meta };
 }
 
-sub meta2_arg : ExtDirect(2, metadata => { len => 2, arg => 1 }) {
+sub arg2_middle : ExtDirect(2, metadata => { len => 2, arg => 1 }) {
     my ($class, $arg1, $meta, $arg2) = @_;
 
     return { arg1 => $arg1, arg2 => $arg2, meta => $meta };
 }
 
-sub meta_named_default : ExtDirect(params => [], metadata => { len => 1 }) {
+sub named_default : ExtDirect(params => [], metadata => { len => 1 }) {
     my ($class, %arg) = @_;
 
     my $meta = delete $arg{metadata};
@@ -62,9 +56,9 @@ sub meta_named_default : ExtDirect(params => [], metadata => { len => 1 }) {
     return { %arg, meta => $meta };
 }
 
-# One line declaration is intentional; Perls below 5.12 have trouble
+# One line declarations are intentional; Perls below 5.12 have trouble
 # parsing attributes spanning multiple lines
-sub meta_named_arg : ExtDirect(params => [], metadata => { len => 1, arg => 'foo' }) {
+sub named_arg : ExtDirect(params => [], metadata => { len => 1, arg => 'foo' }) {
     my ($class, %arg) = @_;
 
     my $meta = delete $arg{foo};
@@ -72,7 +66,7 @@ sub meta_named_arg : ExtDirect(params => [], metadata => { len => 1, arg => 'foo
     return { %arg, meta => $meta };
 }
 
-sub meta_named_strict : ExtDirect(params => [], metadata => { params => ['foo'] }) {
+sub named_strict : ExtDirect(params => [], metadata => { params => ['foo'] }) {
     my ($class, %arg) = @_;
     
     my $meta = delete $arg{metadata};
@@ -80,7 +74,7 @@ sub meta_named_strict : ExtDirect(params => [], metadata => { params => ['foo'] 
     return { %arg, meta => $meta };
 }
 
-sub meta_named_unstrict : ExtDirect(params => [], metadata => { params => [], arg => '_meta' }) {
+sub named_unstrict : ExtDirect(params => [], metadata => { params => [], arg => '_meta' }) {
     my ($class, %arg) = @_;
 
     my $meta = delete $arg{_meta};
@@ -88,5 +82,32 @@ sub meta_named_unstrict : ExtDirect(params => [], metadata => { params => [], ar
     return { %arg, meta => $meta };
 }
 
-1;
+sub form_ordered : ExtDirect(formHandler, metadata => { len => 1 }) {
+    my ($class, %arg) = @_;
+    
+    return { %arg };
+}
 
+sub form_named : ExtDirect(formHandler, metadata => { arg => '_m' }) {
+    my ($class, %arg) = @_;
+    
+    return { %arg };
+}
+
+sub aux_hook {
+    my ($class, %arg) = @_;
+    
+    my $method_arg = $arg{arg};
+    
+    push @$method_arg, $arg{aux_data};
+    
+    return 1;
+}
+
+sub aux : ExtDirect(0, before => \&aux_hook) {
+    my ($class, $aux) = @_;
+    
+    return { aux => $aux };
+}
+
+1;

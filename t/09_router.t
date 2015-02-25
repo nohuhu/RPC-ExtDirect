@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 27;
+use Test::More tests => 66;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -57,6 +57,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
+#line 60
 [
     { name   => 'Invalid result', debug => 1,
       input  => '{"type":"rpc","tid":1,"action":"Foo","method":"foo_blessed",'.
@@ -128,21 +129,217 @@ __DATA__
                 ],
     },
     {
-        name   => 'Valid POST with metadata 1', debug => 1,
+        name   => 'Valid POST with invalid metadata 1', debug => 1,
         input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
-                  q|"method":"meta0_default","data":null,|.
+                  q|"method":"arg0","data":null,|.
                   q|"metadata":[42]}|,
         output => [ 200,
                     [
                         'Content-Type', 'application/json',
-                        'Content-Length', 86,
+                        'Content-Length', 213,
                     ],
                     [
-                        q|{"action":"Meta","method":"meta0_default",|.
-                        q|"result":{"meta":[42]},"tid":1,"type":"rpc"}|,
+                        q|{"action":"Meta",|.
+                        q|"message":"ExtDirectMethodMeta.arg0requires|.
+                        q|2metadatavalue(s)butonly1areprovided",|.
+                        q|"method":"arg0","tid":1,"type":"exception",|.
+                        q|"where":"RPC::ExtDirect::API::Method->check_method_metadata"}|,
                     ],
                   ],
             
+    },
+    {
+        name   => 'Valid POST with metadata 1', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"arg0","data":null,|.
+                  q|"metadata":[42,"foo"]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 83,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"arg0",|.
+                        q|"result":{"meta":[42,"foo"]},"tid":1,|.
+                        q|"type":"rpc"}|,
+                    ],
+                  ],
+            
+    },
+    {
+        name   => 'Valid POST with metadata 2', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"arg1_last","data":["foo"],|.
+                  q|"metadata":[42]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 95,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"arg1_last",|.
+                        q|"result":{"arg1":"foo","meta":[42]},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 3', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"arg1_first","data":["foo"],|.
+                  q|"metadata":[42,43]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 99,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"arg1_first",|.
+                        q|"result":{"arg1":"foo","meta":[42,43]},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 4', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"arg2_last","data":[42,43],|.
+                  q|"metadata":["foo","bar"]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 105,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"arg2_last",|.
+                        q|"result":{"arg1":42,"arg2":43,"meta":["foo"]},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 5', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"arg2_middle","data":[44,45],|.
+                  q|"metadata":["fred","bonzo","qux"]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 116,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"arg2_middle",|.
+                        q|"result":{"arg1":44,"arg2":45,"meta":|.
+                        q|["fred","bonzo"]},"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 6', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"named_default",|.
+                  q|"data":{"foo":"bar","fred":"bonzo"},|.
+                  q|"metadata":[42]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 113,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"named_default",|.
+                        q|"result":{"foo":"bar","fred":"bonzo",|.
+                        q|"meta":[42]},"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 7', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"named_arg",|.
+                  q|"data":{"qux":"fred"},|.
+                  q|"metadata":["blerg"]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 100,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"named_arg",|.
+                        q|"result":{"meta":["blerg"],"qux":"fred"},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 8', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"named_arg",|.
+                  q|"data":{"foo":"bar"},|.
+                  q|"metadata":["blerg"]}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 87,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"named_arg",|.
+                        q|"result":{"meta":["blerg"]},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 9', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"named_strict",|.
+                  q|"data":{"frob":"dux","frogg":"bonzo"},|.
+                  q|"metadata":{"foo":{"bar":{"baz":42}}}}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 136,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"named_strict",|.
+                        q|"result":{"frob":"dux","frogg":"bonzo",|.
+                        q|"meta":{"foo":{"bar":{"baz":42}}}},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with metadata 10', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"named_unstrict",|.
+                  q|"data":{"qux":null},"metadata":{}}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 96,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"named_unstrict",|.
+                        q|"result":{"meta":{},"qux":null},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Valid POST with ancillary properties', debug => 1,
+        input  => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                  q|"method":"aux","data":null,"foo":"bar",|.
+                  q|"token":"kaboom!"}|,
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 102,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"aux",|.
+                        q|"result":{"aux":{"foo":"bar","token":"kaboom!"}},|.
+                        q|"tid":1,"type":"rpc"}|,
+                    ],
+                  ],
     },
     { name   => 'Invalid form request', debug => 1,
       input  => { extTID => 100, action => 'Bar', method => 'bar_baz',
@@ -171,6 +368,46 @@ __DATA__
                   q|"tid":123,"type":"rpc"}|,
                   ],
                 ],
+    },
+    {
+        name   => 'Form request with ordered metadata', debug => 1,
+        input  => {
+                    action => '/router_action', method => 'POST',
+                    extAction => 'Meta', extMethod => 'form_ordered',
+                    extTID => 42, fred => 'frob', metadata => [42],
+                  },
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 104,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"form_ordered",|.
+                        q|"result":{"fred":"frob","metadata":[42]},|.
+                        q|"tid":42,"type":"rpc"}|,
+                    ],
+                  ],
+    },
+    {
+        name   => 'Form request with named metadata', debug => 1,
+        input  => {
+                    action => '/router_action', method => 'POST',
+                    extAction => 'Meta', extMethod => 'form_named',
+                    extTID => 58, boogaloo => 1916, frogg => 'splurge',
+                    metadata => { foo => 1, bar => 2, baz => 3 },
+                  },
+        output => [ 200,
+                    [
+                        'Content-Type', 'application/json',
+                        'Content-Length', 137,
+                    ],
+                    [
+                        q|{"action":"Meta","method":"form_named",|.
+                        q|"result":{"_m":{"bar":2,"baz":3,"foo":1},|.
+                        q|"boogaloo":1916,"frogg":"splurge"},|.
+                        q|"tid":58,"type":"rpc"}|,
+                    ],
+                  ],
     },
     { name   => 'Form request, upload one file', debug => 1,
       input  => { action => '/router.cgi', method => 'POST',

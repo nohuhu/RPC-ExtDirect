@@ -72,7 +72,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
-
+#line 75
 [
     { method  => 'foo',
       ex => { type    => 'exception',

@@ -58,7 +58,7 @@ ok      $real_result,                   "NoEvents result() not empty";
 is_deep $real_result, $expected_result, "NoEvents result() deep";
 
 __DATA__
-
+#line 61
 [
     {
         name => 'ordered',

@@ -62,6 +62,7 @@ for my $test ( @$tests ) {
 }
 
 __DATA__
+#line 65
 [{
     name  => 'Empty arrayref attribute data',
     input => [],

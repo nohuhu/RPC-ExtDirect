@@ -34,7 +34,7 @@ is      $@,    '',    "remoting_api() eval $@";
 cmp_api $have, $want, "remoting_api() result";
 
 __DATA__
-
+#line 37
 [
     q~
 Ext.app.REMOTE_CALL_API = {
@@ -52,20 +52,24 @@ Ext.app.REMOTE_CALL_API = {
                 { "len":0, "name":"foo_zero" }
         ],
         "Meta": [
-                { "name":"meta0_default", "len":0, "metadata":{ "len":1 } },
-                { "name":"meta0_arg", "len":0, "metadata":{ "len":2 } },
-                { "name":"meta1_default", "len":1, "metadata":{ "len":1 } },
-                { "name":"meta1_arg", "len":1, "metadata":{ "len":2 } },
-                { "name":"meta2_default", "len":2, "metadata":{ "len":1 } },
-                { "name":"meta2_arg", "len":2, "metadata":{ "len":2 } },
-                { "name":"meta_named_default", "params": [], "strict":false,
+                { "name":"arg0", "len":0, "metadata":{ "len":2 } },
+                { "name":"arg1_last", "len":1, "metadata":{ "len":1 } },
+                { "name":"arg1_first", "len":1, "metadata":{ "len":2 } },
+                { "name":"arg2_last", "len":2, "metadata":{ "len":1 } },
+                { "name":"arg2_middle", "len":2, "metadata":{ "len":2 } },
+                { "name":"form_named", "formHandler": true,
+                  "metadata": { "params": [], "strict": false } },
+                { "name": "form_ordered", "formHandler": true,
                   "metadata": { "len": 1 } },
-                { "name":"meta_named_arg", "params": [], "strict":false,
+                { "name":"named_default", "params": [], "strict":false,
                   "metadata": { "len": 1 } },
-                { "name":"meta_named_strict", "params": [], "strict":false,
+                { "name":"named_arg", "params": [], "strict":false,
+                  "metadata": { "len": 1 } },
+                { "name":"named_strict", "params": [], "strict":false,
                   "metadata": { "params": ["foo"] } },
-                { "name":"meta_named_unstrict", "params": [], "strict":false,
-                  "metadata": { "params": [], "strict": false } }
+                { "name":"named_unstrict", "params": [], "strict":false,
+                  "metadata": { "params": [], "strict": false } },
+                { "name":"aux", "len":0 }
         ],
         "Qux": [
                 { "len":1, "name":"foo_foo" },

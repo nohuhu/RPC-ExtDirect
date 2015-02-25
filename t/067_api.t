@@ -66,7 +66,7 @@ is      $@,    '',    "authz remoting_api eval $@";
 cmp_api $have, $want, "authz remoting_api result";
 
 __DATA__
-
+#line 69
 {
     api_def => {
         'Foo' => {

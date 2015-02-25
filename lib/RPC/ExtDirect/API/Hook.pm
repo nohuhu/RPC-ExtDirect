@@ -64,28 +64,27 @@ sub new {
 sub run {
     my ($self, %args) = @_;
     
-    my ($api, $env, $arg, $result, $exception, $method_ref, $callee)
-        = @args{qw/api env arg result exception method_ref callee/};
-    
-    my $action_name    = $method_ref->action;
-    my $method_name    = $method_ref->name;
-    my $method_pkg     = $method_ref->package;
-    my $method_coderef = $method_ref->code;
+    my $method_ref  = $args{method_ref};
+    my $action_name = $method_ref->action;
+    my $method_name = $method_ref->name;
+    my $method_pkg  = $method_ref->package;
     
     my %hook_arg = $method_ref->get_api_definition_compat();
-
-    $hook_arg{arg}        = $arg;
-    $hook_arg{env}        = $env;
-    $hook_arg{code}       = $method_coderef;
+    
     $hook_arg{method_ref} = $method_ref;
+    $hook_arg{code}       = $method_ref->code;
+
+    @hook_arg{qw/arg env metadata aux_data/}
+      = @args{qw/arg env metadata aux_data/};
 
     # Result and exception are passed to "after" hook only
-    @hook_arg{ qw/result   exception   method_called/ }
-              = ($result, $exception, $callee)
-        if $self->type eq 'after';
+    if ( $self->type eq 'after' ) {
+        @hook_arg{ qw/result exception method_called/ }
+          = @args{ qw/result exception callee/ }
+    }
 
     for my $type ( $self->HOOK_TYPES ) {
-        my $hook = $api->get_hook(
+        my $hook = $args{api}->get_hook(
             action => $action_name,
             method => $method_name,
             type   => $type,
@@ -94,9 +93,11 @@ sub run {
         $hook_arg{ $type.'_ref' } = $hook;
         $hook_arg{ $type }        = $hook ? $hook->code : undef;
     }
+    
+    my $arg = $args{arg};
 
     # A drop of sugar
-    $hook_arg{orig} = sub { $method_coderef->($method_pkg, @$arg) };
+    $hook_arg{orig} = sub { $method_pkg->$method_name(@$arg) };
 
     my $hook_coderef  = $self->code;
     my $hook_sub_name = $self->sub_name;

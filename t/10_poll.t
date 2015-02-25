@@ -36,6 +36,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
+#line 39
 [
     { name   => 'Two events', password => 'Usual, please',
       result => q|[{"data":["foo"],|.

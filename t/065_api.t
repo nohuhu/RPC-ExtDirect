@@ -43,7 +43,7 @@ is      $@,    '',    "remoting_api() eval $@";
 cmp_api $have, $want, "remoting_api() result";
 
 __DATA__
-
+#line 46
 {
     api_def => {
         'RPC::ExtDirect::Test::Foo' => {

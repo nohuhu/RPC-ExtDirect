@@ -37,7 +37,7 @@ is      $@,    '',    "API options eval $@";
 cmp_api $have, $want, "API options result";
 
 __DATA__
-
+#line 40
 [
     q~
 Ext.app.REMOTE_CALL_API = {

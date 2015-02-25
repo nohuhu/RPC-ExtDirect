@@ -62,6 +62,7 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
+#line 65
 [
     { name   => 'Invalid post data, debug off', debug => 0,
       method => 'decode_post',
