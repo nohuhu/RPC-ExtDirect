@@ -125,6 +125,16 @@ for my $test ( @$tests ) {
         };
     }
 
+    # Same thing with metadata and aux_data as above; RPC::ExtDirect code
+    # earlier than 3.1 is not aware of it and so no harm if it's deleted
+    {
+        local $@;
+        eval {
+            delete $before->[1]->{$_}, delete $after->[1]->{$_}
+                for qw/ metadata aux_data /;
+        };
+    }
+
     is_deep $before, $exp_before, "$name: before data";
     is_deep $after,  $exp_after,  "$name: after data";
 };

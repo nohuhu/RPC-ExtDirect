@@ -417,8 +417,12 @@ sub _unpack_arguments {
     # and make it available to the Hooks. This might be used e.g.
     # for passing CSRF protection tokens, etc.
     my %aux = map { $_ => $arg->{$_} } keys %arg_keys;
+    
+    my $aux_ref = %aux ? { %aux } : undef;
 
-    return ($action, $method, $tid, $data, $type, $upload, $meta, \%aux);
+    return (
+        $action, $method, $tid, $data, $type, $upload, $meta, $aux_ref
+    );
 }
 
 ### PRIVATE INSTANCE METHOD ###
