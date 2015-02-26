@@ -1,11 +1,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 16;
+use Test::More tests => 22;
 
 use RPC::ExtDirect::Test::Util;
 
 use RPC::ExtDirect::Test::Pkg::Hooks;
+use RPC::ExtDirect::Test::Pkg::Meta;
 use RPC::ExtDirect::Test::Pkg::PollProvider;
 
 use RPC::ExtDirect::Router;
@@ -53,7 +54,7 @@ use RPC::ExtDirect::API before => \&before_hook, after => \&after_hook;
 use RPC::ExtDirect::API::Hook;
 
 # These variables get set when hooks are called
-my ($before, $after, $modify, $throw_up, $cancel);
+my ($before, $after, $modify, $modify_meta, $throw_up, $cancel);
 
 sub before_hook {
     my ($class, %params) = @_;
@@ -61,6 +62,8 @@ sub before_hook {
     $before = [ $class, { %params } ];
 
     $params{arg}->[0] = 'bar' if $modify;
+    
+    $modify_meta->(%params) if $modify_meta;
 
     die "Exception\n" if $throw_up;
 
@@ -76,6 +79,9 @@ sub after_hook {
 my $tests = eval do { local $/; <DATA> };
 die "Can't read DATA: $@\n" if $@;
 
+my %run_only = map { $_ => 1 } @ARGV;
+
+TEST:
 for my $test ( @$tests ) {
     my $name       = $test->{name};
     my $input      = $test->{input};
@@ -84,11 +90,15 @@ for my $test ( @$tests ) {
     my $exp_before = $test->{expected_before};
     my $exp_after  = $test->{expected_after};
     
-    $before = $after = $modify = $throw_up = $cancel = undef;
+    next TEST if %run_only && !$run_only{$name};
     
-    $modify   = $test->{modify};
-    $throw_up = $test->{throw_up};
-    $cancel   = $test->{cancel};
+    $before = $after = $modify = $modify_meta
+            = $throw_up = $cancel = undef;
+    
+    $modify      = $test->{modify};
+    $modify_meta = $test->{modify_meta};
+    $throw_up    = $test->{throw_up};
+    $cancel      = $test->{cancel};
     
     if ( $type eq 'router' ) {
         RPC::ExtDirect::Router->route($input, $env);
@@ -126,7 +136,7 @@ sub get_hook_ref {
 }
 
 __DATA__
-#line 129
+#line 139
 [
     # Cancel Method call by throwing error
     {
@@ -359,6 +369,190 @@ __DATA__
                 method_ref    => get_method_ref(qw/ Hooks foo_hook /),
                 metadata      => undef,
                 aux_data      => undef,
+            },
+        ],
+    },
+    
+    # Passing metadata to hooks
+    {
+        name  => 'Passing metadata to hooks',
+        input => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                 q|"method":"arg0","data":null,|.
+                 q|"metadata":[42,43]}|,
+        env   => 'env',
+        type  => 'router',
+        expected_before => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Meta arg0 before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Meta arg0 after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Meta',
+                method        => 'arg0',
+                code          => \&RPC::ExtDirect::Test::Pkg::Meta::arg0,
+                arg           => [ [42, 43] ],
+                env           => 'env',
+                param_names   => undef,
+                param_no      => 0,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_ref    => get_method_ref(qw/ Meta arg0 /),
+                metadata      => [42, 43],
+                aux_data      => undef,
+            },
+        ],
+        expected_after => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Meta arg0 before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Meta arg0 after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Meta',
+                method        => 'arg0',
+                code          => \&RPC::ExtDirect::Test::Pkg::Meta::arg0,
+                arg           => [ [42, 43] ],
+                env           => 'env',
+                result        => { meta => [42, 43] },
+                exception     => '',
+                param_names   => undef,
+                param_no      => 0,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_called => \&RPC::ExtDirect::Test::Pkg::Meta::arg0,
+                method_ref    => get_method_ref(qw/ Meta arg0 /),
+                metadata      => [42, 43],
+                aux_data      => undef,
+            },
+        ],
+    },
+    
+    {
+        name  => 'Munging metadata in a hook',
+        input => q|{"type":"rpc","tid":1,"action":"Meta",|.
+                 q|"method":"named_arg","data":{"fred":"frob"},|.
+                 q|"metadata":["quack"]}|,
+        env   => 'env',
+        type  => 'router',
+        modify_meta => sub {
+            my (%arg) = @_;
+            
+            my @meta = @{ delete $arg{metadata} };
+            
+            s/a/i/g for @meta;
+            
+            push @{ $arg{arg} }, 'bar', \@meta;
+        },
+        expected_before => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Meta named_arg before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Meta named_arg after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Meta',
+                method        => 'named_arg',
+                code          => \&RPC::ExtDirect::Test::Pkg::Meta::named_arg,
+                arg           => ['foo', ['quack'], 'fred', 'frob', 'bar', ['quick']],
+                env           => 'env',
+                param_names   => [],
+                param_no      => undef,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_ref    => get_method_ref(qw/ Meta named_arg /),
+                metadata      => ['quack'],
+                aux_data      => undef,
+            },
+        ],
+        expected_after => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Meta named_arg before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Meta named_arg after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Meta',
+                method        => 'named_arg',
+                code          => \&RPC::ExtDirect::Test::Pkg::Meta::named_arg,
+                arg           => ['foo', ['quack'], 'fred', 'frob', 'bar', ['quick']],
+                env           => 'env',
+                result        => { fred => 'frob', bar => ['quick'], meta => ['quack'] },
+                exception     => '',
+                param_names   => [],
+                param_no      => undef,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_called => \&RPC::ExtDirect::Test::Pkg::Meta::named_arg,
+                method_ref    => get_method_ref(qw/ Meta named_arg /),
+                metadata      => ['quack'],
+                aux_data      => undef,
+            },
+        ],
+    },
+    
+    {
+        name  => 'Ancillary data in hooks',
+        input => q|{"type":"rpc","tid":1,"action":"Hooks",|.
+                 q|"method":"foo_hook","data":[42],|.
+                 q|"token":"kaboom!","frob":"bazoo"}|,
+        env   => 'env',
+        type  => 'router',
+        expected_before => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
+                method        => 'foo_hook',
+                code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
+                arg           => [42],
+                env           => 'env',
+                param_names   => undef,
+                param_no      => 1,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
+                metadata      => undef,
+                aux_data      => { frob => 'bazoo', token => 'kaboom!' },
+            },
+        ],
+        expected_after => [
+            'main',
+            {
+                before        => \&before_hook,
+                before_ref    => get_hook_ref(qw/ Hooks foo_hook before /),
+                instead       => undef,
+                instead_ref   => undef,
+                after         => \&after_hook,
+                after_ref     => get_hook_ref(qw/ Hooks foo_hook after /),
+                package       => 'RPC::ExtDirect::Test::Pkg::Hooks',
+                method        => 'foo_hook',
+                code          => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
+                arg           => [42],
+                env           => 'env',
+                result        => [ 'RPC::ExtDirect::Test::Pkg::Hooks', 42 ],
+                exception     => '',
+                param_names   => undef,
+                param_no      => 1,
+                pollHandler   => 0,
+                formHandler   => 0,
+                method_called => \&RPC::ExtDirect::Test::Pkg::Hooks::foo_hook,
+                method_ref    => get_method_ref(qw/ Hooks foo_hook /),
+                metadata      => undef,
+                aux_data      => { frob => 'bazoo', token => 'kaboom!' },
             },
         ],
     },
