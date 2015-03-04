@@ -5,6 +5,7 @@ use warnings;
 no  warnings 'uninitialized';       ## no critic
 
 use Carp;
+use JSON;
 
 use base 'Exporter';
 
@@ -271,4 +272,33 @@ sub parse_attribute {
     };
 }
 
+### NON-EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Decode metadata sent by the client. This function changes
+# the passed hashref in situ (so has side effects).
+#
+
+sub decode_metadata {
+    # This is a bit hacky but will do
+    my ($self, $keywords) = @_;
+
+    my $meta_encoded = $keywords->{metadata};
+
+    if ( defined $meta_encoded ) {
+        # Whoever sends *multiple* metadata fields is going to regret it.
+        my $meta_json = 'ARRAY' eq ref $meta_encoded ? pop @$meta_encoded
+                      :                                $meta_encoded
+                      ;
+
+        local $@;
+        $keywords->{metadata} = eval { JSON::from_json($meta_json) };
+
+        if ( $@ ) {
+            my $error = clean_error_message($@);
+            $self->set_error("Invalid metadata: $error");
+        }
+    }
+}
+
 1;
+

@@ -39,15 +39,18 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        cgi_content_length => 167,
         cgi_content =>
             q|{"action":"Env","method":"http_list","result":|.
             q|["http_accept","http_accept_charset","http_connection",|.
             q|"http_cookie","http_host","http_user_agent"],|.
             q|"tid":1,"type":"rpc"}|,
+        plack_content_length => 117,
         plack_content =>
             q|{"action":"Env","method":"http_list","result":|.
             q|["content-length","content-type","cookie","host"],|.
             q|"tid":1,"type":"rpc"}|,
+        anyevent_content_length => 110,
         anyevent_content =>
             q|{"action":"Env","method":"http_list","result":|.
             q|["content-length","content-type","cookie"],|.
@@ -95,10 +98,12 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        cgi_content_length => 81,
         cgi_content => 
             q|{"action":"Env","method":"http_header","result":|.
             q|"CGI::Test",|.
             q|"tid":1,"type":"rpc"}|,
+        content_length => 88,
         content =>
             q|{"action":"Env","method":"http_header","result":|.
             q|"application/json",|.
@@ -137,10 +142,12 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        anyevent_content_length => 71,
         anyevent_content =>
             q|{"action":"Env","method":"param_list","result":|.
             q|[],|.
             q|"tid":1,"type":"rpc"}|,
+        content_length => 81,
         content =>
             q|{"action":"Env","method":"param_list","result":|.
             q|["postdata"],|.
@@ -179,10 +186,12 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        anyevent_content_length => 72,
         anyevent_content =>
             q|{"action":"Env","method":"param_get","result":|.
             q|null,|.
             q|"tid":1,"type":"rpc"}|,
+        content_length => 167,
         content =>
             q|{"action":"Env","method":"param_get","result":|.
             q|"{\"type\":\"rpc\",\"tid\":1,\"action\":\"Env\",\"method\":\"param_get\",\"data\":[\"POSTDATA\"]}",|.
@@ -221,6 +230,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        content_length => 77,
         content =>
             q|{"action":"Env","method":"cookie_list","result":|.
             q|["foo"],|.
@@ -259,6 +269,7 @@ my $tests = [{
         status => 200,
         content_type => qr|^application/json\b|,
         comparator => 'cmp_json',
+        content_length => 74,
         content =>
             q|{"action":"Env","method":"cookie_get","result":|.
             q|"bar",|.

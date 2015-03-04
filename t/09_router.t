@@ -374,7 +374,8 @@ __DATA__
         input  => {
                     action => '/router_action', method => 'POST',
                     extAction => 'Meta', extMethod => 'form_ordered',
-                    extTID => 42, fred => 'frob', metadata => [42],
+                    extTID => 42, extType => 'rpc',
+                    fred => 'frob', metadata => [42],
                   },
         output => [ 200,
                     [
@@ -393,7 +394,8 @@ __DATA__
         input  => {
                     action => '/router_action', method => 'POST',
                     extAction => 'Meta', extMethod => 'form_named',
-                    extTID => 58, boogaloo => 1916, frogg => 'splurge',
+                    extTID => 58, extType => 'rpc',
+                    boogaloo => 1916, frogg => 'splurge',
                     metadata => { foo => 1, bar => 2, baz => 3 },
                   },
         output => [ 200,

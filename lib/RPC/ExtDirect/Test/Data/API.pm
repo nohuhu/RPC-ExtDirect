@@ -29,13 +29,14 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/javascript\b|,
+        content_length => 1312,
         comparator => 'cmp_api',
         content => q~
             Ext.app.REMOTING_API = {
                 "actions": {
                 "Bar": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" }
                        ],
                 "Foo": [
@@ -43,11 +44,31 @@ my $tests = [{
                             { "name":"foo_baz", "params":["foo","bar","baz"] },
                             { "len":1, "name":"foo_foo" },
                             { "len":0, "name":"foo_zero" },
-                            { "name":"foo_blessed" }
+                            { "name":"foo_blessed", "params":[], "strict":false }
                        ],
+                "Meta": [
+                        { "name":"arg0", "len":0, "metadata":{ "len":2 } },
+                        { "name":"arg1_last", "len":1, "metadata":{ "len":1 } },
+                        { "name":"arg1_first", "len":1, "metadata":{ "len":2 } },
+                        { "name":"arg2_last", "len":2, "metadata":{ "len":1 } },
+                        { "name":"arg2_middle", "len":2, "metadata":{ "len":2 } },
+                        { "name":"form_named", "formHandler": true,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name": "form_ordered", "formHandler": true,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_default", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_arg", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_strict", "params": [], "strict":false,
+                          "metadata": { "params": ["foo"] } },
+                        { "name":"named_unstrict", "params": [], "strict":false,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name":"aux", "len":0 }
+                ],
                 "Qux": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" },
                             { "len":2, "name":"foo_bar" },
                             { "name":"foo_baz", "params":["foo","bar","baz"] },
@@ -84,13 +105,14 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/javascript\b|,
+        content_length => 1382,
         comparator => 'cmp_api',
         content => q~
             Ext.app.REMOTE_CALL = {
                 "actions": {
                 "Bar": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" }
                        ],
                 "Foo": [
@@ -98,11 +120,31 @@ my $tests = [{
                             { "name":"foo_baz", "params":["foo","bar","baz"] },
                             { "len":1, "name":"foo_foo" },
                             { "len":0, "name":"foo_zero" },
-                            { "name":"foo_blessed" }
+                            { "name":"foo_blessed", "params":[], "strict":false }
                        ],
+                "Meta": [
+                        { "name":"arg0", "len":0, "metadata":{ "len":2 } },
+                        { "name":"arg1_last", "len":1, "metadata":{ "len":1 } },
+                        { "name":"arg1_first", "len":1, "metadata":{ "len":2 } },
+                        { "name":"arg2_last", "len":2, "metadata":{ "len":1 } },
+                        { "name":"arg2_middle", "len":2, "metadata":{ "len":2 } },
+                        { "name":"form_named", "formHandler": true,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name": "form_ordered", "formHandler": true,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_default", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_arg", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_strict", "params": [], "strict":false,
+                          "metadata": { "params": ["foo"] } },
+                        { "name":"named_unstrict", "params": [], "strict":false,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name":"aux", "len":0 }
+                ],
                 "Qux": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" },
                             { "len":2, "name":"foo_bar" },
                             { "name":"foo_baz", "params":["foo","bar","baz"] },
@@ -142,13 +184,14 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/javascript\b|,
+        content_length => 1394,
         comparator => 'cmp_api',
         content => q~
             Ext.app.CALL = {
                 "actions": {
                 "Bar": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" }
                        ],
                 "Foo": [
@@ -156,11 +199,31 @@ my $tests = [{
                             { "name":"foo_baz", "params":["foo","bar","baz"] },
                             { "len":1, "name":"foo_foo" },
                             { "len":0, "name":"foo_zero" },
-                            { "name":"foo_blessed" }
+                            { "name":"foo_blessed", "params":[], "strict":false }
                        ],
+                "Meta": [
+                        { "name":"arg0", "len":0, "metadata":{ "len":2 } },
+                        { "name":"arg1_last", "len":1, "metadata":{ "len":1 } },
+                        { "name":"arg1_first", "len":1, "metadata":{ "len":2 } },
+                        { "name":"arg2_last", "len":2, "metadata":{ "len":1 } },
+                        { "name":"arg2_middle", "len":2, "metadata":{ "len":2 } },
+                        { "name":"form_named", "formHandler": true,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name": "form_ordered", "formHandler": true,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_default", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_arg", "params": [], "strict":false,
+                          "metadata": { "len": 1 } },
+                        { "name":"named_strict", "params": [], "strict":false,
+                          "metadata": { "params": ["foo"] } },
+                        { "name":"named_unstrict", "params": [], "strict":false,
+                          "metadata": { "params": [], "strict": false } },
+                        { "name":"aux", "len":0 }
+                ],
                 "Qux": [
                             { "len":5, "name":"bar_bar" },
-                            { "formHandler":true, "len":0, "name":"bar_baz" },
+                            { "formHandler":true, "name":"bar_baz" },
                             { "len":4, "name":"bar_foo" },
                             { "len":2, "name":"foo_bar" },
                             { "name":"foo_baz", "params":["foo","bar","baz"] },

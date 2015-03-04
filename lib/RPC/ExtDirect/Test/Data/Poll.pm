@@ -28,6 +28,7 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/json\b|,
+        content_length => 109,
         comparator => 'cmp_json',
         content => 
             q|[{"data":["foo"],|.
@@ -59,6 +60,7 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/json\b|,
+        content_length => 65,
         comparator => 'cmp_json',
         content =>
             q|{"data":"Uno cappuccino, presto!",|.
@@ -87,6 +89,7 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/json\b|,
+        content_length => 44,
         comparator => 'cmp_json',
         content => q|{"data":"","name":"__NONE__","type":"event"}|,
     },
@@ -112,6 +115,7 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/json\b|,
+        content_length => 44,
         comparator => 'cmp_json',
         content => q|{"data":"","name":"__NONE__","type":"event"}|,
     },
@@ -137,6 +141,7 @@ my $tests = [{
     output => {
         status => 200,
         content_type => qr|^application/json\b|,
+        content_length => 44,
         comparator => 'cmp_json',
         content => q|{"data":"","name":"__NONE__","type":"event"}|,
     },
