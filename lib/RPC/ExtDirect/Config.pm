@@ -365,6 +365,33 @@ my @package_globals = grep { $_->{var} } @$DEFINITIONS;
 
 ### PRIVATE INSTANCE METHOD ###
 #
+# Return the default value for a field.
+#
+
+sub _get_default {
+    my ($self, $field) = @_;
+    
+    my $def = $field_defaults{$field};
+    
+    return $def ? $def->{default} : undef;
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Return true if the current field value is the default.
+#
+
+sub _is_default {
+    my ($self, $field) = @_;
+    
+    my $value   = $self->$field();
+    my $default = $self->_get_default($field);
+    
+    return $value eq $default;
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
 # Parse global package variables
 #
 

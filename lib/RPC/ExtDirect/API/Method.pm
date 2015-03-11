@@ -4,6 +4,8 @@ use strict;
 use warnings;
 no  warnings 'uninitialized';           ## no critic
 
+use Carp;
+
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Util::Accessor;
 
@@ -40,75 +42,25 @@ sub new {
                   :                'named'
                   ;
     
+    # Need $self to call instance methods
+    my $self = bless {
+        upload_arg        => 'file_uploads',
+        is_named          => $is_named,
+        is_ordered        => $is_ordered,
+        argument_checker  => "check_${processor}_arguments",
+        argument_preparer => "prepare_${processor}_arguments",
+    }, $class;
+    
     # If the Method is named, and params array is empty, force !strict
     if ( $is_named ) {
         $arg{params} = $arg{params} || []; # Better safe than sorry
         $arg{strict} = !1 unless @{ $arg{params} };
     }
-
-    my $meta = delete $arg{metadata};
     
-    if ( 'HASH' eq ref $meta ) {
-        my $meta_def = {};
-
-        if ( defined (my $len = $meta->{len}) ) {
-            # Metadata is optional so ordered with 0 arguments does not
-            # make any sense
-            die sprintf "ExtDirect Method %s.%s cannot accept ".
-                        "0 arguments for ordered metadata",
-                        $arg{action}, $arg{name}
-                unless $len > 0;
-            
-            $meta_def->{len} = $len;
-            
-            $arg{metadata_checker}  = 'check_ordered_metadata';
-            $arg{metadata_preparer} = 'prepare_ordered_metadata';
-        }
-        else {
-            my $params = $meta->{params} || [];
-
-            # Same as with main arguments; force !strict if named metadata
-            # has empty params
-            my $strict = !@$params               ? !1
-                       : defined $meta->{strict} ? $meta->{strict}
-                       :                           undef
-                       ;
-            
-            # !strict with no params might be a typo or something;
-            # worth a warning in any case
-            warn sprintf "ExtDirect Method %s.%s implies strict ".
-                         "argument checking for named metadata, ".
-                         "but no parameter names are specified.",
-                         $arg{action}, $arg{name}
-                if !@$params && defined $meta->{strict} &&
-                   !$meta->{strict};
-
-            $meta_def->{strict} = $strict;
-            $meta_def->{params} = $params;
-            
-            $arg{metadata_checker}  = 'check_named_metadata';
-            $arg{metadata_preparer} = 'prepare_named_metadata';
-        }
-        
-        my $arg = $meta->{arg};
-        
-        if ( $is_ordered ) {
-            # There is no way to splice new elements at the end of array
-            # without knowing array length. Splicing at negative subscripts
-            # will not do what is expected, and I don't see a sane default
-            # otherwise. So insist on having the arg defined.
-            die sprintf "ExtDirect Method %s.%s cannot accept ".
-                        "ordered metadata with no arg position specified",
-                        $arg{action}, $arg{name}
-                unless defined $arg;
-        }
-        else {
-            $arg = defined $arg ? $arg : 'metadata';
-        }
-        
-        $meta_def->{arg} = $arg;
-
-        $arg{metadata} = $meta_def;
+    if ( exists $arg{metadata} ) {
+        # This method is coupled too tightly to try untangling it,
+        # so let's pretend that side effects are ok in this case
+        $self->_parse_metadata(\%arg);
     }
     
     # We avoid hard binding on the hook class
@@ -123,15 +75,10 @@ sub new {
             if $hook;
     }
     
-    return bless {
-        upload_arg        => 'file_uploads',
-        is_named          => $is_named,
-        is_ordered        => $is_ordered,
-        argument_checker  => "check_${processor}_arguments",
-        argument_preparer => "prepare_${processor}_arguments",
-        %arg,
-        %hooks,
-    }, $class;
+    @$self{ keys %arg   } = values %arg;
+    @$self{ keys %hooks } = values %hooks;
+    
+    return $self;
 }
 
 ### PUBLIC INSTANCE METHOD ###
@@ -457,7 +404,7 @@ sub prepare_formHandler_arguments {
 sub check_named_arguments {
     my ($self, $arg) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects named arguments " .
+    die sprintf "ExtDirect Method %s.%s expects named arguments ".
                 "in hashref\n", $self->action, $self->name
         unless 'HASH' eq ref $arg;
     
@@ -482,7 +429,7 @@ sub check_named_arguments {
 sub check_named_metadata {
     my ($self, $meta) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects metadata key/value" .
+    die sprintf "ExtDirect Method %s.%s expects metadata key/value ".
                 "pairs in hashref\n", $self->action, $self->name
         unless 'HASH' eq ref $meta;
     
@@ -726,5 +673,104 @@ my $accessors = [qw/
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => $accessors,
 );
+
+############## PRIVATE METHODS BELOW ##############
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Parse metadata definition and run sanity checks.
+#
+# This method has side effects on $arg!
+#
+
+sub _parse_metadata {
+    my ($self, $arg) = @_;
+    
+    my $meta = delete $arg->{metadata};
+    
+    if ( 'HASH' eq ref $meta ) {
+        my $meta_def = {};
+
+        if ( defined (my $len = $meta->{len}) ) {
+            # Metadata is optional so ordered with 0 arguments
+            # does not make any sense
+            die [
+                    sprintf "ExtDirect Method %s.%s cannot accept ".
+                            "0 arguments for ordered metadata",
+                            $arg->{action}, $arg->{name}
+                ]
+                unless $len > 0;
+            
+            $meta_def->{len} = $len;
+            
+            $arg->{metadata_checker}  = 'check_ordered_metadata';
+            $arg->{metadata_preparer} = 'prepare_ordered_metadata';
+        }
+        else {
+            my $params = $meta->{params} || [];
+
+            # Same as with main arguments; force !strict if named metadata
+            # has empty params
+            my $strict = !@$params               ? !1
+                       : defined $meta->{strict} ? $meta->{strict}
+                       :                           undef
+                       ;
+            
+            $DB::single = 1 if $arg->{name} eq 'meta_named_unstrict2';
+            
+            # !strict with no params might be a typo or something;
+            # worth a warning in any case
+            carp sprintf "ExtDirect Method %s.%s implies strict ".
+                         "argument checking for named metadata, ".
+                         "but no parameter names are specified.",
+                         $arg->{action}, $arg->{name}
+                if !@$params && defined $meta->{strict} && $meta->{strict};
+
+            $meta_def->{strict} = $strict;
+            $meta_def->{params} = $params;
+            
+            $arg->{metadata_checker}  = 'check_named_metadata';
+            $arg->{metadata_preparer} = 'prepare_named_metadata';
+        }
+        
+        $meta_def->{arg} = $self->_get_meta_arg($meta, $arg);
+
+        $arg->{metadata} = $meta_def;
+    }
+}
+
+### PRIVATE INSTANCE METHOD ###
+#
+# Check that the metadata has valid argument name or position
+# to be applied to the called Method.
+#
+# This code is split from the method above so that we could
+# override it in the Client which doesn't need to run the same
+# checks as the server side.
+#
+
+sub _get_meta_arg {
+    my ($self, $meta, $arg) = @_;
+    
+    my $meta_arg = $meta->{arg};
+    
+    if ( $self->is_ordered ) {
+        # There is no way to splice new elements at the end of array
+        # without knowing array length. Splicing at negative subscripts
+        # will not do what is expected, and I don't see a sane default
+        # otherwise. So insist on having the arg defined.
+        die [
+                sprintf "ExtDirect Method %s.%s cannot accept ".
+                        "ordered metadata with no arg position specified",
+                        $arg->{action}, $arg->{name}
+            ]
+            unless defined $meta_arg;
+    }
+    else {
+        $meta_arg = defined $meta_arg ? $meta_arg : 'metadata';
+    }
+    
+    return $meta_arg;
+}
 
 1;
