@@ -47,8 +47,8 @@ sub new {
     my $api    = delete $arg->{api}    || RPC::ExtDirect->get_api();
     my $config = delete $arg->{config} || RPC::ExtDirect::Config->new();
     
-    my $debug = defined $arg->{debug} ? delete $arg->{debug}
-              :                         $config->debug_request
+    my $debug = exists $arg->{debug} ? !!(delete $arg->{debug})
+              :                        $config->debug_request
               ;
 
     # Need blessed object to call private methods
@@ -382,8 +382,8 @@ sub _set_error {
 #
 
 my @std_keys = qw/
-    extAction action extMethod method extTID tid data metadata type
-    extUpload _uploads
+    extAction action extMethod method extTID tid data metadata
+    extType type extUpload _uploads
 /;
 
 sub _unpack_arguments {

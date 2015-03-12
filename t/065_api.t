@@ -99,7 +99,7 @@ __DATA__
                     metadata => { params => ['foo'], },
                 },
                 meta_named_unstrict => {
-                    metadata => { arg => '_meta' },
+                    metadata => { arg => '_meta', strict => !1, },
                 },
             },
         },

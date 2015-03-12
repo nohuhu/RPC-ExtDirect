@@ -32,7 +32,7 @@ sub bar_foo : ExtDirect(4) { croak 'bar foo!' }
 sub bar_bar : ExtDirect(5) { shift; pop; return scalar @_; }
 
 # This is a form handler
-sub bar_baz : ExtDirect( formHandler ) {
+sub bar_baz : ExtDirect(formHandler) {
     my ($class, %param) = @_;
 
     # We don't use the env object here, but have to remove it
@@ -51,7 +51,7 @@ sub bar_baz : ExtDirect( formHandler ) {
         my $size = $upload->{size};
         
         #
-        # CTI::Test somehow uploads files so that
+        # CGI::Test somehow uploads files so that
         # they are 2 bytes shorter than actual size
         # This allows for the same test results to be
         # applied across all gateways and test frameworks

@@ -31,7 +31,7 @@ sub bar_foo : ExtDirect(4) { croak 'bar foo!' }
 sub bar_bar : ExtDirect(5) { shift; return scalar @_; }
 
 # This is a form handler
-sub bar_baz : ExtDirect( formHandler ) {
+sub bar_baz : ExtDirect(formHandler, decode_params => [qw/frob guzzard/]) {
     my ($class, %param) = @_;
 
     # Simulate uploaded file handling

@@ -74,7 +74,7 @@ sub named_strict : ExtDirect(params => [], metadata => { params => ['foo'] }) {
     return { %arg, meta => $meta };
 }
 
-sub named_unstrict : ExtDirect(params => [], metadata => { params => [], arg => '_meta' }) {
+sub named_unstrict : ExtDirect(params => [], metadata => { params => [], strict => !1, arg => '_meta' }) {
     my ($class, %arg) = @_;
 
     my $meta = delete $arg{_meta};
@@ -88,7 +88,7 @@ sub form_ordered : ExtDirect(formHandler, metadata => { len => 1 }) {
     return { %arg };
 }
 
-sub form_named : ExtDirect(formHandler, metadata => { arg => '_m' }) {
+sub form_named : ExtDirect(formHandler, metadata => { arg => '_m', strict => !1, }) {
     my ($class, %arg) = @_;
     
     return { %arg };

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 110;
+use Test::More tests => 166;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -22,7 +22,8 @@ for my $test ( @$tests ) {
     my $type       = $test->{type};
     my $method_arg = $test->{method};
     my $input      = $test->{input};
-    my $out_type   = $test->{out_type};
+    my $out_type   = $test->{out_type} || 'array';
+    my $out_ctx    = $test->{out_context} || { list => 1, scalar => 1 },
     my $output     = $test->{output};
     my $exception  = $test->{exception};
     my $warning    = $test->{warning};
@@ -42,7 +43,9 @@ for my $test ( @$tests ) {
     
     if ( $@ ) {
         if ( $exception ) {
-            like $@, $exception, "$name: new exception";
+            my $xcpt = 'ARRAY' eq ref $@ ? $@->[0] : $@;
+            
+            like $xcpt, $exception, "$name: new exception";
         }
         else {
             fail "$name: uncaught new exception: $@";
@@ -59,27 +62,45 @@ for my $test ( @$tests ) {
         my $result = eval { $method->check_method_arguments($input) };
         
         if ( $exception ) {
-            like $@, $exception, "$name: check exception";
+            my $xcpt = 'ARRAY' eq ref $@ ? $@->[0] : $@;
+            
+            like $xcpt, $exception, "$name: check exception";
         }
         else {
             is_deep $result, $output, "$name: check result";
         }
     }
     elsif ( $type eq 'prepare' ) {
-        my @prep_out = $method->prepare_method_arguments(%$input);
-        my $prep_out = $method->prepare_method_arguments(%$input);
-        
-        if ( $out_type ) {
-            is ref($prep_out), uc $out_type, "$name: prepare ref type";
+        if ( $out_ctx->{list} ) {
+            if ( $out_type eq 'hash' ) {
+                my %have = $method->prepare_method_arguments(%$input);
+                
+                is_deep \%have, $output, "$name: prepare list output";
+            }
+            else {
+                my @have = $method->prepare_method_arguments(%$input);
+                
+                is_deep \@have, $output, "$name: prepare list output";
+            }
         }
         
-        is_deep $prep_out, $output, "$name: prepare output";
+        if ( $out_ctx->{scalar} ) {
+            my $have = $method->prepare_method_arguments(%$input);
+            
+            if ( $out_type ) {
+                is ref($have), uc $out_type, "$name: prepare ref type";
+            }
+            
+            is_deep $have, $output, "$name: prepare scalar output";
+        }
     }
     elsif ( $type eq 'check_meta' ) {
         my $result = eval { $method->check_method_metadata($input) };
         
         if ( $exception ) {
-            like $@, $exception, "$name: check_meta exception";
+            my $xcpt = 'ARRAY' eq ref $@ ? $@->[0] : $@;
+            
+            like $xcpt, $exception, "$name: check_meta exception";
         }
         else {
             is_deep $result, $output, "$name: check_meta result";
@@ -96,7 +117,7 @@ for my $test ( @$tests ) {
 }
 
 __DATA__
-#line 99
+#line 120
 [
     {
         name => 'Ordered passed {}',
@@ -554,6 +575,22 @@ __DATA__
         output => { foo => 'bar', _env => 'env' },
     },
     {
+        name => 'formHandler decode_params',
+        type => 'prepare',
+        method => {
+            formHandler => 1,
+            decode_params => ['frobbe', 'guzzard'],
+        },
+        input => {
+            input => { frobbe => '{"throbbe":["vita","voom"]}', },
+        },
+        out_type => 'hash',
+        out_context => { list => 1 },
+        output => {
+            frobbe => { throbbe => ['vita', 'voom'] },
+        },
+    },
+    {
         name => 'formHandler w/def uploads w/ env',
         type => 'prepare',
         method => {
@@ -685,7 +722,7 @@ __DATA__
         name => 'Named meta !strict passed {}',
         type => 'check_meta',
         method => {
-            metadata => { params => [], strict => !1 },
+            metadata => { params => [], },
         },
         input => {},
         output => 1,
@@ -1021,6 +1058,7 @@ __DATA__
             input => { foo => 'bar', baz => 'qux' },
             metadata => [42, 43, 44],
         },
+        out_type => 'hash',
         output => {
             _env => 'env',
             foo => 'bar',
@@ -1040,6 +1078,7 @@ __DATA__
             input => { fred => 'moo', blurg => 'frob' },
             metadata => [42, 43],
         },
+        out_type => 'hash',
         output => {
             fred => 'moo',
             blurg => 'frob',
@@ -1059,6 +1098,7 @@ __DATA__
             input => { fred => 'moo', blurg => 'frob' },
             metadata => [42, 43],
         },
+        out_type => 'hash',
         output => {
             _e => 'env',
             fred => 'moo',
@@ -1079,6 +1119,7 @@ __DATA__
             input => [42, 43],
             metadata => { foo => 'bar', baz => 'qux' },
         },
+        out_type => 'array',
         output => [42, 'env', { foo => 'bar', baz => 'qux' }, ],
     },
     {
@@ -1094,6 +1135,7 @@ __DATA__
             input => [42, 43],
             metadata => { foo => 'bar', baz => 'qux' },
         },
+        out_type => 'array',
         output => [42, 43, 'env', { foo => 'bar' }, ],
     },
     {
@@ -1108,6 +1150,7 @@ __DATA__
             input => [42, 43],
             metadata => { foo => 'bar', baz => 'qux' },
         },
+        out_type => 'array',
         output => [{ foo => 'bar', baz => 'qux' }]
     },
     {
@@ -1123,6 +1166,7 @@ __DATA__
             input => { fred => 'blerg', frob => 'blam', },
             metadata => { foo => 'bar', baz => 'qux' },
         },
+        out_type => 'hash',
         output => {
             _env => 'env',
             fred => 'blerg',
@@ -1143,6 +1187,7 @@ __DATA__
             input => { fred => 'moo', blurg => 'frob' },
             metadata => { foo => 'bar', baz => 'qux' },
         },
+        out_type => 'hash',
         output => {
             _e => 'env',
             fred => 'moo',

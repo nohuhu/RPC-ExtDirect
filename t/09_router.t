@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 66;
+use Test::More tests => 69;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -368,6 +368,23 @@ __DATA__
                   q|"tid":123,"type":"rpc"}|,
                   ],
                 ],
+    },
+    {
+        name   => 'Form request with decode_params',
+        input  => { action => '/router_action', method => 'POST',
+                    extAction => 'Bar', extType => 'rpc', extTID => 432,
+                    extAction => 'Bar', extMethod => 'bar_baz',
+                    blerg => '["bar","baz"]',
+                    frob => '{"throbbe":["vita","voom"]}', },
+        output => [ 200, [ 'Content-Type', 'application/json',
+                           'Content-Length', 132, ],
+                    [
+                        q|{"action":"Bar","method":"bar_baz","type":"rpc",|.
+                        q|"result":{"blerg":"[\"bar\",\"baz\"]",|.
+                        q|"frob":{"throbbe":["vita","voom"]}},|.
+                        q|"tid":432}|,
+                    ],
+                  ],
     },
     {
         name   => 'Form request with ordered metadata', debug => 1,

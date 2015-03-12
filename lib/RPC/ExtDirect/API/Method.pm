@@ -5,8 +5,10 @@ use warnings;
 no  warnings 'uninitialized';           ## no critic
 
 use Carp;
+use JSON;
 
 use RPC::ExtDirect::Config;
+use RPC::ExtDirect::Util ();
 use RPC::ExtDirect::Util::Accessor;
 
 ### PUBLIC CLASS METHOD (ACCESSOR) ###
@@ -351,7 +353,7 @@ sub check_formHandler_arguments {
 #
 
 my @std_params = qw/action method extAction extMethod
-                    extTID extUpload _uploads/;
+                    extType extTID extUpload _uploads/;
 
 sub prepare_formHandler_arguments {
     my ($self, %arg) = @_;
@@ -386,7 +388,36 @@ sub prepare_formHandler_arguments {
         # will include two copies of metadata. We don't want that.
         delete $data{metadata} unless $meta_arg eq 'metadata';
     }
-
+    
+    # Preparers are called in list context on the server side,
+    # where params can be decoded if configured so; the client
+    # will send all form fields JSON encoded anyway so no special
+    # handling required for it.
+    if ( wantarray ) {
+        for my $param ( @{ $self->decode_params || [] } ) {
+            # This check is necessary because inclusion in decode_params
+            # does not make the field a mandatory argument!
+            if ( exists $data{$param} ) {
+                my $value = delete $data{$param};
+                
+                if ( defined $value ) {
+                    # If JSON throws an exception we will rethrow it
+                    # after cleaning up
+                    $value = eval { JSON::from_json($value) };
+                    
+                    die RPC::ExtDirect::Util::clean_error_message($@)
+                        if $@;
+                }
+                
+                $data{$param} = $value;
+            }
+        }
+        
+        return %data;
+    }
+    else {
+        return { %data };
+    }
     return wantarray ? %data : { %data };
 }
 
@@ -666,6 +697,7 @@ my $accessors = [qw/
     argument_preparer
     metadata_checker
     metadata_preparer
+    decode_params
 /,
     __PACKAGE__->HOOK_TYPES,
 ];
@@ -716,15 +748,13 @@ sub _parse_metadata {
                        :                           undef
                        ;
             
-            $DB::single = 1 if $arg->{name} eq 'meta_named_unstrict2';
-            
             # !strict with no params might be a typo or something;
             # worth a warning in any case
             carp sprintf "ExtDirect Method %s.%s implies strict ".
                          "argument checking for named metadata, ".
                          "but no parameter names are specified.",
                          $arg->{action}, $arg->{name}
-                if !@$params && defined $meta->{strict} && $meta->{strict};
+                if !@$params && (!defined $meta->{strict} || $meta->{strict});
 
             $meta_def->{strict} = $strict;
             $meta_def->{params} = $params;
