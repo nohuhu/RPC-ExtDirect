@@ -36,6 +36,7 @@ lib/RPC/ExtDirect/Test/Pkg/Env.pm
 lib/RPC/ExtDirect/Test/Pkg/Foo.pm
 lib/RPC/ExtDirect/Test/Pkg/Hooks.pm
 lib/RPC/ExtDirect/Test/Pkg/JuiceBar.pm
+lib/RPC/ExtDirect/Test/Pkg/Meta.pm
 lib/RPC/ExtDirect/Test/Pkg/PollProvider.pm
 lib/RPC/ExtDirect/Test/Pkg/Qux.pm
 lib/RPC/ExtDirect/Test/Util.pm
