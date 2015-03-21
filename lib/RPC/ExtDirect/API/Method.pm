@@ -319,13 +319,7 @@ sub prepare_pollHandler_arguments {
     
     # When called from the client, env_arg should not be defined
     if ( defined (my $env_arg = +$self->env_arg) ) {
-        # Splicing an empty array at negative subscript will result
-        # in a fatal error; guard against that and put env at the end
-        $env_arg = $env_arg >= 0 ? $env_arg : 0;
-        
-        no warnings;    ## no critic
-        
-        splice @actual_arg, $env_arg, 0, $arg{env} if defined $arg{env};
+        push @actual_arg, $arg{env} if defined $arg{env};
     }
     
     return wantarray ? @actual_arg : [ @actual_arg ];
@@ -749,7 +743,7 @@ sub _parse_metadata {
                        ;
             
             # !strict with no params might be a typo or something;
-            # worth a warning in any case
+            # worth a warning in that case
             carp sprintf "ExtDirect Method %s.%s implies strict ".
                          "argument checking for named metadata, ".
                          "but no parameter names are specified.",
