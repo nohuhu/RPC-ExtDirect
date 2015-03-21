@@ -1,9 +1,9 @@
 use strict;
 use warnings;
 
-use Test::More tests => 69;
+use Test::More tests => 92;
 
-use RPC::ExtDirect::Test::Util;
+use RPC::ExtDirect::Test::Util qw/ cmp_json is_deep /;
 use RPC::ExtDirect::Config;
 
 use RPC::ExtDirect::Router;
@@ -36,9 +36,6 @@ for my $test ( @$tests ) {
 
     my $result = eval { $router->route($input) };
 
-    # Remove whitespace
-    s/\s//g for ( $expect->[2]->[0], $result->[2]->[0] );
-
     # Remove reference addresses. On different platforms
     # stringified reference has different length so we're
     # trying to compensate for that here.
@@ -51,9 +48,25 @@ for my $test ( @$tests ) {
         $result->[1]->[3] = $expect->[1]->[3] = length $expect->[2]->[0];
     };
 
-    is      $@,      '',      "$name eval $@";
-    is ref  $result, 'ARRAY', "$name result ARRAY";
-    is_deep $result, $expect, "$name result deep";
+    my $want_response = (pop @$expect)->[0];
+    my $have_response = (pop @$result)->[0];
+
+    my ($want_json, $have_json);
+
+    # It was a form request; extract JSON
+    if ( $want_response =~ /<textarea>/i ) {
+        ($want_json) = $want_response =~ /<textarea>(.*)<\/textarea>/i;
+        ($have_json) = $have_response =~ /<textarea>(.*)<\/textarea>/i;
+    }
+    else {
+        $want_json = $want_response;
+        $have_json = $have_response;
+    }
+
+    is       $@,         '',      "$name eval $@";
+    is ref   $result,    'ARRAY', "$name result ARRAY";
+    is_deep  $result,    $expect, "$name result headers";
+    cmp_json $have_json, $want_json, "$name result body";
 };
 
 __DATA__
