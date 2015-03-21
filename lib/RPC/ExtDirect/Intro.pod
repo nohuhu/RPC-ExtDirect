@@ -141,28 +141,45 @@ signature conforming to Method's declaration in the L</API>.
 =item Ordered Method
 
 A L</Method> that accepts zero or more parameters in ordered fashion, i.e.
-by position (in a list). See more in
-L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
+by position (in a list). Ordered Methods support call L</Metadata>.
+
+See more in L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Named Method
 
-A L</Method> that accepts parameters by name, in a hash. See more in
-L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
+A L</Method> that accepts parameters by name, in a hash. Named Methods
+support call L</Metadata>.
+
+See more in L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Form Handler Method
 
 A L</Method> that accepts form submits. All form field values are passed to
-the Form handler in a hash, C<< field => value >>. The only practical reason
+the Form handler in a hash, C<< field => value >>. One practical reason
 to use Form handlers is to process file uploads; see
-L<FILE UPLOADS|RPC::ExtDirect/"FILE UPLOADS"> for more information. See also
-L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS"> for more information on
-Form handlers calling convention.
+L<FILE UPLOADS|RPC::ExtDirect/"FILE UPLOADS"> for more information. Note
+also that Form Handler Methods support call L</Metadata>.
+
+See also L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS"> for more
+information on Form handlers calling convention.
 
 =item Poll Handler Method
 
 A L</Method> that is called by an L</"Event Provider"> to return the list of
-L<Events|/Event> to be passed on to the client side. See more in
-L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
+L<Events|/Event> to be passed on to the client side. Poll Handler Methods
+B<do not support> call L</Metadata>.
+
+See more in L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
+
+=item Metadata
+
+A set of extra arguments associated with the Method. Metadata is sent
+separately from the main arguments and can vary between invocations.
+Metadata can also follow a calling convention that is different from
+the main arguments, e.g. it is possible to have L</"Ordered Method">
+with Named metadata, and vice versa.
+
+See more in L<RPC::ExtDirect/"METHODS AND CALLING CONVENTIONS">.
 
 =item Result
 
@@ -478,6 +495,91 @@ logging:
 Set this way, C<log_everything> will be called after every Ext.Direct
 Method invocation, even if a C<before> hook canceled it. See
 L<RPC::ExtDirect::API::Hook> for the gory details.
+
+=head1 Using call metadata
+
+Suppose you want to implement CRUD operations on a set of similar
+database tables. Instead of declaring a separate set of Methods
+for each table, you can use call metadata:
+
+    package MyApp::Crud;
+    
+    use RPC::ExtDirect Action => 'MyApp.Database';
+    
+    # Client will send an array of records as one positional argument
+    sub create : ExtDirect(1, metadata => {params => ['table'], arg => 9}) {
+        my ($class, $records, $meta) = @_;
+        
+        my $table_name = $meta->{table};
+        
+        # Insert the records
+        ...
+    }
+    
+    # Note that for Named methods the default argument is 'metadata'
+    sub read : ExtDirect(params => [], metadata => {params => ['table']}) {
+        my ($class, %arg) = @_;
+        
+        my $table_name = $arg{metadata}->{table};
+        
+        # Read the records
+        ...
+    }
+    
+    # Like with read, a single main argument contains records
+    sub update : ExtDirect(1, metadata => {params => ['table'], arg => 9}) {
+        my ($class, $records, $meta) = @_;
+        
+        my $table_name = $meta->{table};
+        
+        # Update the records
+        ...
+    }
+    
+    # Again a single main argument with array of records
+    sub delete : ExtDirect(1, metadata => {params => ['table'], arg => 9}) {
+        my ($class, $records, $meta) = @_;
+        
+        my $table_name = $meta->{table};
+        
+        # Delete the records
+        ...
+    }
+
+This can now be used easily on the client side (with Ext JS 5.1+):
+
+    var grid = new Ext.grid.Panel({
+        title: 'Ext.Direct grid',
+        
+        store: {
+            fields: ['frobbe', 'throbbe'],
+            proxy: {
+                type: 'direct',
+                api: {
+                    create:  'MyApp.Database.create',
+                    read:    'MyApp.Database.read',
+                    update:  'MyApp.Database.update',
+                    destroy: 'MyApp.Database.delete'
+                },
+                metadata: {
+                    table: 'foo'
+                }
+            }
+        },
+        
+        columns: [{
+            text: 'Frobbe',
+            dataIndex: 'frobbe'
+        }, {
+            text: 'Throbbe',
+            dataIndex: 'throbbe'
+        }],
+        
+        ...
+    });
+
+It may be also worth noting that L<RPC::ExtDirect::Client> supports
+call metadata fully as of version 1.10.
 
 =head1 SEE ALSO
 

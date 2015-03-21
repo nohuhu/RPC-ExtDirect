@@ -33,8 +33,14 @@ RPC::ExtDirect::API - Ext.Direct service discovery handler
                         len => 1,
                     },
                     bar => {
-                        params => [qw/ foo bar /],
+                        params => ['foo', 'bar'],
                     },
+                    baz => {
+                        params => ['frobbe', 'throbbe'],
+                        metadata => {
+                            params => ['mymse', 'qux'],
+                        }
+                    }
                 }
             }
         }
@@ -138,7 +144,7 @@ but all parameters are treated as optional and no checks are performed.
 
 =head2 Lazy parameter checking
 
-Starting with Ext JS 4.2.2 and RPC::ExtDirect 3.0+, it is possible to
+Starting with Ext JS 4.2.2 and RPC::ExtDirect 3.00, it is possible to
 perform less strict parameter checking on by-name methods. All parameters
 explicitly declared for a method will still be treated as mandatory, but
 no exception will be thrown if undeclared arguments are passed into the
@@ -153,6 +159,25 @@ it, set the L<strict|/strict> option to falsy value for any given method.
 
 Lazy parameter checking is not supported in Ext JS below 4.2.2, and in
 Sencha Touch 2.x.
+
+=head2 Call metadata
+
+Starting with Ext JS 5.1.0 and RPC::ExtDirect 3.20, it is possible to
+pass additional set of metadata arguments to any Method that supports it.
+
+Metadata arguments can differ in calling convention from the main arguments;
+e.g. it is possible to have an Ordered method with named metadata,
+and vice versa. The only kind of Methods unable to receive metadata is
+Poll handlers.
+
+Call metadata is optional and will only be passed to the Methods that declare
+their metadata convention. Unlike the main arguments, call metadata is always
+passed by reference, in arrayref or hashref.
+
+In order to support call metadata, the Method declaration should include
+corresponding parameters via the L</metadata> keyword. Note that for Ordered
+Methods, metadata declaration should always include the position for the
+metadata argument.
 
 =head1 COMPILE VS RUN TIME DEFINITION
 
@@ -176,7 +201,7 @@ more than one active API object at a given time, possibly implementing
 different APIs tailored for usage patterns of a particular application.
 
 Note that these two methods are I<not> mutually exclusive, but it is
-not recommended to mix them unless you really know how to deal with ensuing
+not recommended to mix them unless you are ready to deal with ensuing
 timing issues. You've been warned.
 
 =head1 DEFINING METHODS STATICALLY
@@ -189,7 +214,7 @@ with the sub definition:
 Note that there can be no space between the C<ExtDirect> attribute name and
 the opening parens; also in Perls older than 5.12, the attribute statement
 cannot span multiple lines, i.e. the whole C<ExtDirect(...)> construct
-should fit in one line.
+should fit in one line. This is due to limitations in Perl code parser.
 
 Inside the parentheses, one of the following mutually exclusive option
 keywords is B<mandatory>:
@@ -208,7 +233,7 @@ If C<n> is used, this keyword should always come first in the list:
 
 =item C<len>
 
-A more preferred way to define an Ordered Method. This keyword should be
+The more preferred way to define an Ordered Method. This keyword should be
 followed by the number of the parameters accepted by the Method:
 
     sub foo : ExtDirect(len => 1)      {} # right
@@ -244,34 +269,8 @@ Having more than one calling convention keyword in the Method definition
 is not supported and will lead to undefined behavior.
 
 Besides the mandatory calling convention keyword, there are optional
-Method attributes in hash-like C<key =E<gt> value> form. Currently
-supported attributes are:
-
-=over 4
-
-=item C<strict>
-
-This option, if set to a falsy value with Named parameters, turns on
-L<lazy parameter checking|/"Lazy parameter checking">. Since the checks
-are strict by default, setting this option to truthy value will do nothing.
-
-    sub foo : ExtDirect(params => ['foo'], strict => !1, ...) {}
-
-=item C<before|instead|after>
-
-A corresponding L<Hook|RPC::ExtDirect/HOOKS> slot definition for the
-Method. This keyword should be followed by an argument that defines the
-actual Hook behavior. See L</add_hook> method documentation below.
-
-=item other
-
-Any other keyword with the corresponding value will be passed through
-to the L<Method class|RPC::ExtDirect::Config/api_method_class> constructor
-and will end up as a Method object property. Note that accessors for such
-properties will I<not> be created automatically when the stock
-L<RPC::ExtDirect::API::Method> class is used.
-
-=back
+Method attributes in hash-like C<< key => value >> form. See more in
+L<RPC::ExtDirect::API::Method/new>.
 
 =head1 DEFINING METHODS DYNAMICALLY
 
@@ -302,8 +301,8 @@ containing the API definition:
         },
     });
 
-Keywords and options are the same as with the static method, refer to the
-L<section above|/"DEFINING METHODS STATICALLY"> for details.
+Keywords and options are mostly the same as with the static definition;
+refer to L<RPC::ExtDirect::API::Method/new> for details.
 
 =head1 GLOBAL API TREE INSTANCE
 
@@ -350,7 +349,7 @@ mistake has been made somewhere.
 =head1 API CONFIGURATION
 
 RPC::ExtDirect::API provides two ways to configure Ext.Direct API declaration
-variables to accommodate specific application needs: dynamic via an
+variables to accommodate for specific application needs: dynamic via an
 L<RPC::ExtDirect::Config> instance, and static via C<import> package
 subroutine.
 

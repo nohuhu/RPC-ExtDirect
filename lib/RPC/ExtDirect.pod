@@ -19,13 +19,13 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
     
     use RPC::ExtDirect Action => 'FooBar';
     
-    sub sum : ExtDirect( len => 2 ) {
+    sub sum : ExtDirect(len => 2) {
         my ($class, $a, $b) = @_;
         
         return $a + $b;
     }
     
-    sub login : ExtDirect( params => [qw/ user pass /] ) {
+    sub login : ExtDirect(params => ['user, 'pass']) {
         my ($class, %arg) = @_;
         
         if ( $arg{user} eq 'foo' && $arg{pass} eq 'bar' ) {
@@ -82,6 +82,11 @@ client via GET requests to a preconfigured URI
 
 Dead simple client side invocation via functional stubs created from the
 API declaration
+
+=item *
+
+Support for call metadata that is handled separately from the arguments
+for method invocation
 
 =item *
 
@@ -201,11 +206,41 @@ client side.
 =item *
 
 Poll handler methods are called in list context and do not
-receive any arguments except an environment object. Return value
+receive any arguments except the environment object. Return value
 must be a list of instantiated L<Event|RPC::ExtDirect::Intro/Event>
 objects, see L<RPC::ExtDirect::Event> for more detail.
 
 =back
+
+=head1 CALL METADATA
+
+Imagine a Web application with an editable Grid populated with data
+from a database table. To update the database when changes are saved,
+the client will send an array of changed records that will be passed
+to the corresponding Ext.Direct Method as call arguments. But what
+about the table name?
+
+The usual approach is to create a separate set of 4 CRUD methods
+(Create, Read, Update, Delete) for each table, and expose these
+methods as a separate L<Action|RPC::ExtDirect::Intro/Action>. While
+tried and true, this approach leads to bloated Ext.Direct API
+when there are many tables, with lots of packages and code duplication
+just for the sake of editing a database table. This can be especially
+frustrating when the application has many similar tables differing
+only in the name.
+
+Call metadata allows solving this and many other problems by passing
+some information to the called Method along with the main data but not
+as a part of the arguments. In particular, using metadata allows for
+having one set of CRUD methods for all similar data tables and send
+different table name for each call as metadata.
+
+More of it, Ext JS (and RPC::ExtDirect, too) allow having different
+calling convention for Method arguments and metadata, e.g. having a
+L<Named Method|RPC::ExtDirect::Intro/"Named Method"> with ordered
+(by position) metadata, and vice versa.
+
+Call metadata is a new feature in Ext JS 5.1+.
 
 =head1 HOOKS
 

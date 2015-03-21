@@ -128,6 +128,58 @@ Use this parameter to change the hash key name in which the
 L<file upload array|RPC::ExtDirect/"FILE UPLOADS"> is passed to a
 Form handler Method. Default is C<'file_uploads'>.
 
+=item C<decode_params>
+
+This optional parameter may contain the list of fields that should be
+decoded from JSON for a formHandler Method. Does nothing for Methods
+with other calling conventions.
+
+=item C<metadata>
+
+Use this parameter to declare that this Method supports call
+L<metadata|RPC::ExtDirect::Intro/Metadata>. The value of this key
+should be a hashref with the following properties:
+
+=over 8
+
+=item C<len>
+
+Declares that this Method accepts ordered (by position) metadata
+with this number of mandatory values, with the number > 0.
+The metadata values will be passed to the Method in arrayref.
+
+This parameter is mutually exclusive with "params" below.
+
+=item C<params>
+
+Declares that this Method accepts named metadata values in a hashref.
+The value of C<params> is also arrayref with the names of mandatory
+metadata values. The declaration arrayref may be empty to indicate
+that all metadata values are optional and should not be checked
+for existence.
+
+This parameter is mutually exclusive with "len" above.
+
+=item C<strict>
+
+Set this option to falsy value to have all metadata key-value pairs
+passed to the Method. The default behavior is similar to named main
+arguments, where all undeclared parameters will be discarded and only
+the declared ones will be passed to the Method.
+
+=item C<arg>
+
+Defines the position of the metadata argument for Ordered methods,
+or the name of the metadata argument for Named methods. Note that
+this is about the calling convention of the main arguments, not
+metadata itself!
+
+For Named methods, C<arg> defaults to C<metadata>; for Ordered
+methods there is no default and an error will be raised if C<arg>
+is omitted.
+
+=back
+
 =item other
 
 Any other hash key with the corresponding value will be stored in the
@@ -210,12 +262,27 @@ Instance method. Takes input data and checks that it's an arrayref,
 and it has enough elements to satisfy the L</len> requirement of
 the Method.
 
+=item C<check_ordered_metadata>
+
+Instance method. Takes input metadata and checks that it's an arrayref,
+and it has enough values to satisfy the metadata C<len> requirement
+of the Method.
+
+Metadata will only be checked for Methods that accept it.
+
 =item C<check_named_arguments>
 
 Instance method. Takes input data and checks that it's a hashref,
 and that keys for all mandatory L</params> exist in that hashref.
 If the Method declares empty L</params>, the check will pass and
 effectively all arguments will be passed on to the Method call.
+
+=item C<check_named_metadata>
+
+Instance method. Takes input metadata and performs the checks similar
+to those made for named arguments.
+
+Metadata will only be checked for Methods that accept it.
 
 =item C<check_formHandler_arguments>
 
@@ -268,27 +335,36 @@ when uploaded files are present.
 Instance method. Takes C<input> arguments for the Method and returns
 an arrayref conformant to the 
 L<ordered Method's|RPC::ExtDirect::Intro/"Ordered Method"> definition.
-This arrayref will optionally contain C<env> object.
+This arrayref will optionally contain env object if requested,
+and/or metadata.
+
+=item C<prepare_ordered_metadata>
+
+Instance method. Takes input metadata and returns an arrayref conformant
+to the Method's metadata definition.
 
 =item C<prepare_named_arguments>
 
 Instance method. Takes C<input> arguments for the Method and returns
 a hashref conformant to the 
 L<named Method's|RPC::ExtDirect::Intro/"Named Method"> definition.
-This hashref will optionally contain C<env> object.
+This hashref will optionally contain env object if requested,
+and/or metadata.
 
 =item C<prepare_formHandler_arguments>
 
 Instance method. Takes C<input> arguments for the Method and returns
 a hashref conformant to the
 L<Form Handler Method's|RPC::ExtDirect::Intro/"Form Handler Method">
-definition. This hashref will optionally contain C<env> object.
+definition. This hashref will optionally contain env object if requested,
+and/or metadata.
 
 =item C<prepare_pollHandler_arguments>
 
 Instance method. Returns an arrayref conformant to
 L<Poll handler method's|RPC::ExtDirect::Intro/"Poll Handler Method">
-definition. This arrayref will optionally contain C<env> object.
+definition. This arrayref will optionally contain env object
+if requested.
 
 =back
 
