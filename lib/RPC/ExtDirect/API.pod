@@ -359,7 +359,7 @@ applications; it allows keeping the whole API definition in one place
 instead of distributed among the packages. It is also possible to define
 more than one API this way, for publishing to different clients.
 
-The static configuration was available since version 1.0 and will be
+The static configuration has been available since version 1.0 and will be
 supported going forward. This way it is possible to configure the API
 variables at compile time:
 
