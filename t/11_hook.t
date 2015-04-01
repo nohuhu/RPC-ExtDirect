@@ -89,6 +89,7 @@ for my $test ( @$tests ) {
     my $env        = $test->{env};
     my $exp_before = $test->{expected_before};
     my $exp_after  = $test->{expected_after};
+    my $arg_type   = $test->{arg_type} || 'array';
     
     next TEST if %run_only && !$run_only{$name};
     
@@ -110,6 +111,33 @@ for my $test ( @$tests ) {
     # Orig is a closure in RPC::ExtDirect::Hook, impossible to take ref of
     eval { delete $before->[1]->{orig}; delete $after->[1]->{orig}; };
     $@ = undef;
+    
+    # Argument output is a list that would be coerced into a hash in
+    # real world Methods with no issues; however in tests it is captured
+    # in arrayref that is compared to the expected values.
+    # Hash randomization feature may change the order, screwing up
+    # some tests.
+    if ( $arg_type =~ /hash/i ) {
+        my $have_before = $before->[1];
+        
+        $have_before->{arg} = { @{ $have_before->{arg} } }
+            if ref $have_before->{arg};
+        
+        my $want_before = $exp_before->[1];
+        
+        $want_before->{arg} = { @{ $want_before->{arg} } }
+            if ref $want_before->{arg};
+        
+        my $have_after = $after->[1];
+        
+        $have_after->{arg} = { @{ $have_after->{arg} } }
+            if ref $have_after->{arg};
+        
+        my $want_after = $exp_after->[1];
+        
+        $want_after->{arg} = { @{ $want_after->{arg} } }
+            if ref $want_after->{arg};
+    }
 
     is_deep $before, $exp_before, "$name: before data";
     is_deep $after,  $exp_after,  "$name: after data";
@@ -439,6 +467,7 @@ __DATA__
                  q|"metadata":["quack"]}|,
         env   => 'env',
         type  => 'router',
+        arg_type => 'hash',
         modify_meta => sub {
             my (%arg) = @_;
             
