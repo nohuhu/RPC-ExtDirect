@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 74;
+use Test::More tests => 75;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Util;
@@ -29,6 +29,12 @@ is $@, '', 'Empty string attribute data';
 # *Theoretically* this should not be possible too, but who knows
 eval { p_attr('foo', sub {}, sub {}, 'ExtDirect', []) };
 like $@, qr/^Can't resolve symbol/, 'Symbol name resolution';
+
+# UNIVERSAL::ExtDirect should be able to rethrow aref exceptions (duh!)
+eval {
+    UNIVERSAL::ExtDirect('foo', *foo, \&foo, 'ExtDirect', ['len', 1, 'metadata', {len => 0}])
+};
+like $@, qr/Method.*?cannot accept 0 arguments/, 'Arrayref exceptions';
 
 # The rest is automated
 my $tests = eval do { local $/; <DATA> } or die "Can't eval DATA: '$@'";

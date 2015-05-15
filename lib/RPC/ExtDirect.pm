@@ -104,8 +104,9 @@ sub import {
     sub UNIVERSAL::ExtDirect : ATTR(CODE,$phase) {
         my \$attr = RPC::ExtDirect::Util::parse_attribute(\@_);
         
-        ${pkg}->add_method(\$attr);
-    }
+        eval { ${pkg}->add_method(\$attr) };
+
+        if (\$@) { die 'ARRAY' eq ref(\$@) ? \$\@->[0] : \$@ }; };
 END
 }
 
