@@ -17,7 +17,7 @@ use RPC::ExtDirect::Util;
 # at the end.
 #
 
-our $VERSION = '3.20';
+our $VERSION = '3.21';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #

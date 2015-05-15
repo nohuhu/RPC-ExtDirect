@@ -1,3 +1,7 @@
+3.21  Thu May 14 20:38:51 PDT 2015
+    - Fixed a bug when exceptions could be thrown as ARRAY instead of a string
+      in ExtDirect attribute handler
+
 3.20  Tue Mar 31 21:37:10 PDT 2015
     - Added support for call metadata available in Ext JS 5.1+
     - Added support for JSON argument decoding in Form handlers
