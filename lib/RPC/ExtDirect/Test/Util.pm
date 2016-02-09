@@ -95,7 +95,7 @@ sub deparse_api {
     my @parts = split /;\s*/, $api_str;
 
     for my $part ( @parts ) {
-        next unless $part =~ /={/;
+        next unless $part =~ /=\{/;
 
         my ($var, $json) = split /=/, $part;
         
