@@ -1,3 +1,6 @@
+3.22  Mon Aug  1 11:32:17 PDT 2016
+    - Fixed the issue with unescaped curly bracket warning in Perl 5.23.6+
+
 3.21  Thu May 14 20:38:51 PDT 2015
     - Fixed a bug when exceptions could be thrown as ARRAY instead of a string
       in ExtDirect attribute handler
