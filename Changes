@@ -1,3 +1,7 @@
+3.23  Mon Oct 10 19:31:34 PDT 2016
+    - Fixed another issue with unescaped curly bracket warning in Perl 5.23.6+
+    - Misc documentation fixes
+
 3.22  Mon Aug  1 11:32:17 PDT 2016
     - Fixed the issue with unescaped curly bracket warning in Perl 5.23.6+
 
