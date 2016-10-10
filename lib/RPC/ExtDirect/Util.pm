@@ -28,7 +28,7 @@ sub clean_error_message {
         at
         .*?
         line \s \d+(, \s <DATA> \s line \s \d+)? \.? \n*
-        (?:\s*eval \s {...} \s called \s at \s .*? line \s \d+ \n*)?
+        (?:\s*eval \s \{...\} \s called \s at \s .*? line \s \d+ \n*)?
         //msx;
 
     return $msg;
