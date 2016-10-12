@@ -95,8 +95,9 @@ sub set_options {
     
     my %options = @_ == 1 && 'HASH' eq ref($_[0]) ? %{ $_[0] } : @_;
     
-    while ( my ($option, $value) = each %options ) {
-    
+    foreach my $option (keys %options) {
+        my $value = $options{$option};
+        
         # We may as well be passed some options that we don't support;
         # that may happen by accident, or the options hash may be passed
         # on from unknown upper level. This does not represent a problem
@@ -412,7 +413,8 @@ sub _init {
     $self->_parse_global_vars();
     
     # Apply the defaults
-    while ( my ($field, $def) = each %field_defaults ) {
+    foreach my $field (keys %field_defaults) {
+        my $def = $field_defaults{$field};
         my $default = $def->{default};
         
         $self->$field($default) unless defined $self->$field();

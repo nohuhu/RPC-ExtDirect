@@ -491,7 +491,9 @@ sub _get_remoting_api {
     my %actions = %{ $self->{actions} };
     
     ACTION:
-    while ( my ($name, $action) = each %actions ) {
+    foreach my $name (keys %actions) {
+        my $action = $actions{$name};
+
         # Get the list of methods for Action
         my @methods = $action->remoting_api($env);
 
@@ -536,7 +538,8 @@ sub _get_polling_api {
     my %actions = %{ $self->{actions} };
     
     ACTION:
-    while ( my ($name, $action) = each %actions ) {
+    foreach my $name (keys %actions) {
+        my $action = $actions{$name};
         $has_poll_handlers = $action->has_pollHandlers($env);
 
         last ACTION if $has_poll_handlers;
