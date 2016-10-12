@@ -1,3 +1,9 @@
+3.24  Wed Oct 12 00:34:02 PDT 2016
+    - Fixed test suite failure when running under Perl 5.8.2
+    - Refactored test suite not to use isa_ok to avoid an issue found
+      while debugging the above failure
+    - Refactored core modules not to use `each` iterator
+
 3.23  Mon Oct 10 19:31:34 PDT 2016
     - Fixed another issue with unescaped curly bracket warning in Perl 5.23.6+
     - Misc documentation fixes
