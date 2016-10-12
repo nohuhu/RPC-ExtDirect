@@ -32,7 +32,7 @@ my $api = eval {
 };
 
 is     $@,   '', "new_from_hashref eval $@";
-isa_ok $api, 'RPC::ExtDirect::API';
+ref_ok $api, 'RPC::ExtDirect::API';
 
 $api->config->debug_serialize(1);
 

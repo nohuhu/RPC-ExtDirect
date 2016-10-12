@@ -41,4 +41,3 @@ $json = RPC::ExtDirect::Serialize->serialize(1, $data);
 
 is $json, $expected, 'Ivalid data, exceptions off';
 
-exit 0;

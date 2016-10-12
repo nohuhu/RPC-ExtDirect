@@ -24,7 +24,7 @@ my $event = eval { RPC::ExtDirect::Event->new('foo', 'bar') };
 
 is     $@, '', "Event new() eval $@";
 ok     $event, "Event object created";
-isa_ok $event, 'RPC::ExtDirect::Event';
+ref_ok $event, 'RPC::ExtDirect::Event';
 
 my $expected_result = {
     type => 'event',
@@ -44,7 +44,7 @@ $event = eval { RPC::ExtDirect::Event->new('baz') };
 
 is     $@, '', "Event new() eval $@";
 ok     $event, "Event object created";
-isa_ok $event, 'RPC::ExtDirect::Event';
+ref_ok $event, 'RPC::ExtDirect::Event';
 
 $expected_result = {
     type => 'event',
@@ -64,7 +64,7 @@ my $no_events = eval { RPC::ExtDirect::NoEvents->new() };
 
 is     $@, '',     "NoEvents new() eval $@";
 ok     $no_events, "NoEvents new() object created";
-isa_ok $no_events, 'RPC::ExtDirect::NoEvents';
+ref_ok $no_events, 'RPC::ExtDirect::NoEvents';
 
 $expected_result = {
     type => 'event',

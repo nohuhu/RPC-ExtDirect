@@ -3,30 +3,23 @@ use warnings;
 
 use Test::More tests => 9;
 
+use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
 use RPC::ExtDirect::Serializer;
 
-my $cfg_class = 'RPC::ExtDirect::Config';
-my $ser_class = 'RPC::ExtDirect::Serializer';
+use lib 't/lib';
 
-package Request;
-
-sub new {
-    my ($class, $params) = @_;
-
-    return $params, $class;
-}
-
-package main;
+my $cfg_class  = 'RPC::ExtDirect::Config';
+my $ser_class  = 'RPC::ExtDirect::Serializer';
 
 my $config     = $cfg_class->new(request_class => 'Request');
 my $serializer = $ser_class->new(config => $config);
 
 my $req = $serializer->_request({ foo => 'bar' });
 
-isa_ok $req, 'Request', "Honors request_class";
+ref_ok $req, 'Request', "Honors request_class";
 
-$config     = $cfg_class->new(
+$config = $cfg_class->new(
     exception_class_serialize => 'Request',
     exception_class           => 'Foo',
 );
@@ -37,7 +30,7 @@ my $ex1 = $serializer->_exception({
     foo       => 'bar',
 });
 
-isa_ok $ex1, 'Request', "Honors exception_class_serialize";
+ref_ok $ex1, 'Request', "Honors exception_class_serialize";
 
 $config     = $cfg_class->new(
     exception_class_deserialize => 'Request',
@@ -50,7 +43,7 @@ my $ex2 = $serializer->_exception({
     foo       => 'bar',
 });
 
-isa_ok $ex2, 'Request', "Honors exception_class_deserialize";
+ref_ok $ex2, 'Request', "Honors exception_class_deserialize";
 
 $config     = $cfg_class->new( exception_class => 'Request' );
 $serializer = $ser_class->new( config          => $config   );
@@ -60,14 +53,14 @@ my $ex3 = $serializer->_exception({
     foo       => 'bar',
 });
 
-isa_ok $ex3, 'Request', "Falls back to exception_class for serializer";
+ref_ok $ex3, 'Request', "Falls back to exception_class for serializer";
 
 my $ex4 = $serializer->_exception({
     direction => 'deserialize',
     foo       => 'bar',
 });
 
-isa_ok $ex4, 'Request', "Falls back to exception_class for deserializer";
+ref_ok $ex4, 'Request', "Falls back to exception_class for deserializer";
 
 my $json_options = { canonical => 1 };
 

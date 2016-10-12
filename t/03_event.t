@@ -22,7 +22,7 @@ for my $test ( @$tests ) {
 
     is     $@, '', "$name event new() eval $@";
     ok     $event, "$name event object created";
-    isa_ok $event, 'RPC::ExtDirect::Event';
+    ref_ok $event, 'RPC::ExtDirect::Event';
     
     my $result = eval { $event->result() };
 
@@ -43,7 +43,7 @@ my $no_events = eval { RPC::ExtDirect::NoEvents->new() };
 
 is     $@, '',     "NoEvents new() eval $@";
 ok     $no_events, "NoEvents new() object created";
-isa_ok $no_events, 'RPC::ExtDirect::NoEvents';
+ref_ok $no_events, 'RPC::ExtDirect::NoEvents';
 
 my $expected_result = {
     type => 'event',

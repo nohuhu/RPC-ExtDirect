@@ -10,6 +10,7 @@ use Test::More;
 use JSON;
 
 our @EXPORT = qw/
+    ref_ok
     is_deep
     cmp_api
     prepare_input
@@ -18,6 +19,22 @@ our @EXPORT = qw/
 our @EXPORT_OK = qw/
     cmp_json
 /;
+
+### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
+#
+# Replacement for isa_ok that actually checks that wanted value
+# is a blessed object and not a string with package name. :(
+#
+
+sub ref_ok {
+    my ($have, $want, $desc) = @_;
+
+    $desc = "Object isa $want" unless $desc;
+
+    ok( (ref $have eq $want) && $have->isa($want), $desc )
+        or diag explain "Expected '", $have, "' to be an object blessed into ",
+                        $want, " package";
+}
 
 ### EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #

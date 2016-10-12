@@ -57,7 +57,7 @@ for my $test ( @$tests ) {
 
     is     $@,   '', "$method() new eval $@";
     ok     $ex,      "$method() exception not null";
-    isa_ok $ex,  'RPC::ExtDirect::Exception';
+    ref_ok $ex,  'RPC::ExtDirect::Exception';
 
     my $run = eval { $ex->run() };
 

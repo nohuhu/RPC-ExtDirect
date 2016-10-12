@@ -361,5 +361,3 @@ for my $test ( @$hook_tests ) {
     is $code, $test->{code}, "$name code matches";
 };
 
-exit 0;
-

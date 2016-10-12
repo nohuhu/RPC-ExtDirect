@@ -37,7 +37,7 @@ for my $test ( @$tests ) {
 
     is     $@,       '', "$name new() eval $@";
     ok     $request,     "$name new() object created";
-    isa_ok $request, $isa;
+    ref_ok $request, $isa;
 
     # Try to run method
     my $ran_ok = eval { $request->run() };

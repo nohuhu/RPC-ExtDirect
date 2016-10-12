@@ -81,6 +81,7 @@ t/92_08_deserialize.t
 t/92_09_router.t
 t/92_10_poll.t
 t/92_11_hook.t
+t/lib/Request.pm
 t/lib/test/hooks.pm
 t/lib2/RPC/ExtDirect/Demo/PollProvider.pm
 t/lib2/RPC/ExtDirect/Demo/Profile.pm
