@@ -483,11 +483,7 @@ L<Ext JS product website|http://www.sencha.com/products/extjs/>
 
 =item *
 
-L<Sencha Touch product website|http://www.sencha.com/products/touch/>
-
-=item *
-
-L<Ext.Direct specification|http://www.sencha.com/products/extjs/extdirect/>
+L<Ext.Direct specification|http://docs.sencha.com/extjs/6.2.0/guides/backend_connectors/direct/specification.html>
 
 =item *
 
