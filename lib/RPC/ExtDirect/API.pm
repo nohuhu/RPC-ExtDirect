@@ -197,9 +197,6 @@ sub get_remoting_api {
     # Get POLLING_API hashref
     my $polling_api  = $self->_get_polling_api($config, $env);
 
-    # Return empty string if we got nothing to declare
-    return '' if !$remoting_api && !$polling_api;
-
     # Shortcuts
     my $remoting_var = $config->remoting_var;
     my $polling_var  = $config->polling_var;
@@ -210,6 +207,23 @@ sub get_remoting_api {
     
     my $serializer = $s_class->new( config => $config );
     
+    if ( $arg{json} ) {
+        my $api_def = [];
+        
+        # Avoid returning [null, null]
+        push @$api_def, $remoting_api if $remoting_api;
+        push @$api_def, $polling_api  if $polling_api;
+        
+        return $serializer->serialize(
+            mute_exceptions => 1,
+            debug           => $debug_api,
+            data            => $api_def,
+        );
+    }
+    
+    # Return empty string if we got nothing to declare
+    return '' if !$remoting_api && !$polling_api;
+
     my $api_json = $serializer->serialize(
         mute_exceptions => 1,
         debug           => $debug_api,
