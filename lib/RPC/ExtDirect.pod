@@ -25,7 +25,7 @@ RPC::ExtDirect - Easily integrate Perl server code with JavaScript apps
         return $a + $b;
     }
     
-    sub login : ExtDirect(params => ['user, 'pass']) {
+    sub login : ExtDirect(params => ['user', 'pass']) {
         my ($class, %arg) = @_;
         
         if ( $arg{user} eq 'foo' && $arg{pass} eq 'bar' ) {
