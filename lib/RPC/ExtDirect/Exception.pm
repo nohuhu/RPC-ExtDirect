@@ -26,6 +26,8 @@ sub new {
         method  => $arg->{method},
         tid     => $arg->{tid},
         verbose => $arg->{verbose},
+        code    => $arg->{code},
+        data    => $arg->{data},
     }, $class;
 
     $self->_set_error($message, $where);
@@ -59,6 +61,7 @@ sub result {
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => [qw/
         debug action method tid where message verbose
+        code data
     /],
 );
 

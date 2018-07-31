@@ -261,6 +261,9 @@ my $DEFINITIONS = [{
     setter   => 'exception_class_request',
     fallback => 'exception_class',
 }, {
+    accessor => 'exception_class_request_json_rpc',
+    default  => 'RPC::ExtDirect::Exception::JsonRpc',
+}, {
     accessor => 'request_class',
     default  => 'RPC::ExtDirect::Request',
 }, {

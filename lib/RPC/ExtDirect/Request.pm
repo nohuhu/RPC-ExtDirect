@@ -36,6 +36,13 @@ our $EXCEPTION_CLASS;
 
 sub HOOK_TYPES { qw/ before instead after / }
 
+### PUBLIC CLASS METHOD (ACCESSOR) ###
+#
+# Return the config property for Exception class
+#
+
+sub EXCEPTION_CLASS { 'exception_class_request' }
+
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of RPC::ExtDirect::Request
@@ -67,6 +74,7 @@ sub new {
         method  => $method_name,
         tid     => $tid,
         message => $@->[0],
+        code    => -32600,
     }) if $@;
 
     # Look up the Method
@@ -76,7 +84,8 @@ sub new {
         action  => $action_name,
         method  => $method_name,
         tid     => $tid,
-        message => 'ExtDirect action or method not found'
+        message => 'ExtDirect action or method not found',
+        code    => -32601,
     }) unless $method_ref;
 
     # Check if arguments passed in $data are of right kind
@@ -180,6 +189,7 @@ sub check_arguments {
                     tid     => $tid,
                     message => $error,
                     where   => ref($method_ref) ."->${checker}",
+                    code    => -32602,
                 });
             }
         }
@@ -318,8 +328,9 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 sub _exception {
     my ($self, $arg) = @_;
     
+    my $prop     = $self->EXCEPTION_CLASS;
     my $config   = $self->config;
-    my $ex_class = $config->exception_class_request;
+    my $ex_class = $config->$prop;
     
     eval "require $ex_class";
     
@@ -331,6 +342,7 @@ sub _exception {
         $arg->{where} = $package . '->' . $sub;
     };
     
+$DB::single = 1;
     return $ex_class->new({
         config  => $config,
         debug   => $self->debug,
@@ -363,6 +375,7 @@ sub _set_error {
         message => $msg,
         where   => $where,
         debug   => $self->debug,
+        code    => -32603,
     });
 
     # Now the black voodoo magiKC part, live on stage

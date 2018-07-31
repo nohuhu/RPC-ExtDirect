@@ -1,5 +1,5 @@
 use strict;
-use warnings;
+use warnings FATAL => 'all';
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -17,29 +17,33 @@ use RPC::ExtDirect::Test::Pkg::Qux;
 use RPC::ExtDirect::Test::Pkg::Hooks;
 use RPC::ExtDirect::Test::Pkg::PollProvider;
 
+my %only_tests = map { $_ => 1 } @ARGV;
+
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";
 
 for my $test ( @$tests ) {
-
-    # Unpack variables
     my ($name, $data, $expected_ran, $expected_result, $debug,
-        $run_twice, $isa, $code, $exception)
-        = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt)
+        $run_twice, $isa, $code, $exception, $class)
+        = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt class)
                 };
+    
+    next if %only_tests and not $only_tests{$name};
 
     # Set debug flag according to the test
     $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug );
     $data->{api}    = RPC::ExtDirect->get_api();
+    
+    $class ||= 'RPC::ExtDirect::Request';
+    
+    eval "require $class";
 
-    # Try to create object
-    my $request = eval { RPC::ExtDirect::Request->new($data) };
+    my $request = eval { $class->new($data) };
 
     is     $@,       '', "$name new() eval $@";
     ok     $request,     "$name new() object created";
     ref_ok $request, $isa;
 
-    # Try to run method
     my $ran_ok = eval { $request->run() };
 
     $exception ||= '';
@@ -50,7 +54,6 @@ for my $test ( @$tests ) {
     # Try to run method second time, no result checks this time
     $ran_ok = eval { $request->run() } if $run_twice;
 
-    # Try to get results
     my $result = eval { $request->result() };
 
     is $@, '', "$name result() eval $@";
@@ -63,7 +66,6 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
-#line 66
 [
     # Null input, debug off
     {
@@ -251,6 +253,21 @@ __DATA__
                     result => { msg  => 'foo! bar! baz!',
                                 foo => 111, bar => 222, baz => 333 }, },
         code   => sub { !!$RPC::ExtDirect::Test::Pkg::Hooks::foo_baz_called },
+    },
+    
+    {
+        name => 'JSON-RPC invalid request', debug => 1, ran_ok => !1,
+        class => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Exception::JsonRpc',
+        data => {
+            method => 'Foo.foo_foo', id => ['bazoom?'], params => [undef, undef],
+        },
+        result => {
+            error => {
+                code => -32600,
+                message => 'JSON-RPC request id MUST be a non-empty string or a number!',
+            },
+        },
     },
 ]
 

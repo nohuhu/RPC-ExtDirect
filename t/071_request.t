@@ -1,5 +1,5 @@
 use strict;
-use warnings;
+use warnings FATAL => 'all';
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -7,7 +7,7 @@ use RPC::ExtDirect;
 
 ### Testing successful requests
 
-use Test::More tests => 64;
+use Test::More tests => 84;
 
 use RPC::ExtDirect::Request;
 
@@ -15,28 +15,33 @@ use RPC::ExtDirect::Test::Pkg::Foo;
 use RPC::ExtDirect::Test::Pkg::Bar;
 use RPC::ExtDirect::Test::Pkg::Qux;
 
+my %only_tests = map { $_ => 1 } @ARGV;
+
 my $tests = eval do { local $/; <DATA>; }       ## no critic
     or die "Can't eval test data: $@";
 
 for my $test ( @$tests ) {
-    # Unpack variables
     my ($name, $data, $expected_ran, $expected_result, $debug,
-        $run_twice, $isa)
-        = @$test{ qw(name data ran_ok result debug run_twice isa)
+        $run_twice, $isa, $class)
+        = @$test{ qw(name data ran_ok result debug run_twice isa class)
                 };
+    
+    next if %only_tests and not $only_tests{$name};
 
     # Set debug flag according to test
     $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug, );
     $data->{api}    = RPC::ExtDirect->get_api();
+    
+    $class ||= 'RPC::ExtDirect::Request';
+    
+    eval "require $class";
 
-    # Try to create object
-    my $request = eval { RPC::ExtDirect::Request->new($data) };
+    my $request = eval { $class->new($data) };
 
     is     $@,       '', "$name new() eval $@";
     ok     $request,     "$name new() object created";
     ref_ok $request, $isa;
 
-    # Try to run method
     my $ran_ok = eval { $request->run() };
 
     is $@,      '',            "$name run() eval $@";
@@ -45,16 +50,13 @@ for my $test ( @$tests ) {
     # Try to run method second time, no result checks this time
     $ran_ok = eval { $request->run() } if $run_twice;
 
-    # Try to get results
     my $result = eval { $request->result() };
 
     is      $@,      '',               "$name result() eval $@";
-    ok      $result,                   "$name result() not empty";
     is_deep $result, $expected_result, "$name result() deep";
 };
 
 __DATA__
-#line 57
 [
     # Numbered one argument with scalar result
     {
@@ -173,5 +175,60 @@ __DATA__
                         "script.js application/javascript 1000\n",
             },
         },
+    },
+    
+    {
+        name => 'JSON-RPC with no arguments', debug => 1, ran_ok => 1,
+        class => 'RPC::ExtDirect::Request::JsonRpc',
+        data => {
+            jsonrpc => '2.0', method => 'Foo.foo_zero', id => "foo",
+        },
+        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        result => {
+            jsonrpc => '2.0', id => "foo", result => ['RPC::ExtDirect::Test::Pkg::Foo'],
+        },
+    },
+    
+    {
+        name => 'JSON-RPC with ordered arguments', debug => 1, ran_ok => 1,
+        class => 'RPC::ExtDirect::Request::JsonRpc',
+        data => {
+            jsonrpc => '2.0', method => 'Foo.foo_foo', params => ['blerg'], id => 10,
+        },
+        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        result => {
+            jsonrpc => '2.0', id => 10, result => "foo! 'blerg'",
+        },
+    },
+    
+    {
+        name => 'JSON-RPC with named arguments', debug => 1, ran_ok => 1,
+        class => 'RPC::ExtDirect::Request::JsonRpc',
+        data => {
+            jsonrpc => '2.0', method => 'Qux.foo_baz', id => '$@$%@$@#',
+            params => {"foo" => "blerg", "bar" => ["throbbe", "zingbong"],
+                       "baz" => {"mymse" => "plugh"}},
+        },
+        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        result => {
+            jsonrpc => '2.0', id => '$@$%@$@#',
+            result => {
+                msg => 'foo! bar! baz!',
+                foo => 'blerg',
+                bar => ['throbbe', 'zingbong'],
+                baz => { mymse => 'plugh' },
+            },
+        },
+    },
+    
+    {
+        name => 'JSON-RPC notification', debug => 1, ran_ok => 1,
+        class => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        data => {
+            jsonrpc => '2.0', method => 'Foo.foo_blessed',
+            params => { foo => 'bar' },
+        },
+        result => undef,
     },
 ]
