@@ -51,7 +51,7 @@ Applications based on JavaScript frameworks
 L<Ext JS|http://www.sencha.com/products/extjs/> and
 L<Sencha Touch|http://www.sencha.com/products/touch/>.
 
-The suite consists of the core RPC::ExtDirect module that implements Ext.Direct
+The suite consists of the core RPC::ExtDirect module that implements Ext Direct
 protocol and transport layer, several server environment-specific peripheral
 gateways, a standalone pure Perl server, two Perl clients, and even its own
 specialized testing scaffold! We've got it covered front to back. :)
@@ -60,15 +60,15 @@ specialized testing scaffold! We've got it covered front to back. :)
 
 =head1 INTRODUCTION AND EXAMPLES
 
-If you are not familiar with Ext.Direct, start with L<RPC::ExtDirect::Intro>
+If you are not familiar with Ext Direct, start with L<RPC::ExtDirect::Intro>
 for more explanations and a few examples, both easy and more advanced.
 
 =head1 WHEN TO USE IT, AND WHY
 
-Ext.Direct is a Remote Procedure Call (RPC) protocol provided out of the box
+Ext Direct is a Remote Procedure Call (RPC) protocol provided out of the box
 with JavaScript frameworks by L<Sencha|http://www.sencha.com>. It is deeply
 integrated in the data services, and is supported by a slew of components.
-Besides that, Ext.Direct also has several major advantages over similar
+Besides that, Ext Direct also has several major advantages over similar
 protocols like XML-RPC and JSON-RPC:
 
 =over 4
@@ -103,7 +103,7 @@ Asynchronous push notifications via event polling
 
 =back
 
-All this makes Ext.Direct a no-brainer when developing Web apps with Ext JS or
+All this makes Ext Direct a no-brainer when developing Web apps with Ext JS or
 Sencha Touch. And with RPC::ExtDirect, choosing Perl to write server side code
 for Web apps comes naturally, too. :)
 
@@ -111,20 +111,20 @@ for Web apps comes naturally, too. :)
 
 =head1 HOW TO USE
 
-Since Ext.Direct is just a transport layer, you don't need to change your app
+Since Ext Direct is just a transport layer, you don't need to change your app
 architecture to work around it. If you have an existing server side API you
 can publish it with minimal effort; if you're starting from scratch, add the
 classes and methods as you go.
 
-Note that with Ext.Direct, we're talking about classes and methods - that owes
-to the fact that Ext.Direct originated in Ext JS framework, which itself is
+Note that with Ext Direct, we're talking about classes and methods - that owes
+to the fact that Ext Direct originated in Ext JS framework, which itself is
 written in JavaScript with object-oriented approach in mind. This does not mean
 you can't go functional or even procedural with RPC::ExtDirect; it is perfectly
 possible to cook your own flavor of spaghetti code under the light OOP sauce that
 RPC::ExtDirect provides.
 
 In order for a method to be published to the outside world, it needs to be
-declared in the L<Ext.Direct API|RPC::ExtDirect::Intro/API>. As of version 3.0,
+declared in the L<Ext Direct API|RPC::ExtDirect::Intro/API>. As of version 3.0,
 it can be done in two ways: either with C<ExtDirect> attribute as shown in the
 L</SYNOPSIS>, or by including the method in a hashref fed to L<RPC::ExtDirect::API>
 constructor. See L<RPC::ExtDirect::API/"COMPILE VS RUN TIME DEFINITION"> for more
@@ -132,7 +132,7 @@ detail.
 
 =head1 METHODS AND CALLING CONVENTIONS
 
-Unlike Ext.Direct specification (and reference PHP implementation, too)
+Unlike Ext Direct specification (and reference PHP implementation, too)
 RPC::ExtDirect does not impose strict architectural notation on server
 side code. There is no mandatory object instantiation and no assumption
 about the code called. That said, an RPC::ExtDirect Method should conform
@@ -170,7 +170,7 @@ more information.
 =item *
 
 Form handlers are passed their arguments as a hash in C<@_>. Standard
-Ext.Direct form field values are removed from the argument hash;
+Ext Direct form field values are removed from the argument hash;
 uploaded file(s) will be passed in the C<file_uploads> hash element.
 It will only be present when there are uploaded files. For more info,
 see L</"FILE UPLOADS">.
@@ -217,13 +217,13 @@ objects, see L<RPC::ExtDirect::Event> for more detail.
 Imagine a Web application with an editable Grid populated with data
 from a database table. To update the database when changes are saved,
 the client will send an array of changed records that will be passed
-to the corresponding Ext.Direct Method as call arguments. But what
+to the corresponding Ext Direct Method as call arguments. But what
 about the table name?
 
 The usual approach is to create a separate set of 4 CRUD methods
 (Create, Read, Update, Delete) for each table, and expose these
 methods as a separate L<Action|RPC::ExtDirect::Intro/Action>. While
-tried and true, this approach leads to bloated Ext.Direct API
+tried and true, this approach leads to bloated Ext Direct API
 when there are many tables, with lots of packages and code duplication
 just for the sake of editing a database table. This can be especially
 frustrating when the application has many similar tables differing
@@ -313,7 +313,7 @@ in Method definition.
 
 =head1 FILE UPLOADS
 
-Ext.Direct offers native support for file uploading by using temporary
+Ext Direct offers native support for file uploading by using temporary
 HTML forms. RPC::ExtDirect supports this feature; upload requests can be
 processed in a
 L<Form Handler Method|RPC::ExtDirect::Intro/"Form Handler Method">.
@@ -376,7 +376,7 @@ L<CGI::ExtDirect> is used with the ole goode L<CGI> environment; it is
 also compatible with the newer L<CGI::Simple> module that is a drop-in
 replacement for C<CGI.pm>.
 
-This gateway is most often used for testing Ext.Direct interfaces, usually
+This gateway is most often used for testing Ext Direct interfaces, usually
 with L<Test::ExtDirect> helper module. However, CGI environment is easy
 to use and set up practically anywhere, and it can be used in the variety
 of situations where a full blown Perl application server is not feasible.
@@ -454,22 +454,22 @@ family:
 
 =item *
 
-L<RPC::ExtDirect::Server> - a prebuilt Ext.Direct server in Perl, based on
+L<RPC::ExtDirect::Server> - a prebuilt Ext Direct server in Perl, based on
 L<HTTP::Server::Simple>.
 
 =item *
 
-L<RPC::ExtDirect::Client> - a synchronous Ext.Direct client in Perl.
+L<RPC::ExtDirect::Client> - a synchronous Ext Direct client in Perl.
 
 =item *
 
-L<RPC::ExtDirect::Client::Async> - a fully asynchronous Ext.Direct client
+L<RPC::ExtDirect::Client::Async> - a fully asynchronous Ext Direct client
 in Perl, with API compatible to L<RPC::ExtDirect::Client>.
 
 =item *
 
 L<Test::ExtDirect> - a set of helper subroutines that make unit testing
-Ext.Direct APIs a breeze.
+Ext Direct APIs a breeze.
 
 =back
 
@@ -483,15 +483,15 @@ L<Ext JS product website|http://www.sencha.com/products/extjs/>
 
 =item *
 
-L<Ext.Direct specification|http://docs.sencha.com/extjs/6.2.0/guides/backend_connectors/direct/specification.html>
+L<Ext Direct specification|http://docs.sencha.com/extjs/6.2.0/guides/backend_connectors/direct/specification.html>
 
 =item *
 
-L<Ext.Direct support forum|http://www.sencha.com/forum/forumdisplay.php?47>
+L<Ext Direct support forum|http://www.sencha.com/forum/forumdisplay.php?47>
 
 =item *
 
-L<Ext.Direct plugin for jQuery|https://github.com/ha-sash/jquery-ext-direct-client>
+L<Ext Direct plugin for jQuery|https://github.com/ha-sash/jquery-ext-direct-client>
 
 =back
 

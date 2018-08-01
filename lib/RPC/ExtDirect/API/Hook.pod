@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API::Hook - Ext.Direct Method wrappers
+RPC::ExtDirect::API::Hook - Ext Direct Method wrappers
 
 =head1 DESCRIPTION
 
@@ -23,7 +23,7 @@ three types:
 C<before> hook is called before a L<Method|RPC::ExtDirect::Intro/Method>
 is invoked, and can be used to change Method arguments or cancel Method
 execution. This hook must return numeric value C<1> to allow Method call.
-Any other value will be interpreted as an Ext.Direct
+Any other value will be interpreted as an Ext Direct
 L<Result|RPC::ExtDirect::Intro/Result>; it will be returned to the
 client side and the Method never gets called.
 
@@ -31,7 +31,7 @@ Note that RPC::ExtDirect will not make any assumptions about this hook's
 return value; a false value like C<''> or C<0> will probably not look
 too helpful from the client side's point of view.
 
-If this hook throws an exception, it will be returned as an Ext.Direct
+If this hook throws an exception, it will be returned as an Ext Direct
 L<Exception|RPC::ExtDirect::Intro/Exception> to the client side, and
 the Method does not execute.
 
@@ -86,7 +86,7 @@ Hooks receive a hash of the following arguments:
 
 =item C<action>
 
-Ext.Direct L<Action|RPC::ExtDirect::Intro/Action> name for the
+Ext Direct L<Action|RPC::ExtDirect::Intro/Action> name for the
 L<Method|RPC::ExtDirect::Intro/Method>.
 
 B<DEPRECATED>. Use L<method_ref|/method_ref> instead:
@@ -94,7 +94,7 @@ C<< $method_ref->action >>
 
 =item C<method>
 
-Ext.Direct L<Method|RPC::ExtDirect::Intro/Method> name
+Ext Direct L<Method|RPC::ExtDirect::Intro/Method> name
 
 B<DEPRECATED>. Use L<method_ref|/method_ref> instead:
 C<< $method_ref->name >>

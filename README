@@ -7,7 +7,7 @@ RPC::ExtDirect
     Touch.
 
     The suite consists of the core RPC::ExtDirect module that implements
-    Ext.Direct protocol and transport layer, several server
+    Ext Direct protocol and transport layer, several server
     environment-specific peripheral gateways, a standalone pure Perl server,
     two Perl clients, and even its own specialized testing scaffold! We've
     got it covered front to back. :)

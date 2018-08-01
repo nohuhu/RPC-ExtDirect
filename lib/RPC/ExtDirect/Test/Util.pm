@@ -2,7 +2,6 @@ package RPC::ExtDirect::Test::Util;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';
 
 use base 'Exporter';
 
@@ -100,7 +99,7 @@ sub cmp_json {
 
 ### NON EXPORTED PUBLIC PACKAGE SUBROUTINE ###
 #
-# Deparse and normalize a JavaScript string with Ext.Direct API
+# Deparse and normalize a JavaScript string with Ext Direct API
 # declaration into Perl data structures suitable for deep comparison
 #
 

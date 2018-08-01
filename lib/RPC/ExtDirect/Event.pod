@@ -80,7 +80,7 @@ typing compatibility with Exception and Request objects.
 =item C<result>
 
 Instance method. Returns an Event hashref in format required by
-Ext.Direct client stack. Not intended to be called directly.
+Ext Direct client stack. Not intended to be called directly.
 
 =back
 

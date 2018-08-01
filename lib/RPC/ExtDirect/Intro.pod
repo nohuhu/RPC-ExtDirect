@@ -6,34 +6,34 @@ RPC::ExtDirect::Intro - A gentle(ish) introduction to RPC::ExtDirect
 
 =head1 DESCRIPTION
 
-=head2 What is Ext.Direct?
+=head2 What is Ext Direct?
 
-Ext.Direct is a high level RPC-over-HTTP protocol provided out of the box
+Ext Direct is a high level RPC-over-HTTP protocol provided out of the box
 with L<Ext JS|http://www.sencha.com/products/extjs/> and
 L<Sencha Touch|http://www.sencha.com/products/touch/> JavaScript frameworks.
 It is server agnostic, provided that the server side stack is conformant
 to the
-L<Ext.Direct specification|http://www.sencha.com/products/extjs/extdirect/>.
+L<Ext Direct specification|http://www.sencha.com/products/extjs/extdirect/>.
 
-L<RPC::ExtDirect> is a fully featured implementation of Ext.Direct server
+L<RPC::ExtDirect> is a fully featured implementation of Ext Direct server
 stack in Perl, compatible with Ext JS 4.x and 5.x, and Sencha Touch 2.x.
 
-=head2 What Ext.Direct is for?
+=head2 What Ext Direct is for?
 
-The primary goal for Ext.Direct is easy and fast integration of server
+The primary goal for Ext Direct is easy and fast integration of server
 components with HTML5 applications. Client side stack is built in frameworks'
 cores and is used by many components like data Stores, Forms, Grids, Charts,
-etc. Ext.Direct supports request batching, file uploads, event polling and
+etc. Ext Direct supports request batching, file uploads, event polling and
 many other features.
 
-Besides simplicity and ease of use, Ext.Direct allows to achieve very clean
+Besides simplicity and ease of use, Ext Direct allows to achieve very clean
 code and issue separation both on server and client sides, which in turn
 results in simplified code, greater overall software quality and shorter
 development times.
 
-From Perl module developer perspective, Ext.Direct is just a transport layer;
+From Perl module developer perspective, Ext Direct is just a transport layer;
 it doesn't matter if a method is called from Perl code or through
-Ext.Direct. This approach, in particular, allows for multi-tiered testing:
+Ext Direct. This approach, in particular, allows for multi-tiered testing:
 
 =over 4 
 
@@ -44,7 +44,7 @@ with the usual tools like L<Test::More>
 
 =item *
 
-Server side classes can be tested as a whole via Ext.Direct calls
+Server side classes can be tested as a whole via Ext Direct calls
 using L<Test::ExtDirect>
 
 =item *
@@ -56,7 +56,7 @@ like Selenium.
 
 =head1 ARCHITECTURE OVERVIEW
 
-Ext.Direct is not only a transport protocol; in fact it implies a set
+Ext Direct is not only a transport protocol; in fact it implies a set
 of requirements for the server side to meet. There are many web server
 environments available in the Perl world, with several major interface
 conventions established over the years. These environments are common
@@ -71,7 +71,7 @@ server environments. The gateway is responsible for implementing the
 features missing in a web server interface, if any.
 
 Since the gateway modules implement the "lowest common denominator"
-abstraction layer, it is fairly easy to use an Ext.Direct application
+abstraction layer, it is fairly easy to use an Ext Direct application
 with several different gateways at the same time. The most common use
 case for this is unit testing; the added benefit is that the application
 becomes independent of the web server environment and can be ported
@@ -81,7 +81,7 @@ See L<RPC::ExtDirect/GATEWAYS> for the list of available gateways.
 
 =head1 TERMINOLOGY
 
-Ext.Direct uses the following terms, followed by their descriptions:
+Ext Direct uses the following terms, followed by their descriptions:
 
 =over 4
 
@@ -121,19 +121,19 @@ collects and returns call L<Results|/Result> or L<Exceptions|/Exception>.
 Namespace unit; collection of L<Methods|/Method>. The nearest Perl analog
 is a package, other languages may call it a Class.
 
-Since Ext.Direct originated in JavaScript, '::' will be replaced with dots
+Since Ext Direct originated in JavaScript, '::' will be replaced with dots
 for all Actions in the L</"API declaration">, and should be called as
 C<Action.Method()> instead of Perl style C<Action::Method>.
 
 =item Method
 
-Subroutine exposed through Ext.Direct API to be called by client side.
+Subroutine exposed through Ext Direct API to be called by client side.
 Method is fully qualified by L</Action> and Method names using a dot as
 the delimiter: C<Action.Method>.
 
 =item Method stub
 
-JavaScript function created by the Ext.Direct transport layer on the client
+JavaScript function created by the Ext Direct transport layer on the client
 side I<in lieu> of the actual L</Method> that only exists on the server
 side. A separate stub will be created for each Method, with the parameter
 signature conforming to Method's declaration in the L</API>.
@@ -191,7 +191,7 @@ and alike events should be returned as Results, not L<Exceptions|/Exception>.
 
 Fatal error, or any other unrecoverable event in the application code.
 Calls that produce Exception instead of L</Result> are considered
-unsuccessful; Ext.Direct provides built in mechanism for managing
+unsuccessful; Ext Direct provides built in mechanism for managing
 Exceptions.
 
 Exceptions are not used to indicate errors in application logic flow,
@@ -222,11 +222,11 @@ The first step is to install and configure a
 L<gateway|RPC::ExtDirect/GATEWAYS> that works with your chosen Web
 server environment. Please refer to gateways' documentation for that.
 It is recommended to install L<Test::ExtDirect> module as well, so
-that you could write tests for your Ext.Direct code right from the
+that you could write tests for your Ext Direct code right from the
 start.
 
 When you have the gateway configured, it's time to publish some code
-in the Ext.Direct L</API>. The easiest way to do this is to use the
+in the Ext Direct L</API>. The easiest way to do this is to use the
 C<ExtDirect> attribute with the subroutines that need to be published:
 
     package MyApp::Math;
@@ -240,7 +240,7 @@ C<ExtDirect> attribute with the subroutines that need to be published:
     }
 
 In this snippet, we have published the C<MyApp::Math> package as
-an Ext.Direct L</Action> called C<MyMath>, and added one L</Method>
+an Ext Direct L</Action> called C<MyMath>, and added one L</Method>
 to be exposed to the client side as C<MyMath.add>. In your Ext JS
 or Sencha Touch app, use the Method with an asynchronous callback
 function that will be fired when result is transmitted back to the
@@ -270,7 +270,7 @@ setup. If this picture makes you cringe with frustration, that's
 totally understandable. But fear not, RPC::ExtDirect has a truly
 Perlish answer to this problem (making hard things possible).
 
-L<Test::ExtDirect> is the recommended way to unit test your Ext.Direct
+L<Test::ExtDirect> is the recommended way to unit test your Ext Direct
 code. To be precise, it is hardly right to call it unit testing when
 it involves a test HTTP server, a Perl client that makes actual RPC
 invocations over HTTP and simulates the JavaScript client; it may
@@ -350,7 +350,7 @@ no checking, use empty params array:
 
 =head2 Form submits
 
-An Ext.Direct Method can be used to accept form submits in
+An Ext Direct Method can be used to accept form submits in
 both C<application/x-www-form-urlencoded> and C<multipart/form-data>
 encodings. This feature can be used to accept file uploads from
 non-HTML5 browsers (think IE9 and below):
@@ -377,7 +377,7 @@ usual way is to throw an L</Exception>:
         die "Houston, we've got a problem!\n";
     }
 
-L<Ext.Direct specification|http://www.sencha.com/products/extjs/extdirect>
+L<Ext Direct specification|http://www.sencha.com/products/extjs/extdirect>
 requires the server side stack to only send exceptions in debugging
 mode but never in production mode. The implied security concerns are valid,
 but having two sets of logic would be unwieldy; RPC::ExtDirect compromises
@@ -410,7 +410,7 @@ parties to find an attack vector to your application!
 
 Suppose that you want to restrict some parts of the API to be accessible
 only by authenticated users. The usual way to do this is by using HTTP
-cookies. However, cookies are not exposed to every Ext.Direct Method
+cookies. However, cookies are not exposed to every Ext Direct Method
 by default; you need to tell RPC::ExtDirect to pass an
 L<environment object|RPC::ExtDirect/"ENVIRONMENT OBJECTS"> to your
 Method in order to get low level things like cookies or HTTP request
@@ -492,7 +492,7 @@ logging:
     # This goes to the main program
     RPC::ExtDirect->get_api->after('MyApp::SecurityLog::log_everything');
 
-Set this way, C<log_everything> will be called after every Ext.Direct
+Set this way, C<log_everything> will be called after every Ext Direct
 Method invocation, even if a C<before> hook canceled it. See
 L<RPC::ExtDirect::API::Hook> for the gory details.
 
@@ -549,7 +549,7 @@ for each table, you can use call metadata:
 This can now be used easily on the client side (with Ext JS 5.1+):
 
     var grid = new Ext.grid.Panel({
-        title: 'Ext.Direct grid',
+        title: 'Ext Direct grid',
         
         store: {
             fields: ['frobbe', 'throbbe'],

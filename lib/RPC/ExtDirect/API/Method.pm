@@ -211,7 +211,7 @@ sub run {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Check the arguments that were passed in the Ext.Direct request
+# Check the arguments that were passed in the Ext Direct request
 # to make sure they conform to the API declared by this Method.
 # Arguments should be passed in a reference, either hash- or array-.
 # This method is expected to die if anything is wrong, or return 1
@@ -259,7 +259,7 @@ sub prepare_method_arguments {
 
 ### PUBLIC INSTANCE METHOD ###
 #
-# Check the metadata that was passed in the Ext.Direct request
+# Check the metadata that was passed in the Ext Direct request
 # to make sure it conforms to the API declared by this Method.
 #
 # This method is similar to check_method_arguments and operates
@@ -553,7 +553,7 @@ sub check_ordered_arguments {
     
     my $want_len = $self->len;
     
-    # Historically Ext.Direct on the JavaScript client side sent null value
+    # Historically Ext Direct on the JavaScript client side sent null value
     # instead of empty array for ordered Methods that accept 0 arguments.
     die sprintf "ExtDirect Method %s.%s expects ordered arguments " .
                 "in Array\n",

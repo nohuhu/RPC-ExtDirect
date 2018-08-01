@@ -41,7 +41,7 @@ sub new {
         $data = $arg{data};
     }
 
-    croak "Ext.Direct Event name is required"
+    croak "Event name is required"
         unless defined $name;
 
     my $self = bless { name => $name, data => $data }, $class;

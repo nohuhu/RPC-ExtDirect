@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API::Action - Ext.Direct Action object
+RPC::ExtDirect::API::Action - Ext Direct Action object
 
 =head1 DESCRIPTION
 
-This package implements an Ext.Direct L<Action|RPC::ExtDirect::Intro/Action>
+This package implements an Ext Direct L<Action|RPC::ExtDirect::Intro/Action>
 object that holds Action's properties, and a set of
 L<Methods|RPC::ExtDirect::Intro/Method>. You can subclass this package to
 change its behavior.

@@ -185,7 +185,7 @@ sub _encode_json {
                 :                              $config->debug_serialize
                 ;
     
-    # We force UTF-8 as per Ext.Direct spec
+    # We force UTF-8 as per Ext Direct spec
     $options->{utf8} = 1
         unless $self->env->{type} eq 'jsonrpc';
     

@@ -519,7 +519,7 @@ sub _run_before_hook {
     };
 
     # If "before" hook returns anything but number 1,
-    # treat it as an Ext.Direct response and do not call
+    # treat it as an Ext Direct response and do not call
     # the actual method
     if ( $hook_result ne '1' ) {
         $result     = $hook_result;

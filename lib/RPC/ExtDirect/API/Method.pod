@@ -2,11 +2,11 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API::Method - Ext.Direct Method object
+RPC::ExtDirect::API::Method - Ext Direct Method object
 
 =head1 DESCRIPTION
 
-This package implements an Ext.Direct L<Method|RPC::ExtDirect::Intro/Method>
+This package implements an Ext Direct L<Method|RPC::ExtDirect::Intro/Method>
 object that holds Method's properties and can be subclassed to change
 its behavior.
 
@@ -194,7 +194,7 @@ L<API declaration|RPC::ExtDirect::Intro/"API declaration">, or an empty
 list if the Method should not be included in the remoting API published
 to the client side.
 
-If you need to affect Ext.Direct API generation, this method is the place
+If you need to affect Ext Direct API generation, this method is the place
 to do it. One example option is running a check on the user's credentials,
 and deciding to include or exclude this particular Method from the API
 generated for this user.

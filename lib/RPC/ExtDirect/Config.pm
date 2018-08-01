@@ -323,7 +323,7 @@ my $DEFINITIONS = [{
     default  => 'RPC::ExtDirect::EventProvider',
 }, {
     accessor => 'verbose_exceptions',
-    default  => !1,  # In accordance with Ext.Direct spec
+    default  => !1,  # In accordance with Ext Direct spec
 }, {
     accessor => 'api_path',
     default  => '/extdirectapi',

@@ -82,11 +82,11 @@ sub showDetails : ExtDirect(params => [qw(firstName lastName age)]) {
 
 =head1 NAME
 
-RPC::ExtDirect::Demo::TestAction - Part of Ext.Direct interface demo
+RPC::ExtDirect::Demo::TestAction - Part of Ext Direct interface demo
 
 =head1 DESCRIPTION
 
-This module implements TestAction class used in ExtJS Ext.Direct demo
+This module implements TestAction class used in ExtJS Ext Direct demo
 scripts; it is not intended to be used per se but rather as an example.
 
 I decided to keep it in the installation tree so that it will always

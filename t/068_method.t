@@ -545,7 +545,7 @@ __DATA__
         input => {
             env => 'env',
 
-            # Test stripping of the standard Ext.Direct fields
+            # Test stripping off the standard Ext Direct fields
             input => {
                 action => 'Foo',
                 method => 'bar',

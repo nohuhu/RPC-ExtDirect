@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-RPC::ExtDirect::API - Ext.Direct service discovery handler
+RPC::ExtDirect::API - Ext Direct service discovery handler
 
 =head1 SYNOPSIS
 
@@ -48,12 +48,12 @@ RPC::ExtDirect::API - Ext.Direct service discovery handler
 
 =head1 DESCRIPTION
 
-With Ext.Direct, the L<API|RPC::ExtDirect::Intro/API> exposed by the
+With Ext Direct, the L<API|RPC::ExtDirect::Intro/API> exposed by the
 server side is published to the clients via fixed URI, a GET request
 to which produces a response with a piece of JavaScript code containing
 the API declaration. This module handles the API service discovery requests.
 
-The Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+The Ext Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
 is in fact a tree-like data structure (an Object in JavaScript parlance)
 containing description of L<Actions|RPC::ExtDirect::Intro/Action> and
 L<Methods|RPC::ExtDirect::Intro/Method> available to the client. This
@@ -63,7 +63,7 @@ at this time.
 
 =head1 ACTIONS AND METHODS
 
-An L<Action|RPC::ExtDirect::Intro/Action> in Ext.Direct parlance is a
+An L<Action|RPC::ExtDirect::Intro/Action> in Ext Direct parlance is a
 collection of L<Method|RPC::ExtDirect::Intro/Method> definitions. The
 nearest similar Perl thing is a package, other languages may call it
 a Class. In L<RPC::ExtDirect>, an Action needs a unique name that can
@@ -88,7 +88,7 @@ chunk of the package name: C<'Foo::Bar::Baz' -E<gt> 'Baz'>.
 
 =head2 Method calling conventions
 
-L<Ext.Direct specification|www.sencha.com/products/extjs/extdirect/>
+L<Ext Direct specification|www.sencha.com/products/extjs/extdirect/>
 defines four calling convention for methods:
 
 =over 4
@@ -119,7 +119,7 @@ when requested.
 
 =back
 
-When an Ext.Direct remoting method is called on the client side, the
+When an Ext Direct remoting method is called on the client side, the
 transport layer will perform a check on the actual arguments passed
 to the L<method stub|RPC::ExtDirect::Intro/"Method stub">, and throw
 an exception if arguments do not conform to the
@@ -181,7 +181,7 @@ metadata argument.
 
 =head1 COMPILE VS RUN TIME DEFINITION
 
-There are two ways to define Ext.Direct L<API|RPC::ExtDirect::Intro/API>
+There are two ways to define Ext Direct L<API|RPC::ExtDirect::Intro/API>
 with RPC::ExtDirect: statically by using C<ExtDirect> subroutine attribute,
 or dynamically by including Actions and Methods in a hashref that is used to
 configure an API object.
@@ -206,7 +206,7 @@ timing issues. You've been warned.
 
 =head1 DEFINING METHODS STATICALLY
 
-In order to add a subroutine to the Ext.Direct interface, use an attribute
+In order to add a subroutine to the Ext Direct interface, use an attribute
 with the sub definition:
 
     sub foo : ExtDirect(...) {}
@@ -348,7 +348,7 @@ mistake has been made somewhere.
 
 =head1 API CONFIGURATION
 
-RPC::ExtDirect::API provides two ways to configure Ext.Direct API declaration
+RPC::ExtDirect::API provides two ways to configure Ext Direct API declaration
 variables to accommodate for specific application needs: dynamic via an
 L<RPC::ExtDirect::Config> instance, and static via C<import> package
 subroutine.
@@ -393,19 +393,19 @@ e.g.: C<myApp.Foo.Bar>
 
 =item C<router_path>
 
-URI for Ext.Direct L<Router|RPC::ExtDirect::Intro/Router> calls. For the
+URI for Ext Direct L<Router|RPC::ExtDirect::Intro/Router> calls. For the
 L<CGI environment|CGI::ExtDirect>, this should be the name of the CGI script
 that provides the API declaration; for more sophisticated environments it is
 an anchor for the specified PATH_INFO.
 
 =item C<poll_path>
 
-URI for Ext.Direct L<Event Provider|RPC::ExtDirect::Intro/"Event Provider">
+URI for Ext Direct L<Event Provider|RPC::ExtDirect::Intro/"Event Provider">
 calls. Client side will poll this URI periodically, hence the name.
 
 =item C<remoting_var>
 
-By default, Ext.Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
+By default, Ext Direct L<API declaration|RPC::ExtDirect::Intro/"API declaration">
 for remoting (forward) L<Methods|RPC::ExtDirect::Intro/Method> is stored in
 Ext.app.REMOTING_API variable. If for any reason you would like to change that,
 do this by setting remoting_var.
@@ -415,13 +415,13 @@ version of the JavaScript application that consist of one big JavaScript file.
 In this case, it is recommended to include API declaration as the first script
 in your index.html and change the remoting API variable name to something like
 C<EXT_DIRECT_API>. Default variable name depends on Ext.app namespace being
-available by the time Ext.Direct
+available by the time Ext Direct
 L<API declaration|RPC::ExtDirect::Intro/"API declaration"> is downloaded, which is
 often not the case.
 
 =item C<polling_var>
 
-Ext.Direct does not provide a standard namespace for
+Ext Direct does not provide a standard namespace for
 L<Event Providers|RPC::ExtDirect::Intro/"Event Provider"> to be published in.
 For similarity with L</remoting_var>, C<Ext.app.POLLING_API> name is used to
 declare an L<Event Provider|RPC::ExtDirect::Intro/"Event Provider"> so that
@@ -430,7 +430,7 @@ explicitly.
 
 C<Ext.app.POLLING_API> configuration will only be published to the client side
 if there is at least one L<pollHandler|RPC::ExtDirect::Config/pollHandler>
-L<Method|RPC::ExtDirect::Intro/Method> defined in the Ext.Direct
+L<Method|RPC::ExtDirect::Intro/Method> defined in the Ext Direct
 L<API|RPC::ExtDirect::Intro/API>.
 
 Note that the same variable naming caveat applies here as with L</remoting_var>.
@@ -610,7 +610,7 @@ for the corresponding package, or C<undef>. Accepts one ordered argument
 
 =item C<add_method>
 
-Instance method. Add a new Ext.Direct L<Method|RPC::ExtDirect::Intro/Method>
+Instance method. Add a new Ext Direct L<Method|RPC::ExtDirect::Intro/Method>
 object to the current API tree, creating an Action for it if necessary.
 Accepts named arguments in a hash.
 

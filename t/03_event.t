@@ -35,7 +35,7 @@ for my $test ( @$tests ) {
 
 my $event = eval { RPC::ExtDirect::Event->new() };
 
-like $@, qr/^Ext.Direct Event name is required/, "Argument check";
+like $@, qr/^Event name is required/, "Argument check";
 
 # Test the stub
 

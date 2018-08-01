@@ -41,7 +41,7 @@ my %TEST_REQ = (
 WriteMakefile(
     NAME         => 'RPC::ExtDirect',
     VERSION_FROM => 'lib/RPC/ExtDirect.pm',
-    ABSTRACT     => 'Core Ext.Direct implementation for Perl',
+    ABSTRACT     => 'Core Ext Direct implementation for Perl',
     AUTHOR       => 'Alex Tokarev <tokarev@cpan.org>',
     LICENSE      => 'perl',
     

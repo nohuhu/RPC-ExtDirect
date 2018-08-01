@@ -23,11 +23,11 @@ __END__
 
 =head1 NAME
 
-RPC::ExtDirect::Demo::PollProvider - Ext.Direct polling provider demo
+RPC::ExtDirect::Demo::PollProvider - Ext Direct polling provider demo
 
 =head1 DESCRIPTION
 
-This module implements polling provider used in ExtJS Ext.Direct demo
+This module implements polling provider used in ExtJS Ext Direct demo
 scripts; it is not intended to be used per se but rather as an example.
 
 I decided to keep it in the installation tree so that it will always
