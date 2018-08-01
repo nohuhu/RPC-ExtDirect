@@ -1,5 +1,5 @@
 use strict;
-use warnings FATAL => 'all';
+use warnings;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -7,7 +7,7 @@ use RPC::ExtDirect;
 
 ### Testing invalid inputs
 
-use Test::More tests => 94;
+use Test::More tests => 122;
 
 use RPC::ExtDirect::Request;
 
@@ -24,8 +24,8 @@ my $tests = eval do { local $/; <DATA>; }       ## no critic
 
 for my $test ( @$tests ) {
     my ($name, $data, $expected_ran, $expected_result, $debug,
-        $run_twice, $isa, $code, $exception, $class)
-        = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt class)
+        $run_twice, $isa, $code, $exception)
+        = @$test{ qw(name data ran_ok result debug run_twice isa code xcpt)
                 };
     
     next if %only_tests and not $only_tests{$name};
@@ -34,11 +34,7 @@ for my $test ( @$tests ) {
     $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug );
     $data->{api}    = RPC::ExtDirect->get_api();
     
-    $class ||= 'RPC::ExtDirect::Request';
-    
-    eval "require $class";
-
-    my $request = eval { $class->new($data) };
+    my $request = eval { RPC::ExtDirect::Request->new($data) };
 
     is     $@,       '', "$name new() eval $@";
     ok     $request,     "$name new() object created";
@@ -104,9 +100,9 @@ __DATA__
                     tid     => 1, data => [], },
         isa    => 'RPC::ExtDirect::Exception',
         result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
+                    action  => '',
+                    method  => 'foo',
+                    tid     => 1,
                     where   => 'RPC::ExtDirect::Request->new',
                     message => 'ExtDirect action (class name) required' },
     },
@@ -117,9 +113,9 @@ __DATA__
                     tid     => 2, data => [], },
         isa    => 'RPC::ExtDirect::Exception',
         result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
+                    action  => 'Some',
+                    method  => '',
+                    tid     => 2,
                     where   => 'RPC::ExtDirect::Request->new',
                     message => 'ExtDirect method name required' },
     },
@@ -151,7 +147,7 @@ __DATA__
                                'check_method_arguments',
                     message => 'ExtDirect Method Qux.bar_foo '.
                                'requires 4 argument(s) but only 3 '.
-                               'are provided', },
+                               'were provided', },
     },
     # Tried to run method twice
     {
@@ -257,15 +253,68 @@ __DATA__
     
     {
         name => 'JSON-RPC invalid request', debug => 1, ran_ok => !1,
-        class => 'RPC::ExtDirect::Request::JsonRpc',
-        isa => 'RPC::ExtDirect::Exception::JsonRpc',
+        isa => 'RPC::ExtDirect::Exception',
         data => {
+            jsonrpc => '2.0',
             method => 'Foo.foo_foo', id => ['bazoom?'], params => [undef, undef],
         },
         result => {
+            jsonrpc => '2.0',
             error => {
                 code => -32600,
                 message => 'JSON-RPC request id MUST be a non-empty string or a number!',
+            },
+        },
+    },
+    
+    {
+        name => 'JSON-RPC method not found', debug => 1, ran_ok => !1,
+        isa => 'RPC::ExtDirect::Exception',
+        data => {
+            jsonrpc => '2.0',
+            method => 'Foo.blergobonzo', id => 'qux', params => [undef, undef],
+        },
+        result => {
+            jsonrpc => '2.0',
+            id => 'qux',
+            error => {
+                code => -32601,
+                message => 'JSON-RPC method not found',
+            },
+        },
+    },
+    
+    {
+        name => 'JSON-RPC wrong ordered arguments', debug => 1, ran_ok => !1,
+        isa => 'RPC::ExtDirect::Exception',
+        data => {
+            jsonrpc => '2.0',
+            method => 'Foo.foo_foo', id => 123, params => {},
+        },
+        result => {
+            jsonrpc => '2.0',
+            id => 123,
+            error => {
+                code => -32602,
+                message => 'JSON-RPC Method Foo.foo_foo expects ordered arguments in Array',
+            },
+        },
+    },
+    
+    {
+        name => 'JSON-RPC wrong named arguments', debug => 1, ran_ok => !1,
+        isa => 'RPC::ExtDirect::Exception',
+        data => {
+            jsonrpc => '2.0',
+            method => 'Foo.foo_baz', id => 321, params => [],
+        },
+        result => {
+            jsonrpc => '2.0',
+            id => 321,
+            error => {
+                code => -32602,
+                message => 'JSON-RPC Method Foo.foo_baz expects named argument '.
+                           'key/value pairs in Object (hashref)',
             },
         },
     },

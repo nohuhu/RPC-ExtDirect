@@ -2,7 +2,6 @@ package RPC::ExtDirect::Config;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
@@ -260,9 +259,6 @@ my $DEFINITIONS = [{
     type     => 'scalar',
     setter   => 'exception_class_request',
     fallback => 'exception_class',
-}, {
-    accessor => 'exception_class_request_json_rpc',
-    default  => 'RPC::ExtDirect::Exception::JsonRpc',
 }, {
     accessor => 'request_class',
     default  => 'RPC::ExtDirect::Request',

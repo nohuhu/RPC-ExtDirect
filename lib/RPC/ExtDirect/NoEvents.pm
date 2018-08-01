@@ -2,7 +2,6 @@ package RPC::ExtDirect::NoEvents;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use base 'RPC::ExtDirect::Event';
 

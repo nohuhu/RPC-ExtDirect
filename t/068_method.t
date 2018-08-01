@@ -126,7 +126,7 @@ __DATA__
             len => 1,
         },
         input => { foo => 'bar' },
-        exception => qr/expects ordered arguments in arrayref/,
+        exception => qr/expects ordered arguments in Array/,
     },
     {
         name => 'Ordered zero passed [0]',
@@ -153,7 +153,7 @@ __DATA__
             len => 1,
         },
         input => [],
-        exception => qr/requires 1 argument\(s\) but only 0 are provided/,
+        exception => qr/requires 1 argument\(s\) but only 0 were provided/,
     },
     {
         name => 'Ordered 1 passed [1]',
@@ -180,7 +180,7 @@ __DATA__
             len => 3,
         },
         input => [],
-        exception => qr/requires 3 argument\(s\) but only 0 are provided/,
+        exception => qr/requires 3 argument\(s\) but only 0 were provided/,
     },
     {
         name => 'Ordered 3 passed [2]',
@@ -189,7 +189,7 @@ __DATA__
             len => 3,
         },
         input => [111, 222],
-        exception => qr/requires 3 argument\(s\) but only 2 are provided/,
+        exception => qr/requires 3 argument\(s\) but only 2 were provided/,
     },
     {
         name => 'Ordered 3 passed [3]',
@@ -216,7 +216,7 @@ __DATA__
             params => [qw/ foo bar /],
         },
         input => [],
-        exception => qr/expects named arguments in hashref/,
+        exception => qr/expects named argument key\/value pairs in Object \(hashref\)/,
     },
     {
         name => 'Named strict passed empty {}',
@@ -357,7 +357,7 @@ __DATA__
             formHandler => 1,
         },
         input => [],
-        exception => qr/expects named arguments in hashref/,
+        exception => qr/expects named argument key\/value pairs in Object \(hashref\)/,
     },
     {
         name => 'formHandler passed {}',
@@ -659,7 +659,7 @@ __DATA__
             metadata => { len => 1, arg => -1, },
         },
         input => {},
-        exception => qr/expects metadata in arrayref/,
+        exception => qr/expects metadata in Array/,
     },
     {
         name => 'Ordered meta passed [0]',

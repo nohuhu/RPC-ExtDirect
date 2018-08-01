@@ -2,7 +2,6 @@ package RPC::ExtDirect::API::Method;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 use JSON;
@@ -335,7 +334,8 @@ sub check_formHandler_arguments {
     
     # Nothing to check here really except that it's a hashref
     die sprintf "ExtDirect formHandler Method %s.%s expects named " .
-                "arguments in hashref\n", $self->action, $self->name
+                "argument key/value pairs in Object (hashref)\n",
+                ($self->action || ''), ($self->name || '')
         unless 'HASH' eq ref $arg;
     
     return 1;
@@ -429,8 +429,9 @@ sub prepare_formHandler_arguments {
 sub check_named_arguments {
     my ($self, $arg) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects named arguments ".
-                "in hashref\n", $self->action, $self->name
+    die sprintf "ExtDirect Method %s.%s expects named argument ".
+                "key/value pairs in Object (hashref)\n",
+                ($self->action || ''), ($self->name || '')
         unless 'HASH' eq ref $arg;
     
     my @params = @{ $self->params };
@@ -439,7 +440,7 @@ sub check_named_arguments {
     
     die sprintf "ExtDirect Method %s.%s requires the following ".
                  "parameters: '%s'; these are missing: '%s'\n",
-                 $self->action, $self->name,
+                 ($self->action || ''), ($self->name || ''),
                  join(', ', @params), join(', ', @missing)
         if @missing;
     
@@ -455,7 +456,8 @@ sub check_named_metadata {
     my ($self, $meta) = @_;
     
     die sprintf "ExtDirect Method %s.%s expects metadata key/value ".
-                "pairs in hashref\n", $self->action, $self->name
+                "pairs in Object (hashref)\n",
+                ($self->action || ''), ($self->name || '')
         unless 'HASH' eq ref $meta;
     
     my $meta_def = $self->metadata;
@@ -465,7 +467,7 @@ sub check_named_metadata {
     
     die sprintf "ExtDirect Method %s.%s requires the following ".
                 "metadata keys: '%s'; these are missing: '%s'\n",
-                $self->action, $self->name,
+                ($self->action || ''), ($self->name || ''),
                 join(', ', @meta_params), join(', ', @missing)
         if @missing;
     
@@ -554,14 +556,16 @@ sub check_ordered_arguments {
     # Historically Ext.Direct on the JavaScript client side sent null value
     # instead of empty array for ordered Methods that accept 0 arguments.
     die sprintf "ExtDirect Method %s.%s expects ordered arguments " .
-                "in arrayref\n", $self->action, $self->name
+                "in Array\n",
+                ($self->action || ''), ($self->name || '')
         if $want_len > 0 && 'ARRAY' ne ref $input;
 
     my $have_len = $want_len > 0 ? @$input : 0;
     
     die sprintf "ExtDirect Method %s.%s requires %d argument(s) ".
-                "but only %d are provided\n",
-                $self->action, $self->name, $want_len, $have_len
+                "but only %d were provided\n",
+                ($self->action || ''), ($self->name || ''),
+                $want_len, $have_len
         unless $have_len >= $want_len;
     
     return 1;
@@ -575,8 +579,8 @@ sub check_ordered_arguments {
 sub check_ordered_metadata {
     my ($self, $meta) = @_;
     
-    die sprintf "ExtDirect Method %s.%s expects metadata in arrayref\n",
-                $self->action, $self->name
+    die sprintf "ExtDirect Method %s.%s expects metadata in Array\n",
+                ($self->action || ''), ($self->name || '')
         unless 'ARRAY' eq ref $meta;
     
     my $meta_def = $self->metadata;
@@ -584,8 +588,9 @@ sub check_ordered_metadata {
     my $have_len = @$meta;
     
     die sprintf "ExtDirect Method %s.%s requires %d metadata ".
-                "value(s) but only %d are provided\n",
-                $self->action, $self->name, $want_len, $have_len
+                "value(s) but only %d were provided\n",
+                ($self->action || ''), ($self->name || ''),
+                $want_len, $have_len
         unless $have_len >= $want_len;
     
     return 1;

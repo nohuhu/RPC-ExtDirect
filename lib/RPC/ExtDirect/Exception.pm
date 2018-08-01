@@ -2,7 +2,6 @@ package RPC::ExtDirect::Exception;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 
@@ -17,20 +16,9 @@ use RPC::ExtDirect::Util qw/ clean_error_message get_caller_info /;
 sub new {
     my ($class, $arg) = @_;
 
-    my $where   = $arg->{where};
-    my $message = $arg->{message};
+    my $self = bless { %$arg }, $class;
 
-    my $self = bless {
-        debug   => $arg->{debug},
-        action  => $arg->{action},
-        method  => $arg->{method},
-        tid     => $arg->{tid},
-        verbose => $arg->{verbose},
-        code    => $arg->{code},
-        data    => $arg->{data},
-    }, $class;
-
-    $self->_set_error($message, $where);
+    $self->_set_error($arg->{message}, $arg->{where});
 
     return $self;
 }
@@ -61,7 +49,7 @@ sub result {
 RPC::ExtDirect::Util::Accessor::mk_accessors(
     simple => [qw/
         debug action method tid where message verbose
-        code data
+        code data type
     /],
 );
 
@@ -91,28 +79,56 @@ sub _set_error {
 sub _get_exception_hashref {
     my ($self) = @_;
 
-    # If debug flag is not set, return generic message. This is for
-    # compatibility with Ext.Direct specification.
-    my ($where, $message);
+    my $tid = $self->tid;
+    my $code = $self->code;
     
-    if ( $self->debug || $self->verbose ) {
-        $where   = $self->where;
-        $message = $self->message;
+    my ($where, $message, $exception_ref);
+    
+    if ( ($self->type || '') eq 'jsonrpc' ) {
+        # RPC-JSON notifications MUST NOT send a response
+        # even if an error occured:
+        # https://www.jsonrpc.org/specification#response_object
+        # This does not include internal errors.
+        return undef
+            if not defined $tid
+               and not (defined $code and $code < 32600);
+    
+        my $data = $self->data;
+        my $message = $self->message;
+        
+        $message =~ s/ExtDirect/JSON-RPC/g;
+        
+        $exception_ref = {
+            jsonrpc => '2.0',
+            (defined($tid) ? (id => $tid) : ()),
+            error => {
+                code => (defined($code) ? $code : -32603),
+                message => $message,
+                (defined($data) ? (data => $data) : ()),
+            },
+        };
     }
     else {
-        $where   = 'ExtDirect';
-        $message = 'An error has occured while processing request';
-    };
-
-    # Format the hashref
-    my $exception_ref = {
-        type    => 'exception',
-        action  => $self->action,
-        method  => $self->method,
-        tid     => $self->tid,
-        where   => $where,
-        message => $message,
-    };
+        # If debug flag is not set, return generic message.
+        # This is defined in Ext Direct specification.
+        if ( $self->debug || $self->verbose ) {
+            $where   = $self->where;
+            $message = $self->message;
+        }
+        else {
+            $where   = 'ExtDirect';
+            $message = 'An error has occured while processing request';
+        };
+    
+        $exception_ref = {
+            type    => 'exception',
+            action  => $self->action,
+            method  => $self->method,
+            tid     => $self->tid,
+            where   => $where,
+            message => $message,
+        };
+    }
 
     return $exception_ref;
 }

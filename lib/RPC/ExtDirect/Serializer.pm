@@ -22,6 +22,8 @@ use RPC::ExtDirect::Util qw/
 sub new {
     my ($class, %arg) = @_;
     
+    $arg{env} = {} unless 'HASH' eq ref($arg{env});
+    
     my $self = bless { %arg }, $class;
     
     return $self;
@@ -67,11 +69,18 @@ sub decode_post {
 
     if ( $@ ) {
         my $error = $self->_clean_msg($@);
+        my $type = $self->env->{type} || 'rpc';
 
-        my $msg  = "ExtDirect error decoding POST data: '$error'";
+        my $msg = $type eq 'jsonrpc'
+            ? "JSON-RPC parse error: invalid JSON"
+            : "ExtDirect error decoding POST data: '$error'"
+            ;
+        
         my $xcpt = $self->_exception({
             direction => 'deserialize',
             message   => $msg,
+            type      => $type,
+            code      => -32700,
             %arg,
         });
         
@@ -103,7 +112,7 @@ sub decode_form {
 }
 
 RPC::ExtDirect::Util::Accessor::mk_accessors(
-    simple => [qw/ config api /],
+    simple => [qw/ config api env /],
 );
 
 ############## PRIVATE METHODS BELOW ##############
@@ -134,6 +143,7 @@ sub _encode_response {
 
     if ( $@ and not $mute_exceptions ) {
         my $msg = $self->_clean_msg($@);
+        my $type = $self->env->{type} || 'rpc';
 
         # It's not a given that response/exception hashrefs
         # will be actual blessed objects, so we have to peek
@@ -145,6 +155,8 @@ sub _encode_response {
             tid       => $response->{tid},
             where     => __PACKAGE__,
             message   => $msg,
+            type      => $type,
+            code      => -32603,
             %arg,
         });
         
@@ -174,7 +186,9 @@ sub _encode_json {
                 ;
     
     # We force UTF-8 as per Ext.Direct spec
-    $options->{utf8}      = 1;
+    $options->{utf8} = 1
+        unless $self->env->{type} eq 'jsonrpc';
+    
     $options->{canonical} = $debug
         unless defined $options->{canonical};
     

@@ -2,7 +2,6 @@ package RPC::ExtDirect;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';       ## no critic
 
 use Carp;
 use Attribute::Handlers;
@@ -17,7 +16,7 @@ use RPC::ExtDirect::Util;
 # at the end.
 #
 
-our $VERSION = '3.30.0';
+our $VERSION = 'v4.0.0';
 
 ### PACKAGE GLOBAL VARIABLE ###
 #

@@ -2,7 +2,6 @@ package RPC::ExtDirect::API::Hook;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use B;
 

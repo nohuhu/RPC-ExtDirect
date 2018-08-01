@@ -1,5 +1,5 @@
 use strict;
-use warnings FATAL => 'all';
+use warnings;
 
 use RPC::ExtDirect::Test::Util;
 use RPC::ExtDirect::Config;
@@ -23,7 +23,7 @@ my $tests = eval do { local $/; <DATA>; }       ## no critic
 for my $test ( @$tests ) {
     my ($name, $data, $expected_ran, $expected_result, $debug,
         $run_twice, $isa, $class)
-        = @$test{ qw(name data ran_ok result debug run_twice isa class)
+        = @$test{ qw(name data ran_ok result debug run_twice isa)
                 };
     
     next if %only_tests and not $only_tests{$name};
@@ -31,12 +31,8 @@ for my $test ( @$tests ) {
     # Set debug flag according to test
     $data->{config} = RPC::ExtDirect::Config->new( debug_request => $debug, );
     $data->{api}    = RPC::ExtDirect->get_api();
-    
-    $class ||= 'RPC::ExtDirect::Request';
-    
-    eval "require $class";
 
-    my $request = eval { $class->new($data) };
+    my $request = eval { RPC::ExtDirect::Request->new($data) };
 
     is     $@,       '', "$name new() eval $@";
     ok     $request,     "$name new() object created";
@@ -179,11 +175,10 @@ __DATA__
     
     {
         name => 'JSON-RPC with no arguments', debug => 1, ran_ok => 1,
-        class => 'RPC::ExtDirect::Request::JsonRpc',
         data => {
             jsonrpc => '2.0', method => 'Foo.foo_zero', id => "foo",
         },
-        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Request',
         result => {
             jsonrpc => '2.0', id => "foo", result => ['RPC::ExtDirect::Test::Pkg::Foo'],
         },
@@ -191,11 +186,10 @@ __DATA__
     
     {
         name => 'JSON-RPC with ordered arguments', debug => 1, ran_ok => 1,
-        class => 'RPC::ExtDirect::Request::JsonRpc',
         data => {
             jsonrpc => '2.0', method => 'Foo.foo_foo', params => ['blerg'], id => 10,
         },
-        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Request',
         result => {
             jsonrpc => '2.0', id => 10, result => "foo! 'blerg'",
         },
@@ -203,13 +197,12 @@ __DATA__
     
     {
         name => 'JSON-RPC with named arguments', debug => 1, ran_ok => 1,
-        class => 'RPC::ExtDirect::Request::JsonRpc',
         data => {
             jsonrpc => '2.0', method => 'Qux.foo_baz', id => '$@$%@$@#',
             params => {"foo" => "blerg", "bar" => ["throbbe", "zingbong"],
                        "baz" => {"mymse" => "plugh"}},
         },
-        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Request',
         result => {
             jsonrpc => '2.0', id => '$@$%@$@#',
             result => {
@@ -223,8 +216,7 @@ __DATA__
     
     {
         name => 'JSON-RPC notification', debug => 1, ran_ok => 1,
-        class => 'RPC::ExtDirect::Request::JsonRpc',
-        isa => 'RPC::ExtDirect::Request::JsonRpc',
+        isa => 'RPC::ExtDirect::Request',
         data => {
             jsonrpc => '2.0', method => 'Foo.foo_blessed',
             params => { foo => 'bar' },

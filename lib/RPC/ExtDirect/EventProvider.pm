@@ -2,7 +2,6 @@ package RPC::ExtDirect::EventProvider;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use RPC::ExtDirect::Util::Accessor;
 use RPC::ExtDirect::Config;

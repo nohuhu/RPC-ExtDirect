@@ -2,7 +2,6 @@ package RPC::ExtDirect::Event;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 

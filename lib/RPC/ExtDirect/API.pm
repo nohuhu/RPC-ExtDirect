@@ -2,7 +2,6 @@ package RPC::ExtDirect::API;
 
 use strict;
 use warnings;
-no  warnings 'uninitialized';           ## no critic
 
 use Carp;
 

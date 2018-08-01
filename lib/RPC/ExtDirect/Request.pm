@@ -36,13 +36,6 @@ our $EXCEPTION_CLASS;
 
 sub HOOK_TYPES { qw/ before instead after / }
 
-### PUBLIC CLASS METHOD (ACCESSOR) ###
-#
-# Return the config property for Exception class
-#
-
-sub EXCEPTION_CLASS { 'exception_class_request' }
-
 ### PUBLIC CLASS METHOD (CONSTRUCTOR) ###
 #
 # Initializes new instance of RPC::ExtDirect::Request
@@ -58,37 +51,48 @@ sub new {
               :                        $config->debug_request
               ;
 
-    # Need blessed object to call private methods
     my $self = bless {
         api    => $api,
         config => $config,
         debug  => $debug,
     }, $class;
 
-    # Unpack and validate arguments
-    my ($action_name, $method_name, $tid, $data, $type, $upload, $meta, $aux)
-        = eval { $self->_unpack_arguments($arg) };
+    my ($action_name, $method_name, $tid, $data, 
+        $type, $upload, $meta, $aux, $error)
+        = $self->_unpack_arguments($arg);
     
-    return $self->_exception({
-        action  => $action_name,
-        method  => $method_name,
-        tid     => $tid,
-        message => $@->[0],
-        code    => -32600,
-    }) if $@;
-
-    # Look up the Method
-    my $method_ref = $api->get_method_by_name($action_name, $method_name);
+    if ( $error ) {
+        return $self->_exception({
+            action  => $action_name,
+            method  => $method_name,
+            tid     => $tid,
+            message => $error,
+            code    => -32600,
+            type    => $type,
+        });
+    }
     
-    return $self->_exception({
-        action  => $action_name,
-        method  => $method_name,
-        tid     => $tid,
-        message => 'ExtDirect action or method not found',
-        code    => -32601,
-    }) unless $method_ref;
+    # We need this early to properly format exceptions
+    $self->{type} = $type;
+    
+    my $method_ref
+        = $api->get_method_by_name($action_name, $method_name);
+    
+    if ( not $method_ref ) {
+        my $message = $type eq 'jsonrpc'
+                    ? 'JSON-RPC method not found'
+                    : 'ExtDirect action or method not found'
+                    ;
+        
+        return $self->_exception({
+            action  => $action_name,
+            method  => $method_name,
+            tid     => $tid,
+            message => $message,
+            code    => -32601,
+        });
+    }
 
-    # Check if arguments passed in $data are of right kind
     my $exception = $self->check_arguments(
         action_name => $action_name,
         method_name => $method_name,
@@ -101,8 +105,8 @@ sub new {
     return $exception if defined $exception;
     
     # Bulk assignment for brevity
-    @$self{ qw/ tid type data metadata upload method_ref run_count aux / }
-        = ($tid, $type, $data, $meta, $upload, $method_ref, 0, $aux);
+    @$self{ qw/ tid data metadata upload method_ref run_count aux / }
+        = ($tid, $data, $meta, $upload, $method_ref, 0, $aux);
     
     # Finally, resolve the hooks; it's easier to do that upfront
     # since it involves API lookup
@@ -328,9 +332,8 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 sub _exception {
     my ($self, $arg) = @_;
     
-    my $prop     = $self->EXCEPTION_CLASS;
     my $config   = $self->config;
-    my $ex_class = $config->$prop;
+    my $ex_class = $config->exception_class_request;
     
     eval "require $ex_class";
     
@@ -342,11 +345,11 @@ sub _exception {
         $arg->{where} = $package . '->' . $sub;
     };
     
-$DB::single = 1;
     return $ex_class->new({
         config  => $config,
         debug   => $self->debug,
         verbose => $config->verbose_exceptions,
+        type    => $self->type,
         %$arg
     });
 }
@@ -357,7 +360,7 @@ $DB::single = 1;
 #
 
 sub _set_error {
-    my ($self, $msg, $where) = @_;
+    my ($self, $msg, $where, $code) = @_;
 
     # Munge $where to avoid it being '_set_error' all the time
     if ( !defined $where ) {
@@ -375,7 +378,7 @@ sub _set_error {
         message => $msg,
         where   => $where,
         debug   => $self->debug,
-        code    => -32603,
+        code    => defined($code) ? $code : -32603,
     });
 
     # Now the black voodoo magiKC part, live on stage
@@ -394,47 +397,104 @@ sub _set_error {
 # Unpacks arguments into a list and validates them
 #
 
-my @std_keys = qw/
+my @std_keys_extdirect = qw/
     extAction action extMethod method extTID tid data metadata
     extType type extUpload _uploads
 /;
 
+my @std_keys_jsonrpc = qw/ jsonrpc id method params /;
+
 sub _unpack_arguments {
     my ($self, $arg) = @_;
 
-    # Unpack and normalize arguments
-    my $action = $arg->{extAction} || $arg->{action};
-    my $method = $arg->{extMethod} || $arg->{method};
-    my $tid    = $arg->{extTID}    || $arg->{tid}; # can't be 0
-    my $type   = $arg->{type}      || 'rpc';
+    my ($action, $method, $type, $tid, $params, $meta,
+        $upload, $aux_ref, $error, @keys);
     
-    # For a formHandler, the "data" field is the form itself;
-    # the arguments are fields in the form-encoded POST body
-    my $data   = $arg->{data} || $arg;
-    my $meta   = $arg->{metadata};
-    my $upload = $arg->{extUpload} eq 'true' ? $arg->{_uploads}
-               :                               undef
-               ;
-
-    # Throwing arrayref so that die() wouldn't add file/line to the string
-    die [ "ExtDirect action (class name) required" ]
-        unless defined $action && length $action > 0;
-
-    die [ "ExtDirect method name required" ]
-        unless defined $method && length $method > 0;
-
-    my %arg_keys = map { $_ => 1, } keys %$arg;
-    delete @arg_keys{ @std_keys };
-
-    # Collect ancillary data that might be passed in the packet
-    # and make it available to the Hooks. This might be used e.g.
-    # for passing CSRF protection tokens, etc.
-    my %aux = map { $_ => $arg->{$_} } keys %arg_keys;
+    eval {
+        # If 'jsonrpc' property is present, it's JSON-RPC request
+        my $jsonrpc = $arg->{jsonrpc};
+        
+        if ( defined $jsonrpc ) {
+            $type = 'jsonrpc';
+            
+            die [ "JSON-RPC version 2.0 and later is required" ]
+                unless $jsonrpc >= 2.0;
+            
+            $method = $arg->{method};
+        
+            die [ "JSON-RPC method name is required" ]
+                unless defined $method && length $method > 0;
+            
+            # JSON-RPC does not have a concept of Action (Class), so we assume
+            # that the last item in dotted notation is the method name, and prefix
+            # if any is the Action.
+            if ( $method =~ /\./ ) {
+                my @parts = split /\./, $method;
+                
+                $method = pop @parts;
+                $action = join '.', @parts;
+            }
+            else {
+                $action = '__DEFAULT__';
+            }
+            
+           $tid = $arg->{id};
+            
+            # JSON-RPC spec does not insist on non-empty string but we're
+            # trying to stay sane, are we?
+            # https://www.jsonrpc.org/specification#request_object
+            if ( defined($tid) and $tid eq '' or ref $tid ) {
+                $tid = undef;
+                die [ 'JSON-RPC request id MUST be a non-empty string or a number!' ];
+            }
+            
+            $params = $arg->{params};
+            $meta = $arg->{metadata};
+            
+            @keys = @std_keys_jsonrpc;
+        }
+        else {
+            $type   = $arg->{type}      || 'rpc';
+            $action = $arg->{extAction} || $arg->{action};
+            $method = $arg->{extMethod} || $arg->{method};
+            $tid    = $arg->{extTID}    || $arg->{tid}; # can't be 0
+        
+            # For a formHandler, the "data" field is the form itself;
+            # the arguments are fields in the form-encoded POST body
+            $params = $arg->{data} || $arg;
+            $meta   = $arg->{metadata};
+            $upload = $arg->{extUpload} eq 'true' ? $arg->{_uploads}
+                    :                               undef
+                    ;
+            
+            # Throwing arrayref so that die() wouldn't add
+            # file/line to the string
+            die [ "ExtDirect action (class name) required" ]
+                unless defined $action && length $action > 0;
+        
+            die [ "ExtDirect method name required" ]
+                unless defined $method && length $method > 0;
+            
+            @keys = @std_keys_extdirect;
+        }
     
-    my $aux_ref = %aux ? { %aux } : undef;
+        my %arg_keys = map { $_ => 1 } keys %$arg;
+        delete @arg_keys{ @keys };
+    
+        # Collect ancillary data that might be passed in the packet
+        # and make it available to the Hooks. This might be used e.g.
+        # for passing CSRF protection tokens, etc.
+        my %aux = map { $_ => $arg->{$_} } keys %arg_keys;
+        
+        $aux_ref = %aux ? { %aux } : undef;
+    };
+    
+    if ( $@ ) {
+        $error = $@->[0];
+    }
 
     return (
-        $action, $method, $tid, $data, $type, $upload, $meta, $aux_ref
+        $action, $method, $tid, $params, $type, $upload, $meta, $aux_ref, $error
     );
 }
 
@@ -512,15 +572,31 @@ sub _run_after_hook {
 sub _get_result_hashref {
     my ($self) = @_;
     
+    my $tid = $self->tid;
     my $method_ref = $self->method_ref;
+    
+    my $result_ref;
 
-    my $result_ref = {
-        type   => 'rpc',
-        tid    => $self->tid,
-        action => $method_ref->action,
-        method => $method_ref->name,
-        result => $self->{result},  # To avoid collisions
-    };
+    if ( $self->type eq 'jsonrpc') {
+        # JSON-RPC notifications MUST NOT return a response
+        # https://www.jsonrpc.org/specification#notification
+        return unless defined $tid;
+        
+        $result_ref = {
+            jsonrpc => '2.0',
+            id      => $tid,
+            result  => $self->{result},
+        };
+    }
+    else {
+        $result_ref = {
+            type   => 'rpc',
+            tid    => $tid,
+            action => $method_ref->action,
+            method => $method_ref->name,
+            result => $self->{result},
+        };
+    }
 
     return $result_ref;
 }

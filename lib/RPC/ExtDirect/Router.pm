@@ -89,15 +89,9 @@ sub route {
     
     my $self = ref($class) ? $class : $class->new();
     
-    # Decode requests
-    my ($has_upload, $requests) = $self->_decode_requests($input);
-
-    # Run requests and collect responses
+    my ($has_upload, $requests) = $self->_decode_requests($input, $env);
     my $responses = $self->_run_requests($env, $requests);
-
-    # Serialize responses
-    my $result = $self->_serialize_responses($responses);
-
+    my $result = $self->_serialize_responses($responses, $env);
     my $http_response = $self->_format_response($result, $has_upload);
     
     return $http_response;
@@ -120,7 +114,7 @@ RPC::ExtDirect::Util::Accessor::mk_accessors(
 #
 
 sub _decode_requests {
-    my ($self, $input) = @_;
+    my ($self, $input, $env) = @_;
     
     # $input can be scalar containing POST data,
     # or a hashref containing form data
@@ -135,12 +129,18 @@ sub _decode_requests {
     
     eval "require $deserializer_class";
     
-    my $dser = $deserializer_class->new( config => $config, api => $api );
+    my $dser = $deserializer_class->new(
+        config => $config, api => $api, env => $env,
+    );
+    
+    my %dser_arg = (
+        data => $input,
+        debug => $debug,
+    );
 
-    my $requests
-        = $has_form ? $dser->decode_form(data => $input, debug => $debug)
-        :             $dser->decode_post(data => $input, debug => $debug)
-        ;
+    my $requests = $has_form ? $dser->decode_form(%dser_arg)
+                 :             $dser->decode_post(%dser_arg)
+                 ;
     
     return ($has_upload, $requests);
 }
@@ -170,7 +170,7 @@ sub _run_requests {
 #
 
 sub _serialize_responses {
-    my ($self, $responses) = @_;
+    my ($self, $responses, $env) = @_;
     
     my $api    = $self->api;
     my $config = $self->config;

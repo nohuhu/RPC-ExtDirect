@@ -124,9 +124,9 @@ __DATA__
                     tid     => 1, data => [], },
         isa    => 'RPC::ExtDirect::Exception',
         result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
+                    action  => '',
+                    method  => 'foo',
+                    tid     => 1,
                     where   => 'RPC::ExtDirect::Request->new',
                     message => 'ExtDirect action (class name) required' },
     },
@@ -137,9 +137,9 @@ __DATA__
                     tid     => 2, data => [], },
         isa    => 'RPC::ExtDirect::Exception',
         result => { type    => 'exception',
-                    action  => undef,
-                    method  => undef,
-                    tid     => undef,
+                    action  => 'Some',
+                    method  => '',
+                    tid     => 2,
                     where   => 'RPC::ExtDirect::Request->new',
                     message => 'ExtDirect method name required' },
     },
@@ -171,7 +171,7 @@ __DATA__
                                'check_method_arguments',
                     message => 'ExtDirect Method Qux.bar_foo '.
                                'requires 4 argument(s) but only 3 '.
-                               'are provided', },
+                               'were provided', },
     },
     # Tried to run method twice
     {

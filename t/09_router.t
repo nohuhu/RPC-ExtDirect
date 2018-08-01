@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 92;
+use Test::More tests => 132;
 
 use RPC::ExtDirect::Test::Util qw/ cmp_json is_deep /;
 use RPC::ExtDirect::Config;
@@ -17,14 +17,14 @@ my $tests = eval do { local $/; <DATA>; }           ## no critic
 
 my %only_tests = map { $_ => 1 } @ARGV;
 
-TEST:
 for my $test ( @$tests ) {
     my $name   = $test->{name};
     my $debug  = $test->{debug};
     my $input  = $test->{input};
     my $expect = $test->{output};
+    my $env    = $test->{env};
     
-    next TEST if %only_tests && !$only_tests{$name};
+    next if %only_tests && !$only_tests{$name};
 
     my $config = RPC::ExtDirect::Config->new(
         debug_router => $debug,
@@ -34,7 +34,7 @@ for my $test ( @$tests ) {
         config => $config,
     );
 
-    my $result = eval { $router->route($input) };
+    my $result = eval { $router->route($input, $env) };
 
     # Remove reference addresses. On different platforms
     # stringified reference has different length so we're
@@ -70,7 +70,6 @@ for my $test ( @$tests ) {
 };
 
 __DATA__
-#line 60
 [
     { name   => 'Invalid result', debug => 1,
       input  => '{"type":"rpc","tid":1,"action":"Foo","method":"foo_blessed",'.
@@ -149,12 +148,12 @@ __DATA__
         output => [ 200,
                     [
                         'Content-Type', 'application/json',
-                        'Content-Length', 213,
+                        'Content-Length', 214,
                     ],
                     [
                         q|{"action":"Meta",|.
                         q|"message":"ExtDirectMethodMeta.arg0requires|.
-                        q|2metadatavalue(s)butonly1areprovided",|.
+                        q|2metadatavalue(s)butonly1wereprovided",|.
                         q|"method":"arg0","tid":1,"type":"exception",|.
                         q|"where":"RPC::ExtDirect::API::Method->check_method_metadata"}|,
                     ],
@@ -499,5 +498,153 @@ __DATA__
                   q|</textarea></body></html>|,
                   ],
                 ],
+    },
+    {
+        name => 'JSON-RPC parse error', debug => 1,
+        input => q|{"jsonrpc":"2.0","method":"Foo.foo_foo","id":["bazoom?"],"params":[null}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 88],
+            [
+                q|{"jsonrpc":"2.0","error":{"code":-32700,"message":|.
+                q|"JSON-RPC parse error: invalid JSON"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC batch parse error', debug => 1,
+        input => 
+            q|[{"jsonrpc":"2.0","method":"Foo.foo_foo","id":["bazoom?"],"params":[null]},|.
+            q|{"jsonrpc":"2.0","method":"Foo.bar_bar","id":"fumble","params":|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 88],
+            [
+                q|{"jsonrpc":"2.0","error":{"code":-32700,"message":|.
+                q|"JSON-RPC parse error: invalid JSON"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC invalid request id', debug => 1,
+        input => q|{"jsonrpc":"2.0","method":"Foo.foo_foo","id":["bazoom?"],"params":[null,null]}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 113],
+            [
+                q|{"jsonrpc":"2.0","error":{"code":-32600,"message":|.
+                q|"JSON-RPC request id MUST be a non-empty string or a number!"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC method not found', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","method":"Foo.blergobonzo","id":"qux","params":[null,null]}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 90],
+            [
+                q|{"jsonrpc":"2.0","id":"qux","error":{"code":-32601,|.
+                q|"message":"JSON-RPC method not found"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC wrong ordered arguments', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","method":"Foo.foo_foo","id":123,"params":{}}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 125],
+            [
+                q|{"jsonrpc":"2.0","id":123,"error":{|.
+                q|"code":-32602,"message":"JSON-RPC Method Foo.foo_foo |.
+                q|expects ordered arguments in Array"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC wrong named arguments', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","method":"Foo.foo_baz","id":321,"params":[]}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 149],
+            [
+                q|{"jsonrpc":"2.0","id":321,"error":{|.
+                q|"code":-32602,"message":"JSON-RPC Method Foo.foo_baz |.
+                q|expects named argument key/value pairs in Object (hashref)"}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC call with no arguments', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","method":"Foo.foo_zero","id":"foo"}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 72],
+            [
+                q|{"jsonrpc":"2.0","id":"foo","result":["RPC::ExtDirect::Test::Pkg::Foo"]}|
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC call with ordered arguments', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","id":10,"method":"Foo.foo_foo","params":["throbbe"]}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 51],
+            [
+                q|{"jsonrpc":"2.0","id":10,"result":"foo! 'throbbe'"}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC call with named arguments', debug => 1,
+        input =>
+            q|{"jsonrpc":"2.0","id":11,"method":"Qux.foo_baz","params":{|.
+            q|"foo":"blerg","bar":["throbbe","zingbong"],"baz":{"mymse":"plugh"}}}|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 126],
+            [
+                q|{"jsonrpc":"2.0","id":11,"result":{"msg":"foo! bar! baz!",|.
+                q|"foo":"blerg","bar":["throbbe","zingbong"],"baz":{"mymse":"plugh"}}}|,
+            ],
+        ],
+    },
+    {
+        name => 'JSON-RPC batch call', debug => 1,
+        input =>
+            q|[{"jsonrpc":"2.0","id":11,"method":"Qux.foo_baz","params":{|.
+            q|"foo":"blerg","bar":["throbbe","zingbong"],"baz":{"mymse":"plugh"}}},|.
+            q|{"jsonrpc":"2.0","id":12,"method":"Foo.foo_bar","params":[42,"baru-fu"]},|.
+            q|{"jsonrpc":"2.0","id":13,"method":"Bar.bar_foo","params":[1,2,3,4]},|.
+            q|{"jsonrpc":"2.0","id":14,"method":"Meta.arg1_last","params":["gurgle"],|.
+            q|"metadata":["furgle"]}]|,
+        env => { type => 'jsonrpc' },
+        output => [
+            200,
+            ['Content-Type', 'application/json', 'Content-Length', 332],
+            [
+                q|[{"jsonrpc":"2.0","id":11,"result":{"msg":"foo! bar! baz!",|.
+                q|"foo":"blerg","bar":["throbbe","zingbong"],"baz":{"mymse":"plugh"}}},|.
+                q|{"jsonrpc":"2.0","id":12,"result":["foo! bar!",42,"baru-fu"]},|.
+                q|{"jsonrpc":"2.0","id":13,"error":{"code":-32603,"message":"bar foo!"}},|.
+                q|{"jsonrpc":"2.0","id":14,"result":{"arg1":"gurgle","meta":["furgle"]}}]|,
+            ],
+        ],
     },
 ]
